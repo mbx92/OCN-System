@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ================================
+// AUTHENTICATION & USER MANAGEMENT
+// ================================
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  username String   @unique
+  password String // Hashed with bcrypt
+  name     String
+  phone    String?
+  role     UserRole @default(TECHNICIAN)
+  isActive Boolean  @default(true)
+
+  // Relations
+  technicianProfile Technician? @relation("UserTechnician")
+  activities        Activity[]
+  sessions          Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  OWNER // Full access
+  ADMIN // Administrative staff
+  TECHNICIAN // Limited access to their projects
+  VIEWER // Read-only access
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  lastActivity DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // LOGIN, VIEW_PROJECT, UPDATE_STATUS, etc
+  entity    String? // projects, payments, etc
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+// ================================
+// COMPANY SETTINGS
+// ================================
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  settings  Json // Company settings like margin percentage, etc
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================================
+// CUSTOMER MANAGEMENT
+// ================================
+
+model Customer {
+  id          String    @id @default(cuid())
+  name        String
+  companyName String?
+  phone       String
+  email       String?
+  address     String
+  notes       String? // Preferences, key contacts
+  projects    Project[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ================================
+// PROJECT MANAGEMENT
+// ================================
+
+model Project {
+  id               String              @id @default(cuid())
+  projectNumber    String              @unique // AUTO: PRJ-YYYYMM-XXX
+  customerId       String
+  customer         Customer            @relation(fields: [customerId], references: [id])
+  title            String
+  description      String?
+  status           ProjectStatus       @default(QUOTATION)
+  budget           Decimal             @db.Decimal(15, 2)
+  actualCost       Decimal             @default(0) @db.Decimal(15, 2)
+  finalPrice       Decimal?            @db.Decimal(15, 2)
+  paymentTerms     Json? // {type: 'FULL'|'DP', details: {...}}
+  startDate        DateTime?
+  endDate          DateTime?
+  quotations       Quotation[]
+  purchaseOrders   PurchaseOrder[]
+  expenses         ProjectExpense[]
+  payments         Payment[]
+  items            ProjectItem[]
+  warranties       Warranty[]
+  technicians      ProjectTechnician[]
+  financialSummary FinancialSummary?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+enum ProjectStatus {
+  QUOTATION
+  APPROVED
+  PROCUREMENT
+  ONGOING
+  COMPLETED
+  PAID
+  CLOSED
+}
+
+model ProjectItem {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id])
+  name       String // Product name or custom item
+  quantity   Int
+  unit       String
+  price      Decimal  @db.Decimal(15, 2)
+  totalPrice Decimal  @db.Decimal(15, 2)
+  type       String // QUOTATION, ACTUAL, ADDITIONAL
+  addedAt    DateTime @default(now())
+}
+
+model ProjectExpense {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    String // TRANSPORT, MEAL, TOOL, OTHER
+  description String
+  amount      Decimal  @db.Decimal(15, 2)
+  receipt     String? // Path to receipt image
+  date        DateTime
+  createdAt   DateTime @default(now())
+}
+
+// ================================
+// QUOTATION SYSTEM
+// ================================
+
+model Quotation {
+  id          String   @id @default(cuid())
+  quotationNo String   @unique // AUTO: QT-YYYYMM-XXX
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  customerId  String
+  title       String?
+  items       Json // Array of items with price
+  totalAmount Decimal  @db.Decimal(15, 2)
+  status      String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
+  validUntil  DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ================================
+// PRODUCT & INVENTORY
+// ================================
+
+model Product {
+  id            String            @id @default(cuid())
+  sku           String            @unique
+  name          String
+  category      String // CCTV, NETWORK, ACCESSORIES, SERVICE
+  unit          String // pcs, meter, set, etc
+  purchasePrice Decimal           @default(0) @db.Decimal(15, 2)
+  sellingPrice  Decimal           @default(0) @db.Decimal(15, 2)
+  minStock      Int               @default(0)
+  stock         Stock?
+  suppliers     SupplierProduct[]
+  projectItems  ProjectItem[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Stock {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int      @default(0)
+  reserved    Int      @default(0) // Reserved for projects
+  available   Int      @default(0) // quantity - reserved
+  lastUpdated DateTime @updatedAt
+}
+
+// ================================
+// SUPPLIER MANAGEMENT
+// ================================
+
+model Supplier {
+  id             String            @id @default(cuid())
+  name           String
+  contactPerson  String?
+  phone          String
+  email          String?
+  address        String?
+  products       SupplierProduct[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model SupplierProduct {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  price      Decimal  @db.Decimal(15, 2)
+  isActive   Boolean  @default(true)
+
+  @@unique([supplierId, productId])
+}
+
+// ================================
+// PURCHASE ORDERS
+// ================================
+
+model PurchaseOrder {
+  id           String    @id @default(cuid())
+  poNumber     String    @unique // AUTO: PO-YYYYMM-XXX
+  projectId    String?
+  project      Project?  @relation(fields: [projectId], references: [id])
+  supplierId   String
+  supplier     Supplier  @relation(fields: [supplierId], references: [id])
+  items        Json // Array of {productId, quantity, price}
+  totalAmount  Decimal   @db.Decimal(15, 2)
+  status       String    @default("DRAFT") // DRAFT, SENT, PARTIAL, RECEIVED
+  receivedDate DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ================================
+// PAYMENT MANAGEMENT
+// ================================
+
+model Payment {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  amount    Decimal   @db.Decimal(15, 2)
+  type      String // DP, TERMIN_1, FINAL, etc
+  method    String // CASH, TRANSFER
+  status    String    @default("PENDING") // PENDING, PAID
+  paidDate  DateTime?
+  dueDate   DateTime
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ================================
+// TECHNICIAN MANAGEMENT
+// ================================
+
+model Technician {
+  id            String              @id @default(cuid())
+  userId        String?             @unique
+  user          User?               @relation("UserTechnician", fields: [userId], references: [id])
+  name          String
+  phone         String
+  type          String              @default("FREELANCE") // FREELANCE, INTERNAL
+  feeType       String              @default("PERCENTAGE") // PERCENTAGE, FIXED, CUSTOM
+  feePercentage Decimal?            @db.Decimal(5, 2) // Default percentage
+  minFee        Decimal             @default(150000) @db.Decimal(15, 2) // Minimum fee for small projects
+  assignments   ProjectTechnician[]
+
+  // Dashboard access
+  canViewProjects Boolean @default(true)
+  canViewEarnings Boolean @default(true)
+  canUpdateStatus Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectTechnician {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technicianId String
+  technician   Technician @relation(fields: [technicianId], references: [id])
+  fee          Decimal    @db.Decimal(15, 2)
+  feeType      String // How fee was calculated
+  isPaid       Boolean    @default(false)
+  paidDate     DateTime?
+  notes        String?
+  createdAt    DateTime   @default(now())
+}
+
+// ================================
+// WARRANTY & MAINTENANCE
+// ================================
+
+model Warranty {
+  id           String               @id @default(cuid())
+  projectId    String
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemName     String
+  warrantyType String // PRODUCT, SERVICE
+  supplier     String? // Supplier name for product warranty
+  startDate    DateTime
+  endDate      DateTime
+  status       String               @default("ACTIVE") // ACTIVE, EXPIRED, CLAIMED
+  notes        String?
+  services     MaintenanceService[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model MaintenanceService {
+  id          String    @id @default(cuid())
+  warrantyId  String?
+  warranty    Warranty? @relation(fields: [warrantyId], references: [id], onDelete: SetNull)
+  customerId  String
+  serviceDate DateTime
+  serviceType String // ROUTINE, COMPLAINT, EMERGENCY
+  issue       String?
+  solution    String?
+  technician  String?
+  cost        Decimal   @default(0) @db.Decimal(15, 2)
+  status      String    @default("SCHEDULED") // SCHEDULED, COMPLETED
+  nextService DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ================================
+// FINANCIAL SUMMARY
+// ================================
+
+model FinancialSummary {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revenue       Decimal  @db.Decimal(15, 2) // Final price from customer
+  totalCost     Decimal  @db.Decimal(15, 2) // All costs
+  grossMargin   Decimal  @db.Decimal(15, 2) // Revenue - Cost
+  marginPercent Decimal  @db.Decimal(5, 2) // (Margin/Revenue)*100
+  technicianFee Decimal  @db.Decimal(15, 2) // Total technician fees
+  companyFund   Decimal  @db.Decimal(15, 2) // 35% of margin
+  netProfit     Decimal  @db.Decimal(15, 2) // Remaining after distribution
+  calculated    DateTime @default(now())
+}
