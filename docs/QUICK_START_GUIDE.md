@@ -1,6 +1,7 @@
 # Quick Start Development Guide
 
 ## 🚀 Day 1-3: Foundation
+
 ```bash
 # Setup
 npx nuxi@latest init cctv-management
@@ -20,6 +21,7 @@ npx prisma migrate dev --name init
 ```
 
 ## 📁 Project Structure Setup
+
 ```
 nuxt. config.ts - Add modules:  tailwind, daisyui, pinia
 server/api/ - API endpoints
@@ -31,6 +33,7 @@ utils/ - Helper functions
 ```
 
 ## 🎯 Week 1 Priorities
+
 1. ✅ Database setup & migration
 2. ✅ Authentication (simple login)
 3. ✅ Customer CRUD
@@ -39,6 +42,7 @@ utils/ - Helper functions
 6. ✅ Basic inventory
 
 ## 🎯 Week 2 Priorities
+
 1. ✅ PO system
 2. ✅ Expense tracking
 3. ✅ Payment recording
@@ -47,47 +51,49 @@ utils/ - Helper functions
 6. ✅ Basic reports
 
 ## 🔑 Key API Endpoints
+
 ```typescript
 // Priority endpoints
-POST   /api/auth/login
-GET    /api/dashboard/summary
+POST / api / auth / login
+GET / api / dashboard / summary
 
 // Customers
-GET    /api/customers
-POST   /api/customers
-GET    /api/customers/[id]
-PUT    /api/customers/[id]
+GET / api / customers
+POST / api / customers
+GET / api / customers / [id]
+PUT / api / customers / [id]
 
 // Quotations
-GET    /api/quotations
-POST   /api/quotations
-PUT    /api/quotations/[id]/approve
+GET / api / quotations
+POST / api / quotations
+PUT / api / quotations / [id] / approve
 
 // Projects
-GET    /api/projects
-POST   /api/projects
-GET    /api/projects/[id]/details
-PUT    /api/projects/[id]/status
-POST   /api/projects/[id]/expenses
-POST   /api/projects/[id]/payments
+GET / api / projects
+POST / api / projects
+GET / api / projects / [id] / details
+PUT / api / projects / [id] / status
+POST / api / projects / [id] / expenses
+POST / api / projects / [id] / payments
 
 // Inventory
-GET    /api/products
-GET    /api/stock/check
-POST   /api/stock/reserve
+GET / api / products
+GET / api / stock / check
+POST / api / stock / reserve
 
 // Purchase Orders
-POST   /api/purchase-orders
-PUT    /api/purchase-orders/[id]/receive
+POST / api / purchase - orders
+PUT / api / purchase - orders / [id] / receive
 
 // Financial
-GET    /api/projects/[id]/financial-summary
-POST   /api/projects/[id]/calculate-fees
+GET / api / projects / [id] / financial - summary
+POST / api / projects / [id] / calculate - fees
 ```
 
 ## 💡 Component Templates
 
 ### Quick Quotation Builder
+
 ```vue
 <template>
   <div class="space-y-4">
@@ -96,8 +102,8 @@ POST   /api/projects/[id]/calculate-fees
         <option value="">Custom Item</option>
         <option v-for="p in products" :value="p.id">{{ p.name }}</option>
       </select>
-      <input v-model="item.quantity" type="number" class="input input-bordered w-20">
-      <input v-model="item.price" type="number" class="input input-bordered">
+      <input v-model="item.quantity" type="number" class="input input-bordered w-20" />
+      <input v-model="item.price" type="number" class="input input-bordered" />
       <button @click="removeItem(index)" class="btn btn-error btn-sm">X</button>
     </div>
     <button @click="addItem" class="btn btn-primary">Add Item</button>
@@ -107,6 +113,7 @@ POST   /api/projects/[id]/calculate-fees
 ```
 
 ### Fee Calculator Component
+
 ```vue
 <template>
   <div class="card bg-base-100">
@@ -127,6 +134,7 @@ POST   /api/projects/[id]/calculate-fees
 ```
 
 ## 🎨 DaisyUI Theme Config
+
 ```javascript
 // tailwind.config.js
 module.exports = {
@@ -134,15 +142,15 @@ module.exports = {
     themes: [
       {
         mytheme: {
-          "primary":  "#3B82F6",
-          "secondary": "#10B981",
-          "accent":  "#F59E0B",
-          "neutral": "#374151",
-          "base-100": "#FFFFFF",
-          "info": "#06B6D4",
-          "success": "#10B981",
-          "warning": "#F59E0B",
-          "error":  "#EF4444",
+          primary: '#3B82F6',
+          secondary: '#10B981',
+          accent: '#F59E0B',
+          neutral: '#374151',
+          'base-100': '#FFFFFF',
+          info: '#06B6D4',
+          success: '#10B981',
+          warning: '#F59E0B',
+          error: '#EF4444',
         },
       },
     ],
@@ -151,26 +159,30 @@ module.exports = {
 ```
 
 ## 🔧 Utility Functions
+
 ```typescript
 // utils/format.ts
 export const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
-    minimumFractionDigits:  0
+    minimumFractionDigits: 0,
   }).format(value)
 }
 
 export const generateProjectNumber = () => {
   const date = new Date()
   const year = date.getFullYear()
-  const month = String(date. getMonth() + 1).padStart(2, '0')
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0')
   return `PRJ-${year}${month}-${random}`
 }
 ```
 
 ## ⚡ Performance Tips
+
 1. Use `lazy` prefix for non-critical components
 2. Implement virtual scrolling for long lists
 3. Use `useFetch` with proper caching
@@ -178,12 +190,14 @@ export const generateProjectNumber = () => {
 5. Compress images before upload
 
 ## 🐛 Common Issues & Solutions
+
 1. **CORS issues**: Configure server/api with proper headers
 2. **Decimal handling**: Use Prisma Decimal type, convert to number in frontend
 3. **Date timezone**: Store in UTC, display in local
 4. **Currency input**: Use input mask for better UX
 
 ## 📱 Mobile Responsive Checklist
+
 - [ ] Touch-friendly buttons (min 44x44px)
 - [ ] Responsive tables (use cards on mobile)
 - [ ] Bottom navigation for mobile
@@ -191,6 +205,7 @@ export const generateProjectNumber = () => {
 - [ ] Optimized images
 
 ## 🚢 Deployment Checklist
+
 - [ ] Environment variables set
 - [ ] Database migrations run
 - [ ] SSL certificate configured
@@ -198,4 +213,4 @@ export const generateProjectNumber = () => {
 - [ ] Error tracking setup (Sentry)
 - [ ] Analytics (optional)
 
-Remember:  SHIP FAST, ITERATE LATER! 🚀
+Remember: SHIP FAST, ITERATE LATER! 🚀

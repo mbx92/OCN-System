@@ -1,17 +1,16 @@
-import prisma from '~/server/utils/prisma'
+export default defineEventHandler(async event => {
+  const token =
+    getCookie(event, 'auth-token') || getHeader(event, 'authorization')?.replace('Bearer ', '')
 
-export default defineEventHandler(async (event) => {
-    const token = getCookie(event, 'auth-token') || getHeader(event, 'authorization')?.replace('Bearer ', '')
+  if (token) {
+    // Delete session
+    await prisma.session.deleteMany({
+      where: { token },
+    })
+  }
 
-    if (token) {
-        // Delete session
-        await prisma.session.deleteMany({
-            where: { token },
-        })
-    }
+  // Clear cookie
+  deleteCookie(event, 'auth-token')
 
-    // Clear cookie
-    deleteCookie(event, 'auth-token')
-
-    return { success: true }
+  return { success: true }
 })

@@ -1,6 +1,8 @@
 <template>
-  <div>
-    <NuxtRouteAnnouncer />
-    <NuxtWelcome />
+  <div data-theme="ocnlight">
+    <NuxtLayout>
+      <NuxtPage />
+      <AppConfirmDialog />
+    </NuxtLayout>
   </div>
 </template>

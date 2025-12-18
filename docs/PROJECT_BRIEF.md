@@ -2,15 +2,16 @@
 
 ## 📋 Project Overview
 
-Sistem manajemen penjualan untuk bisnis CCTV dan jaringan yang beroperasi dengan model project-based.  Dijalankan oleh solo entrepreneur yang menangani semua aspek bisnis dari survey hingga after-sales. 
+Sistem manajemen penjualan untuk bisnis CCTV dan jaringan yang beroperasi dengan model project-based. Dijalankan oleh solo entrepreneur yang menangani semua aspek bisnis dari survey hingga after-sales.
 
 ## 🎯 Business Context
 
 ### Karakteristik Bisnis
+
 - **Model**: Project-based (tidak ada harga fixed, setiap project unique)
 - **Operator**: Solo entrepreneur + 1-2 freelance teknisi
 - **Scope Kerja**: Survey → Quotation → Dealing → Procurement → Installation → Payment → After-sales
-- **Pain Points**: 
+- **Pain Points**:
   - Tidak ada tracking yang terstruktur
   - Difficulty managing multiple projects simultaneously
   - No warranty/maintenance tracking
@@ -19,7 +20,7 @@ Sistem manajemen penjualan untuk bisnis CCTV dan jaringan yang beroperasi dengan
 ## 🔧 Tech Stack
 
 - **Framework**: Nuxt 3
-- **UI**:  Tailwind CSS + DaisyUI 5
+- **UI**: Tailwind CSS + DaisyUI 5
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Timeline**: 2 minggu development
@@ -43,7 +44,7 @@ model Customer {
   name         String
   companyName  String?
   phone        String
-  email        String? 
+  email        String?
   address      String
   notes        String?   // Preferences, key contacts
   projects     Project[]
@@ -57,14 +58,14 @@ model Project {
   customerId      String
   customer        Customer        @relation(fields:  [customerId], references: [id])
   title           String
-  description     String? 
+  description     String?
   status          ProjectStatus   @default(QUOTATION)
   budget          Decimal
   actualCost      Decimal         @default(0)
-  finalPrice      Decimal? 
+  finalPrice      Decimal?
   paymentTerms    Json            // {type: 'FULL'|'DP', details: {...}}
-  startDate       DateTime? 
-  endDate         DateTime? 
+  startDate       DateTime?
+  endDate         DateTime?
   quotations      Quotation[]
   purchaseOrders  PurchaseOrder[]
   expenses        ProjectExpense[]
@@ -108,7 +109,7 @@ model Product {
   purchasePrice Decimal   @default(0)
   sellingPrice  Decimal   @default(0)
   minStock      Int       @default(0)
-  stock         Stock? 
+  stock         Stock?
   suppliers     SupplierProduct[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -127,10 +128,10 @@ model Stock {
 model Supplier {
   id            String            @id @default(cuid())
   name          String
-  contactPerson String? 
+  contactPerson String?
   phone         String
   email         String?
-  address       String? 
+  address       String?
   products      SupplierProduct[]
   purchaseOrders PurchaseOrder[]
   createdAt     DateTime          @default(now())
@@ -145,14 +146,14 @@ model SupplierProduct {
   product     Product   @relation(fields:  [productId], references: [id])
   price       Decimal
   isActive    Boolean   @default(true)
-  
+
   @@unique([supplierId, productId])
 }
 
 model PurchaseOrder {
   id            String    @id @default(cuid())
   poNumber      String    @unique // AUTO: PO-YYYYMM-XXX
-  projectId     String? 
+  projectId     String?
   project       Project?  @relation(fields: [projectId], references: [id])
   supplierId    String
   supplier      Supplier  @relation(fields:  [supplierId], references: [id])
@@ -169,7 +170,7 @@ model ProjectItem {
   id          String    @id @default(cuid())
   projectId   String
   project     Project   @relation(fields: [projectId], references: [id])
-  productId   String? 
+  productId   String?
   name        String    // Product name or custom item
   quantity    Int
   unit        String
@@ -250,14 +251,14 @@ model Warranty {
 
 model MaintenanceService {
   id          String    @id @default(cuid())
-  warrantyId  String? 
+  warrantyId  String?
   warranty    Warranty? @relation(fields: [warrantyId], references: [id])
   customerId  String
   serviceDate DateTime
   serviceType String    // ROUTINE, COMPLAINT, EMERGENCY
-  issue       String? 
+  issue       String?
   solution    String?
-  technician  String? 
+  technician  String?
   cost        Decimal   @default(0)
   status      String    @default("SCHEDULED") // SCHEDULED, COMPLETED
   nextService DateTime?
@@ -319,6 +320,7 @@ Project Value (100%)
 ## 🎨 UI/UX Requirements
 
 ### Dashboard Priority
+
 1. **Today's Tasks** - Survey schedule, follow-ups
 2. **Alerts** - Overdue payments, low stock, warranty expiring
 3. **Quick Actions** - Create quote, new project, check stock
@@ -327,44 +329,39 @@ Project Value (100%)
 ### Key Features
 
 #### Phase 1 (Week 1) - Core Features
+
 1. **Customer Management**
    - Basic CRUD
    - Project history view
-   
 2. **Quotation System**
    - Create/edit quotations
    - Templates for common setups (e.g., 4 CCTV + DVR package)
    - Convert to project
-   
 3. **Project Management**
    - Status tracking
    - Budget vs actual monitoring
    - Payment terms setting
-   
 4. **Basic Inventory**
    - Product master
    - Virtual stock tracking
    - Stock reservation system
 
 #### Phase 2 (Week 2) - Financial & Operational
+
 1. **Purchase Orders**
    - Multi-supplier PO
    - Item receiving
-   
 2. **Expense Tracking**
    - On-site expense entry
    - Receipt photo upload
-   
 3. **Payment & Invoicing**
    - Payment recording
    - Invoice generation
    - Payment reminders
-   
 4. **Fee Calculation**
    - Automatic technician fee
    - Company fund (35%)
    - Margin analysis
-   
 5. **Warranty System**
    - Warranty registration
    - Expiry alerts
@@ -420,14 +417,22 @@ Project Value (100%)
 
 ```vue
 <!-- Priority Components -->
-<ProjectCard /> - Status, progress, alerts
-<QuotationBuilder /> - Dynamic item addition with pricing
-<StockChecker /> - Real-time availability check
-<POGenerator /> - Multi-supplier split
-<ExpenseQuickAdd /> - Mobile-friendly expense entry
-<PaymentTracker /> - Visual payment status
-<FeeCalculator /> - Transparent fee breakdown
-<WarrantyCard /> - Warranty status and alerts
+<ProjectCard />
+- Status, progress, alerts
+<QuotationBuilder />
+- Dynamic item addition with pricing
+<StockChecker />
+- Real-time availability check
+<POGenerator />
+- Multi-supplier split
+<ExpenseQuickAdd />
+- Mobile-friendly expense entry
+<PaymentTracker />
+- Visual payment status
+<FeeCalculator />
+- Transparent fee breakdown
+<WarrantyCard />
+- Warranty status and alerts
 
 <!-- Form Components -->
 <CustomerForm />
@@ -445,18 +450,20 @@ Project Value (100%)
 ## 🚀 Implementation Notes
 
 ### Critical Business Rules
+
 1. **Project Creation**: Only after quotation approval
-2. **Stock**:  Virtual warehouse with reservation system
-3. **PO**:  Can split to multiple suppliers per item
-4. **Technician Fee**: 
+2. **Stock**: Virtual warehouse with reservation system
+3. **PO**: Can split to multiple suppliers per item
+4. **Technician Fee**:
    - Percentage based (10-15%) for normal projects
    - Minimum Rp 150,000 for small/maintenance projects
    - Customizable per project
 5. **Company Fund**: Fixed 35% of gross margin
-6. **Warranty**:  Auto-start after project completion
-7. **Payment Terms**:  Flexible (DP/Full/Termin)
+6. **Warranty**: Auto-start after project completion
+7. **Payment Terms**: Flexible (DP/Full/Termin)
 
 ### Mobile Considerations
+
 - Large buttons for on-site use
 - Offline capability for expense entry
 - Photo upload for receipts
@@ -464,6 +471,7 @@ Project Value (100%)
 - WhatsApp integration preparation
 
 ### Performance Optimizations
+
 - Lazy load heavy components
 - Pagination for lists
 - Cache frequent queries
@@ -471,14 +479,16 @@ Project Value (100%)
 - Optimize image uploads
 
 ### Security Considerations
+
 - Authentication required
-- Role-based access (future:  for technicians)
+- Role-based access (future: for technicians)
 - Audit trail for financial transactions
 - Backup strategy for data
 
 ## 📊 Sample Data Structure
 
 ### Quotation Items Format
+
 ```json
 {
   "items": [
@@ -503,6 +513,7 @@ Project Value (100%)
 ```
 
 ### Payment Terms Format
+
 ```json
 {
   "type": "WITH_DP",
@@ -522,6 +533,7 @@ Project Value (100%)
 ```
 
 ## 🎯 Success Metrics
+
 1. Time saved in project management (target: 50% reduction)
 2. Payment collection improvement (on-time payment tracking)
 3. Customer retention through maintenance tracking
@@ -532,7 +544,7 @@ Project Value (100%)
 
 1. **Project Over Budget**: Alert when expenses exceed 90% budget
 2. **Stock Shortage**: Auto-generate PO suggestions
-3. **Payment Overdue**:  Escalating reminder system
+3. **Payment Overdue**: Escalating reminder system
 4. **Warranty Expiring**: 30-day advance notice
 5. **Negative Margin**: Block project completion, require review
 
@@ -540,9 +552,9 @@ Project Value (100%)
 
 When implementing this system:
 
-1. **Start with**:  Database schema setup using Prisma
+1. **Start with**: Database schema setup using Prisma
 2. **Priority order**: Customer → Quotation → Project → Inventory → Financial
-3. **Use**:  Composition API in Vue 3, TypeScript when possible
+3. **Use**: Composition API in Vue 3, TypeScript when possible
 4. **State Management**: Pinia for global state
 5. **Validation**: Zod for form validation
 6. **Date handling**: dayjs for date manipulation
@@ -572,4 +584,4 @@ When implementing this system:
 5. Cash flow statement
 ```
 
-Remember: This is a PRACTICAL tool for a solo entrepreneur, not enterprise software. Keep it simple, fast, and mobile-friendly! 
+Remember: This is a PRACTICAL tool for a solo entrepreneur, not enterprise software. Keep it simple, fast, and mobile-friendly!

@@ -1,31 +1,49 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { defineNuxtConfig } from 'nuxt/config'
+import tailwindcss from '@tailwindcss/vite'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
 
-  modules: [
-    '@nuxtjs/tailwindcss',
-    '@pinia/nuxt',
-    '@vueuse/nuxt',
-  ],
+  srcDir: 'app/',
 
-  css: ['~/assets/css/main.css'],
-
-  tailwindcss: {
-    configPath: 'tailwind.config.js',
+  dir: {
+    pages: 'pages',
+    layouts: 'layouts',
+    middleware: 'middleware',
+    public: '../public',
   },
+
+  devServer: {
+    port: 4000,
+  },
+
+  modules: ['@pinia/nuxt', '@vueuse/nuxt'],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  css: ['./app/tailwind.css'],
 
   runtimeConfig: {
     jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
     public: {
       baseUrl: process.env.BASE_URL || 'http://localhost:3000',
-    }
+    },
   },
 
   nitro: {
     experimental: {
       asyncContext: true,
     },
+  },
+
+  typescript: {
+    strict: false,
+    typeCheck: false,
+    shim: true,
   },
 })

@@ -2,6 +2,10 @@
 .output
 .data
 .nuxt
+.nuxt_clean
+.nuxt_v2
+.nuxt_tmp
+.nuxt-dev
 .nitro
 .cache
 dist

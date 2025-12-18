@@ -1,0 +1,358 @@
+<template>
+  <div class="space-y-6">
+    <!-- Back Button -->
+    <button @click="navigateTo('/quotations')" class="btn btn-ghost btn-sm gap-2">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Kembali
+    </button>
+
+    <div v-if="pending" class="text-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+
+    <div v-else-if="error" class="alert alert-error">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{{ error.message || 'Terjadi kesalahan' }}</span>
+    </div>
+
+    <template v-else-if="quotation">
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-2xl font-bold">Penawaran #{{ quotation.quotationNo }}</h1>
+            <span class="badge" :class="getStatusClass(quotation.status)">
+              {{ getStatusLabel(quotation.status) }}
+            </span>
+          </div>
+          <p class="text-base-content/60">{{ quotation.customer?.name }}</p>
+        </div>
+        <div class="flex gap-2">
+          <!-- Edit Button (DRAFT only) -->
+          <NuxtLink
+            v-if="quotation.status === 'DRAFT'"
+            :to="`/quotations/${quotation.id}/edit`"
+            class="btn btn-outline"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Edit
+          </NuxtLink>
+
+          <!-- Send Button (DRAFT only) -->
+          <button
+            v-if="quotation.status === 'DRAFT'"
+            @click="sendQuotation"
+            class="btn btn-info text-white"
+            :disabled="!!processing"
+          >
+            <span v-if="processing === 'sending'" class="loading loading-spinner"></span>
+            Kirim
+          </button>
+
+          <!-- Reject Button (DRAFT or SENT) -->
+          <button
+            v-if="['DRAFT', 'SENT'].includes(quotation.status)"
+            @click="rejectQuotation"
+            class="btn btn-error text-white"
+            :disabled="!!processing"
+          >
+            <span v-if="processing === 'rejecting'" class="loading loading-spinner"></span>
+            Tolak
+          </button>
+
+          <!-- Approve Button (SENT or DRAFT) -->
+          <button
+            v-if="['DRAFT', 'SENT'].includes(quotation.status)"
+            @click="approveQuotation"
+            class="btn btn-success text-white"
+            :disabled="!!processing"
+          >
+            <span v-if="processing === 'approving'" class="loading loading-spinner"></span>
+            Setujui
+          </button>
+
+          <!-- Print Button -->
+          <button @click="printQuotation" class="btn btn-outline">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            Cetak
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Customer Info -->
+          <div class="card bg-base-100 shadow">
+            <div class="card-body">
+              <h2 class="card-title">Informasi Penawaran</h2>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p class="text-base-content/60">Pelanggan</p>
+                  <p class="font-bold">{{ quotation.customer?.name }}</p>
+                  <p v-if="quotation.customer?.email" class="text-info">
+                    {{ quotation.customer.email }}
+                  </p>
+                  <p v-if="quotation.customer?.phone">{{ quotation.customer.phone }}</p>
+                </div>
+                <div>
+                  <p class="text-base-content/60">Berlaku Hingga</p>
+                  <p class="font-bold" :class="{ 'text-error': isExpired }">
+                    {{ formatDate(quotation.validUntil) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div class="card bg-base-100 shadow">
+            <div class="card-body">
+              <h2 class="card-title">Item Penawaran</h2>
+              <div class="overflow-x-auto">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>ITEM</th>
+                      <th class="text-center">QTY</th>
+                      <th class="text-right">HARGA SATUAN</th>
+                      <th class="text-right">SUBTOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in quotation.items" :key="item.id">
+                      <td>
+                        <div class="font-bold">{{ item.name }}</div>
+                        <div v-if="item.product" class="text-xs text-base-content/60">
+                          {{ item.product.sku }}
+                        </div>
+                      </td>
+                      <td class="text-center">{{ item.quantity }} {{ item.unit }}</td>
+                      <td class="text-right font-mono">{{ formatCurrency(item.price) }}</td>
+                      <td class="text-right font-mono font-bold">
+                        {{ formatCurrency(item.totalPrice) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3" class="text-right font-bold">Total</td>
+                      <td class="text-right font-mono font-bold text-primary text-lg">
+                        {{ formatCurrency(quotation.totalAmount) }}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div v-if="quotation.notes" class="card bg-base-100 shadow">
+            <div class="card-body">
+              <h2 class="card-title">Catatan</h2>
+              <p class="whitespace-pre-wrap">{{ quotation.notes }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+          <div class="card bg-base-100 shadow">
+            <div class="card-body">
+              <h2 class="card-title">Ringkasan</h2>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Total Item</span>
+                  <span>{{ quotation.items?.length || 0 }}</span>
+                </div>
+                <div class="divider my-1"></div>
+                <div class="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span class="text-primary">{{ formatCurrency(quotation.totalAmount) }}</span>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <h3 class="font-semibold">Timeline</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Dibuat</span>
+                  <span>{{ formatDate(quotation.createdAt) }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Diupdate</span>
+                  <span>{{ formatDate(quotation.updatedAt) }}</span>
+                </div>
+              </div>
+
+              <!-- Link to Project if approved -->
+              <div v-if="quotation.project" class="mt-4">
+                <NuxtLink
+                  :to="`/projects/${quotation.project.id}`"
+                  class="btn btn-primary btn-block"
+                >
+                  Lihat Proyek →
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import dayjs from 'dayjs'
+
+const route = useRoute()
+const { formatCurrency, formatDate } = useFormatter()
+const { showAlert } = useAlert()
+const { confirm } = useConfirm()
+
+const {
+  data: quotation,
+  pending,
+  error,
+  refresh,
+} = await useFetch(`/api/quotations/${route.params.id}`)
+
+const processing = ref<string | null>(null)
+
+const isExpired = computed(() => {
+  if (!quotation.value) return false
+  return dayjs((quotation.value as any).validUntil).isBefore(dayjs())
+})
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    DRAFT: 'Draft',
+    SENT: 'Terkirim',
+    APPROVED: 'Disetujui',
+    REJECTED: 'Ditolak',
+  }
+  return labels[status] || status
+}
+
+const getStatusClass = (status: string) => {
+  const classes: Record<string, string> = {
+    DRAFT: 'badge-ghost',
+    SENT: 'badge-info',
+    APPROVED: 'badge-success',
+    REJECTED: 'badge-error',
+  }
+  return classes[status] || 'badge-ghost'
+}
+
+const sendQuotation = async () => {
+  processing.value = 'sending'
+  try {
+    await $fetch(`/api/quotations/${route.params.id}/send`, { method: 'POST' })
+    showAlert('Penawaran berhasil dikirim', 'success')
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mengirim penawaran', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+const rejectQuotation = async () => {
+  const isConfirmed = await confirm({
+    title: 'Tolak Penawaran',
+    message: 'Apakah Anda yakin ingin menolak penawaran ini?',
+    confirmText: 'Ya, Tolak',
+    type: 'error',
+  })
+  if (!isConfirmed) return
+
+  processing.value = 'rejecting'
+  try {
+    await $fetch(`/api/quotations/${route.params.id}/reject`, { method: 'POST' })
+    showAlert('Penawaran berhasil ditolak', 'success')
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menolak penawaran', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+const approveQuotation = async () => {
+  const isConfirmed = await confirm({
+    title: 'Setujui Penawaran',
+    message: 'Apakah Anda yakin ingin menyetujui penawaran ini? Proyek baru akan dibuat.',
+    confirmText: 'Ya, Setujui',
+    type: 'success',
+  })
+  if (!isConfirmed) return
+
+  processing.value = 'approving'
+  try {
+    const result = await $fetch(`/api/quotations/${route.params.id}/approve`, { method: 'POST' })
+    showAlert('Penawaran berhasil disetujui', 'success')
+    await navigateTo(`/projects/${(result as any).projectId}`)
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyetujui penawaran', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+const printQuotation = () => {
+  window.print()
+}
+</script>

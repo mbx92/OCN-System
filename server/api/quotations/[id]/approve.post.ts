@@ -1,92 +1,178 @@
-import prisma from '~/server/utils/prisma'
 import dayjs from 'dayjs'
 
-export default defineEventHandler(async (event) => {
-    const id = getRouterParam(event, 'id')
+export default defineEventHandler(async event => {
+  const id = getRouterParam(event, 'id')
 
-    if (!id) {
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'ID penawaran tidak ditemukan',
+  if (!id) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'ID penawaran tidak ditemukan',
+    })
+  }
+
+  const quotation = await prisma.quotation.findUnique({
+    where: { id },
+  })
+
+  if (!quotation) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Penawaran tidak ditemukan',
+    })
+  }
+
+  if (quotation.status !== 'DRAFT' && quotation.status !== 'SENT') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Penawaran sudah tidak bisa disetujui',
+    })
+  }
+
+  // Generate project number
+  const startOfMonth = dayjs().startOf('month').toDate()
+  const endOfMonth = dayjs().endOf('month').toDate()
+  const count = await prisma.project.count({
+    where: {
+      createdAt: { gte: startOfMonth, lte: endOfMonth },
+    },
+  })
+  const projectNumber = `PRJ-${dayjs().format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
+
+  // Get customer
+  const customer = await prisma.customer.findUnique({
+    where: { id: quotation.customerId },
+  })
+
+  if (!customer) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Pelanggan tidak ditemukan',
+    })
+  }
+
+  // Create project from quotation
+  const items = quotation.items as any[]
+
+  // Fetch product costs and stock
+  const productIds = items.map(item => item.productId).filter(Boolean)
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      purchasePrice: true,
+      stock: true,
+    },
+  })
+
+  // Map for easy access
+  const productMap = new Map(products.map(p => [p.id, p]))
+
+  // Prepare Stock Updates
+  const stockUpdates: { productId: string; increment: number }[] = []
+
+  const projectItemsData = items.map(item => {
+    let cost = 0
+    let needsPo = false
+    let currentStock = 0
+    let reservedStock = 0
+
+    if (item.productId) {
+      const product = productMap.get(item.productId)
+      if (product) {
+        cost = Number(product.purchasePrice)
+        currentStock = product.stock?.quantity || 0
+        reservedStock = product.stock?.reserved || 0
+
+        const available = currentStock - reservedStock
+        if (available < item.quantity) {
+          needsPo = true
+        }
+
+        // Prepare stock update (increment reserved)
+        stockUpdates.push({
+          productId: item.productId,
+          increment: item.quantity,
         })
+      }
     }
 
-    const quotation = await prisma.quotation.findUnique({
-        where: { id },
+    return {
+      productId: item.productId || null,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      price: item.price,
+      totalPrice: item.total || item.quantity * item.price,
+      cost: cost,
+      totalCost: item.quantity * cost,
+      type: 'QUOTATION',
+      needsPo, // Flag for PO
+      poStatus: needsPo ? 'PENDING' : 'NONE',
+    }
+  })
+
+  // Transaction to ensure atomicity
+  const project = await prisma.$transaction(async tx => {
+    // 1. Create Project
+    const newProject = await tx.project.create({
+      data: {
+        projectNumber,
+        customerId: quotation.customerId,
+        title: quotation.title || `Project untuk ${customer.name}`,
+        budget: quotation.totalAmount,
+        status: 'APPROVED',
+        items: {
+          create: projectItemsData,
+        },
+      },
+      include: {
+        customer: true,
+        items: true,
+      },
     })
 
-    if (!quotation) {
-        throw createError({
-            statusCode: 404,
-            statusMessage: 'Penawaran tidak ditemukan',
+    // 2. Update Quotation Status & Link
+    await tx.quotation.update({
+      where: { id },
+      data: {
+        status: 'APPROVED',
+        projectId: newProject.id,
+      },
+    })
+
+    // 3. Update Stocks (Increment Reserved and Recalculate Available)
+    for (const update of stockUpdates) {
+      // Get current stock values
+      const existingStock = await tx.stock.findUnique({
+        where: { productId: update.productId },
+      })
+
+      if (existingStock) {
+        const newReserved = existingStock.reserved + update.increment
+        const newAvailable = existingStock.quantity - newReserved
+
+        await tx.stock.update({
+          where: { productId: update.productId },
+          data: {
+            reserved: newReserved,
+            available: newAvailable,
+          },
         })
+      } else {
+        // Create new stock entry
+        await tx.stock.create({
+          data: {
+            productId: update.productId,
+            quantity: 0,
+            reserved: update.increment,
+            available: -update.increment, // No stock yet, so available is negative
+          },
+        })
+      }
     }
 
-    if (quotation.status !== 'DRAFT' && quotation.status !== 'SENT') {
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'Penawaran sudah tidak bisa disetujui',
-        })
-    }
+    return newProject
+  })
 
-    // Generate project number
-    const startOfMonth = dayjs().startOf('month').toDate()
-    const endOfMonth = dayjs().endOf('month').toDate()
-    const count = await prisma.project.count({
-        where: {
-            createdAt: { gte: startOfMonth, lte: endOfMonth },
-        },
-    })
-    const projectNumber = `PRJ-${dayjs().format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
-
-    // Get customer
-    const customer = await prisma.customer.findUnique({
-        where: { id: quotation.customerId },
-    })
-
-    if (!customer) {
-        throw createError({
-            statusCode: 404,
-            statusMessage: 'Pelanggan tidak ditemukan',
-        })
-    }
-
-    // Create project from quotation
-    const items = quotation.items as any[]
-
-    const project = await prisma.project.create({
-        data: {
-            projectNumber,
-            customerId: quotation.customerId,
-            title: quotation.title || `Project untuk ${customer.name}`,
-            budget: quotation.totalAmount,
-            status: 'APPROVED',
-            items: {
-                create: items.map(item => ({
-                    productId: item.productId || null,
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    price: item.price,
-                    totalPrice: item.total || item.quantity * item.price,
-                    type: 'QUOTATION',
-                })),
-            },
-        },
-        include: {
-            customer: true,
-            items: true,
-        },
-    })
-
-    // Update quotation
-    await prisma.quotation.update({
-        where: { id },
-        data: {
-            status: 'APPROVED',
-            projectId: project.id,
-        },
-    })
-
-    return project
+  return project
 })

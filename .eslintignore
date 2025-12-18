@@ -1,0 +1,10 @@
+node_modules
+dist
+.nuxt
+.output
+.git
+coverage
+*.log
+.DS_Store
+public
+prisma/migrations
