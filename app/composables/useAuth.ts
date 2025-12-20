@@ -84,12 +84,18 @@ export const useAuth = () => {
 
       user.value = response.user
 
-      // Store token in cookie
+      // Store token in cookie with proper settings
       const token = useCookie('auth-token', {
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        sameSite: 'strict',
+        path: '/',
+        sameSite: 'lax',
       })
       token.value = response.token
+
+      // Backup user to localStorage for persistence
+      if (import.meta.client) {
+        localStorage.setItem('ocn-user', JSON.stringify(response.user))
+      }
     } finally {
       loading.value = false
     }
@@ -105,6 +111,10 @@ export const useAuth = () => {
       user.value = null
       const token = useCookie('auth-token')
       token.value = null
+      // Clear localStorage
+      if (import.meta.client) {
+        localStorage.removeItem('ocn-user')
+      }
       loading.value = false
       await navigateTo('/login')
     }
@@ -114,7 +124,25 @@ export const useAuth = () => {
     if (initialized.value) return
 
     const token = useCookie('auth-token')
+
+    // Try to restore user from localStorage first (client-side only)
+    if (import.meta.client && !user.value) {
+      const storedUser = localStorage.getItem('ocn-user')
+      if (storedUser) {
+        try {
+          user.value = JSON.parse(storedUser)
+        } catch {
+          localStorage.removeItem('ocn-user')
+        }
+      }
+    }
+
     if (!token.value) {
+      // No token - clear user and mark initialized
+      user.value = null
+      if (import.meta.client) {
+        localStorage.removeItem('ocn-user')
+      }
       initialized.value = true
       return
     }
@@ -123,9 +151,16 @@ export const useAuth = () => {
     try {
       const response = await $fetch<{ user: User }>('/api/auth/me')
       user.value = response.user
+      // Update localStorage
+      if (import.meta.client) {
+        localStorage.setItem('ocn-user', JSON.stringify(response.user))
+      }
     } catch {
       user.value = null
       token.value = null
+      if (import.meta.client) {
+        localStorage.removeItem('ocn-user')
+      }
     } finally {
       loading.value = false
       initialized.value = true

@@ -4,7 +4,12 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold">Dashboard</h1>
-        <p class="text-base-content/60">Selamat datang, {{ user?.name }}</p>
+        <ClientOnly>
+          <p class="text-base-content/60">Selamat datang, {{ user?.name }}</p>
+          <template #fallback>
+            <p class="text-base-content/60">Selamat datang</p>
+          </template>
+        </ClientOnly>
       </div>
       <div class="flex gap-2">
         <NuxtLink to="/quotations/create" class="btn btn-primary">

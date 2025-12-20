@@ -344,7 +344,7 @@ const approveQuotation = async () => {
   try {
     const result = await $fetch(`/api/quotations/${route.params.id}/approve`, { method: 'POST' })
     showAlert('Penawaran berhasil disetujui', 'success')
-    await navigateTo(`/projects/${(result as any).projectId}`)
+    await navigateTo(`/projects/${(result as any).id}`)
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal menyetujui penawaran', 'error')
   } finally {

@@ -45,7 +45,7 @@
             v-if="po.status === 'DRAFT'"
             @click="sendPo"
             class="btn btn-info text-white"
-            :disabled="processing"
+            :disabled="!!processing"
           >
             <span v-if="processing === 'sending'" class="loading loading-spinner"></span>
             <svg
@@ -71,7 +71,7 @@
             v-if="po.status === 'PROGRESS'"
             @click="receivePo"
             class="btn btn-success text-white"
-            :disabled="processing"
+            :disabled="!!processing"
           >
             <span v-if="processing === 'receiving'" class="loading loading-spinner"></span>
             <svg
@@ -245,6 +245,39 @@
 </template>
 
 <script setup lang="ts">
+// Type definition for Purchase Order
+interface PurchaseOrderItem {
+  id: number
+  name: string
+  quantity: number
+  price: number
+  total: number
+  receivedQty: number
+  product?: {
+    sku: string
+  }
+}
+
+interface PurchaseOrder {
+  id: number
+  poNumber: string
+  status: 'DRAFT' | 'PROGRESS' | 'RECEIVED' | 'CANCELLED'
+  totalAmount: number
+  notes?: string
+  createdAt: string
+  receivedDate?: string
+  supplier?: {
+    name: string
+    phone?: string
+  }
+  project?: {
+    id: number
+    projectNumber: string
+    title: string
+  }
+  items: PurchaseOrderItem[]
+}
+
 const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
 const { showAlert } = useAlert()
@@ -255,7 +288,7 @@ const {
   pending,
   error,
   refresh,
-} = await useFetch(`/api/purchase-orders/${route.params.id}`)
+} = await useFetch<PurchaseOrder>(`/api/purchase-orders/${route.params.id}`)
 
 const processing = ref<string | null>(null)
 

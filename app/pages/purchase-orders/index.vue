@@ -326,7 +326,7 @@
                   </td>
                   <td class="text-right">
                     <span class="font-bold text-error">{{ item.quantity }}</span>
-                    <span class="text-xs">{{ item.unit }}</span>
+                    <span class="text-xs ml-1">{{ item.unit }}</span>
                   </td>
                   <td class="text-right text-sm">
                     <div class="flex flex-col items-end">

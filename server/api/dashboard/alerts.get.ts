@@ -5,28 +5,6 @@ export default defineEventHandler(async () => {
   const today = new Date()
   const thirtyDaysFromNow = dayjs().add(30, 'day').toDate()
 
-  // Overdue payments
-  const overduePayments = await prisma.payment.findMany({
-    where: {
-      status: 'PENDING',
-      dueDate: { lt: today },
-    },
-    include: {
-      project: {
-        include: { customer: true },
-      },
-    },
-    take: 5,
-  })
-
-  overduePayments.forEach(payment => {
-    alerts.push({
-      id: `payment-${payment.id}`,
-      type: 'error',
-      message: `Pembayaran ${payment.project.projectNumber} dari ${payment.project.customer.name} telah jatuh tempo`,
-    })
-  })
-
   // Low stock alerts
   const lowStock = await prisma.stock.findMany({
     where: {
@@ -69,28 +47,35 @@ export default defineEventHandler(async () => {
     alerts.push({
       id: `warranty-${warranty.id}`,
       type: 'info',
-      message: `Garansi ${warranty.itemName} untuk ${warranty.project.customer.name} berakhir dalam ${daysLeft} hari`,
+      message: `Garansi proyek ${warranty.project?.projectNumber || ''} berakhir dalam ${daysLeft} hari`,
     })
   })
 
-  // Projects over budget
-  const overBudgetProjects = await prisma.project.findMany({
-    where: {
-      status: { in: ['ONGOING', 'PROCUREMENT'] },
-    },
-    include: { customer: true },
+  // Projects pending approval
+  const pendingProjects = await prisma.project.count({
+    where: { status: 'APPROVED' },
   })
 
-  overBudgetProjects.forEach(project => {
-    const budgetUsed = (project.actualCost.toNumber() / project.budget.toNumber()) * 100
-    if (budgetUsed >= 90) {
-      alerts.push({
-        id: `budget-${project.id}`,
-        type: 'warning',
-        message: `${project.projectNumber} sudah menggunakan ${budgetUsed.toFixed(0)}% budget`,
-      })
-    }
+  if (pendingProjects > 0) {
+    alerts.push({
+      id: 'pending-projects',
+      type: 'info',
+      message: `${pendingProjects} proyek menunggu untuk dikerjakan`,
+    })
+  }
+
+  // PO items pending
+  const pendingPoItems = await prisma.projectItem.count({
+    where: { poStatus: 'PENDING' },
   })
+
+  if (pendingPoItems > 0) {
+    alerts.push({
+      id: 'pending-po',
+      type: 'warning',
+      message: `${pendingPoItems} item menunggu PO`,
+    })
+  }
 
   return alerts.slice(0, 10)
 })

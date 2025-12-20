@@ -3,7 +3,12 @@
     <!-- Page Header -->
     <div>
       <h1 class="text-2xl font-bold">Dashboard Teknisi</h1>
-      <p class="text-base-content/60">Selamat datang, {{ user?.name }}</p>
+      <ClientOnly>
+        <p class="text-base-content/60">Selamat datang, {{ user?.name }}</p>
+        <template #fallback>
+          <p class="text-base-content/60">Selamat datang</p>
+        </template>
+      </ClientOnly>
     </div>
 
     <!-- Stats -->

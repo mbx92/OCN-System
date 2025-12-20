@@ -16,11 +16,10 @@ export default defineEventHandler(async () => {
     where: { status: 'ONGOING' },
   })
 
-  // Monthly revenue (paid projects this month)
-  const paidThisMonth = await prisma.payment.aggregate({
+  // Monthly revenue (payments this month)
+  const paymentsThisMonth = await prisma.payment.aggregate({
     where: {
-      status: 'PAID',
-      paidDate: {
+      paymentDate: {
         gte: startOfMonth,
         lte: endOfMonth,
       },
@@ -28,10 +27,10 @@ export default defineEventHandler(async () => {
     _sum: { amount: true },
   })
 
-  // Paid projects count
-  const paidProjects = await prisma.project.count({
+  // Completed projects count this month
+  const completedProjects = await prisma.project.count({
     where: {
-      status: { in: ['PAID', 'CLOSED'] },
+      status: 'COMPLETED',
       updatedAt: {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -39,19 +38,8 @@ export default defineEventHandler(async () => {
     },
   })
 
-  // Pending payments
-  const pendingPayments = await prisma.payment.aggregate({
-    where: { status: 'PENDING' },
-    _sum: { amount: true },
-  })
-
-  // Overdue payments
-  const overdueCount = await prisma.payment.count({
-    where: {
-      status: 'PENDING',
-      dueDate: { lt: new Date() },
-    },
-  })
+  // Total payments count
+  const totalPayments = await prisma.payment.count()
 
   // Total customers
   const totalCustomers = await prisma.customer.count()
@@ -69,10 +57,9 @@ export default defineEventHandler(async () => {
   return {
     activeProjects,
     ongoingProjects,
-    monthlyRevenue: paidThisMonth._sum.amount?.toNumber() || 0,
-    paidProjects,
-    pendingPayments: pendingPayments._sum.amount?.toNumber() || 0,
-    overdueCount,
+    monthlyRevenue: paymentsThisMonth._sum.amount?.toNumber() || 0,
+    completedProjects,
+    totalPayments,
     totalCustomers,
     newCustomers,
   }

@@ -71,25 +71,30 @@
           </button>
 
           <!-- User dropdown -->
-          <div v-if="user" class="dropdown dropdown-end">
-            <label tabindex="0" class="btn btn-ghost btn-circle avatar placeholder">
-              <div
-                class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center"
+          <ClientOnly>
+            <div v-if="user" class="dropdown dropdown-end">
+              <label tabindex="0" class="btn btn-ghost btn-circle avatar placeholder">
+                <div
+                  class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center"
+                >
+                  <span class="text-sm">{{ userInitials }}</span>
+                </div>
+              </label>
+              <ul
+                tabindex="0"
+                class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 mt-2"
               >
-                <span class="text-sm">{{ userInitials }}</span>
-              </div>
-            </label>
-            <ul
-              tabindex="0"
-              class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 mt-2"
-            >
-              <li class="menu-title">
-                <span>{{ user.name }}</span>
-              </li>
-              <li><a @click="navigateTo('/profile')">Profil</a></li>
-              <li><a @click="handleLogout" class="text-error">Logout</a></li>
-            </ul>
-          </div>
+                <li class="menu-title">
+                  <span>{{ user.name }}</span>
+                </li>
+                <li><a @click="navigateTo('/profile')">Profil</a></li>
+                <li><a @click="handleLogout" class="text-error">Logout</a></li>
+              </ul>
+            </div>
+            <template #fallback>
+              <div class="w-10 h-10 rounded-full bg-base-300 animate-pulse"></div>
+            </template>
+          </ClientOnly>
         </div>
       </header>
 
@@ -396,6 +401,9 @@
                 <ul>
                   <li>
                     <NuxtLink to="/settings/company" active-class="active">Perusahaan</NuxtLink>
+                  </li>
+                  <li>
+                    <NuxtLink to="/settings/users" active-class="active">Pengguna</NuxtLink>
                   </li>
                   <li>
                     <NuxtLink to="/settings/units" active-class="active">Master Satuan</NuxtLink>

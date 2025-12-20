@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
         orderBy: { date: 'desc' },
       },
       payments: {
-        orderBy: { dueDate: 'asc' },
+        orderBy: { paymentDate: 'desc' },
       },
       purchaseOrders: {
         include: { supplier: true },

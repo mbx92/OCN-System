@@ -24,6 +24,12 @@ export default defineEventHandler(async event => {
       where,
       include: {
         customer: true,
+        items: {
+          select: {
+            id: true,
+            totalPrice: true,
+          },
+        },
         _count: {
           select: { payments: true, expenses: true },
         },
