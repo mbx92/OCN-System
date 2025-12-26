@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Page Header -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2 sm:gap-4">
       <NuxtLink to="/quotations" class="btn btn-ghost btn-sm btn-circle">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -19,32 +19,36 @@
         </svg>
       </NuxtLink>
       <div>
-        <h1 class="text-2xl font-bold">Buat Penawaran</h1>
-        <p class="text-base-content/60">Buat penawaran harga baru</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Buat Penawaran</h1>
+        <p class="text-sm text-base-content/60">Buat penawaran harga baru</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
       <!-- Form -->
       <div class="lg:col-span-2 space-y-6">
         <!-- Customer Selection -->
         <div class="card bg-base-100 shadow">
-          <div class="card-body">
-            <h2 class="card-title">Pelanggan</h2>
-            <div class="form-control">
-              <select v-model="form.customerId" class="select select-bordered" required>
+          <div class="card-body p-4 sm:p-6">
+            <h2 class="card-title text-base sm:text-lg">Pelanggan</h2>
+            <div class="form-control w-full">
+              <select
+                v-model="form.customerId"
+                class="select select-bordered select-sm sm:select-md w-full"
+                required
+              >
                 <option value="">Pilih pelanggan</option>
                 <option v-for="customer in customers" :key="customer.id" :value="customer.id">
                   {{ customer.name }} {{ customer.companyName ? `(${customer.companyName})` : '' }}
                 </option>
               </select>
             </div>
-            <div class="form-control mt-2">
+            <div class="form-control w-full mt-2">
               <input
                 v-model="form.title"
                 type="text"
                 placeholder="Judul penawaran (opsional)"
-                class="input input-bordered"
+                class="input input-bordered input-sm sm:input-md w-full"
               />
             </div>
           </div>
@@ -52,10 +56,12 @@
 
         <!-- Items -->
         <div class="card bg-base-100 shadow">
-          <div class="card-body">
-            <div class="flex justify-between items-center">
-              <h2 class="card-title">Item Penawaran</h2>
-              <button @click="addItem" class="btn btn-primary btn-sm">
+          <div class="card-body p-4 sm:p-6">
+            <div
+              class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0"
+            >
+              <h2 class="card-title text-base sm:text-lg">Item Penawaran</h2>
+              <button @click="addItem" class="btn btn-primary btn-sm w-full sm:w-auto">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-4 w-4"
@@ -81,31 +87,20 @@
               </button>
             </div>
 
-            <div v-else class="space-y-2">
+            <div v-else class="space-y-3">
               <div
                 v-for="(item, index) in form.items"
                 :key="index"
-                class="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
+                class="bg-base-200 rounded-lg p-3 sm:p-4 space-y-3"
               >
-                <!-- Number -->
-                <span class="text-sm font-medium text-base-content/60 w-6 text-center">
-                  {{ index + 1 }}
-                </span>
-
-                <!-- Product Name with Select Button -->
-                <div class="flex items-center gap-1 flex-1 min-w-0">
-                  <input
-                    v-model="item.name"
-                    type="text"
-                    placeholder="Nama item"
-                    class="input input-bordered input-sm flex-1 min-w-0"
-                    required
-                  />
+                <!-- Header: Number and Delete -->
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-bold text-base-content/60">
+                    {{ index + 1 }}
+                  </span>
                   <button
-                    @click="openProductModal(index)"
-                    type="button"
-                    class="btn btn-ghost btn-sm btn-square"
-                    title="Pilih dari daftar produk"
+                    @click="removeItem(index)"
+                    class="btn btn-ghost btn-xs btn-circle text-error"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -118,68 +113,103 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        d="M6 18L18 6M6 6l12 12"
                       />
                     </svg>
                   </button>
                 </div>
 
-                <!-- Quantity -->
-                <input
-                  v-model.number="item.quantity"
-                  type="number"
-                  min="1"
-                  placeholder="Qty"
-                  class="input input-bordered input-sm w-16 text-center"
-                  required
-                />
+                <!-- Nama Item -->
+                <div class="form-control w-full">
+                  <label class="label pb-1">
+                    <span class="label-text text-xs font-medium">Nama Item</span>
+                  </label>
+                  <div class="flex gap-2 w-full">
+                    <input
+                      v-model="item.name"
+                      type="text"
+                      placeholder="Nama item"
+                      class="input input-bordered input-sm flex-1 w-full"
+                      required
+                    />
+                    <button
+                      @click="openProductModal(index)"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-square flex-shrink-0"
+                      title="Pilih dari daftar produk"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
 
-                <!-- Unit -->
-                <input
-                  v-model="item.unit"
-                  type="text"
-                  placeholder="Unit"
-                  class="input input-bordered input-sm w-16 text-center"
-                  required
-                />
+                <!-- Jumlah dan Satuan -->
+                <div class="grid grid-cols-2 gap-2 w-full">
+                  <div class="form-control w-full">
+                    <label class="label pb-1">
+                      <span class="label-text text-xs font-medium">Jumlah</span>
+                    </label>
+                    <input
+                      v-model.number="item.quantity"
+                      type="number"
+                      min="1"
+                      placeholder="1"
+                      class="input input-bordered input-sm w-full"
+                      required
+                    />
+                  </div>
+                  <div class="form-control w-full">
+                    <label class="label pb-1">
+                      <span class="label-text text-xs font-medium">Satuan</span>
+                    </label>
+                    <select
+                      v-model="item.unit"
+                      class="select select-bordered select-sm w-full"
+                      required
+                    >
+                      <option value="">Pilih satuan</option>
+                      <option v-for="unit in units" :key="unit.id" :value="unit.symbol">
+                        {{ unit.name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
 
-                <!-- Price -->
-                <input
-                  v-model.number="item.price"
-                  type="number"
-                  min="0"
-                  placeholder="Harga"
-                  class="input input-bordered input-sm w-28 text-right"
-                  required
-                />
+                <!-- Harga Satuan (Estimasi) -->
+                <div class="form-control w-full">
+                  <label class="label pb-1">
+                    <span class="label-text text-xs font-medium">Harga Satuan (Estimasi)</span>
+                  </label>
+                  <input
+                    v-model.number="item.price"
+                    type="number"
+                    min="0"
+                    placeholder="Rp 1500000"
+                    class="input input-bordered input-sm w-full"
+                    required
+                  />
+                </div>
 
                 <!-- Subtotal -->
-                <div class="text-right min-w-24">
-                  <span class="font-semibold text-primary text-sm">
+                <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                  <span class="text-sm text-base-content/60">Subtotal</span>
+                  <span class="font-bold text-primary">
                     {{ formatCurrency(item.quantity * item.price) }}
                   </span>
                 </div>
-
-                <!-- Delete Button -->
-                <button
-                  @click="removeItem(index)"
-                  class="btn btn-ghost btn-xs btn-circle text-error"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -187,12 +217,12 @@
 
         <!-- Notes -->
         <div class="card bg-base-100 shadow">
-          <div class="card-body">
-            <h2 class="card-title">Catatan</h2>
+          <div class="card-body p-4 sm:p-6">
+            <h2 class="card-title text-base sm:text-lg">Catatan</h2>
             <textarea
               v-model="form.notes"
               placeholder="Catatan untuk pelanggan (opsional)"
-              class="textarea textarea-bordered w-full"
+              class="textarea textarea-bordered textarea-sm sm:textarea-md w-full"
               rows="3"
             ></textarea>
           </div>
@@ -201,9 +231,9 @@
 
       <!-- Summary -->
       <div class="lg:col-span-1">
-        <div class="card bg-base-100 shadow sticky top-20">
-          <div class="card-body">
-            <h2 class="card-title">Ringkasan</h2>
+        <div class="card bg-base-100 shadow lg:sticky lg:top-20">
+          <div class="card-body p-4 sm:p-6">
+            <h2 class="card-title text-base sm:text-lg">Ringkasan</h2>
 
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
@@ -221,11 +251,14 @@
               </div>
             </div>
 
-            <div class="form-control mt-4">
+            <div class="form-control w-full mt-4">
               <label class="label">
                 <span class="label-text">Masa Berlaku</span>
               </label>
-              <select v-model.number="form.validDays" class="select select-bordered select-sm">
+              <select
+                v-model.number="form.validDays"
+                class="select select-bordered select-sm w-full"
+              >
                 <option :value="7">7 hari</option>
                 <option :value="14">14 hari</option>
                 <option :value="30">30 hari</option>
@@ -249,16 +282,16 @@
 
     <!-- Product Selection Modal -->
     <dialog ref="productModal" class="modal">
-      <div class="modal-box w-11/12 max-w-4xl">
-        <h3 class="font-bold text-lg mb-4">Pilih Produk</h3>
+      <div class="modal-box w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <h3 class="font-bold text-base sm:text-lg mb-3 sm:mb-4">Pilih Produk</h3>
 
         <!-- Search -->
-        <div class="form-control mb-4">
+        <div class="form-control mb-3 sm:mb-4">
           <input
             v-model="productSearch"
             type="text"
             placeholder="Cari produk..."
-            class="input input-bordered w-full"
+            class="input input-bordered input-sm sm:input-md w-full"
           />
         </div>
 
@@ -351,6 +384,8 @@ const { data: customersResponse } = await useFetch('/api/customers', { query: { 
 const customers = computed(() => customersResponse.value?.data || [])
 const { data: productsResponse } = await useFetch('/api/products', { query: { limit: 1000 } })
 const products = computed(() => productsResponse.value?.data || [])
+const { data: unitsResponse } = await useFetch('/api/units')
+const units = computed(() => unitsResponse.value || [])
 
 const categories = computed(() => {
   if (!products.value?.length) return []

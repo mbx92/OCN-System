@@ -75,380 +75,618 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Info -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Project Details -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <h2 class="card-title">Informasi Proyek</h2>
+      <!-- Overview Card -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Overview Proyek</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div>
+              <p class="text-sm text-base-content/60">Pelanggan</p>
+              <p class="font-medium">{{ project.customer?.name }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Budget (Dari Quotation)</p>
+              <p class="font-medium font-mono text-primary">
+                {{ formatCurrency(project.budget) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Total Harga Jual</p>
+              <p class="font-medium font-mono text-success">
+                {{ formatCurrency(calculatedItemPrice) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Total HPP (Modal)</p>
+              <p class="font-medium font-mono text-warning">
+                {{ formatCurrency(calculatedItemCost) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Total Expense</p>
+              <p class="font-medium font-mono">{{ formatCurrency(calculatedExpenseCost) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Estimasi Margin</p>
+              <p
+                class="font-medium font-mono"
+                :class="calculatedMargin >= 0 ? 'text-success' : 'text-error'"
+              >
+                {{ formatCurrency(calculatedMargin) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Selisih Budget</p>
+              <p
+                class="font-medium font-mono"
+                :class="budgetVariance >= 0 ? 'text-success' : 'text-error'"
+              >
+                {{ budgetVariance >= 0 ? '+' : '' }}{{ budgetVariance.toFixed(2) }}%
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Tanggal Mulai</p>
+              <p class="font-medium">{{ formatDate(project.startDate) || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Tanggal Selesai</p>
+              <p class="font-medium">{{ formatDate(project.endDate) || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Dibuat</p>
+              <p class="font-medium text-sm">{{ formatDate(project.createdAt) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-base-content/60">Diupdate</p>
+              <p class="font-medium text-sm">{{ formatDate(project.updatedAt) }}</p>
+            </div>
+          </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <p class="text-sm text-base-content/60">Pelanggan</p>
-                  <p class="font-medium">{{ project.customer?.name }}</p>
+          <div v-if="project.description" class="mt-4 pt-4 border-t border-base-300">
+            <p class="text-sm text-base-content/60">Deskripsi</p>
+            <p class="mt-1">{{ project.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div role="tablist" class="tabs tabs-boxed bg-base-100 shadow">
+        <input
+          type="radio"
+          name="project_tabs"
+          role="tab"
+          class="tab"
+          aria-label="Item & Material"
+          checked
+        />
+        <div role="tabpanel" class="tab-content p-4 sm:p-6">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4"
+          >
+            <h2 class="text-base sm:text-lg font-bold">Item & Material</h2>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <AppViewToggle v-model="itemsViewMode" class="flex-shrink-0" />
+              <button
+                v-if="['ONGOING', 'APPROVED', 'QUOTATION'].includes(project.status)"
+                @click="showAddItem = true"
+                class="btn btn-sm btn-outline flex-1 sm:flex-initial"
+              >
+                + Tambah Item
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid View -->
+          <div
+            v-if="itemsViewMode === 'GRID'"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <div
+              v-for="item in project.items"
+              :key="item.id"
+              class="card bg-base-200 hover:bg-base-300 transition-all"
+            >
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <h3 class="font-bold text-sm sm:text-base">{{ item.name }}</h3>
+                    <span
+                      class="badge badge-xs sm:badge-sm mt-1"
+                      :class="item.type === 'QUOTATION' ? 'badge-ghost' : 'badge-accent'"
+                    >
+                      {{ item.type }}
+                    </span>
+                  </div>
+                  <button
+                    v-if="
+                      item.productId &&
+                      ['ONGOING', 'APPROVED'].includes(project.status) &&
+                      item.quantity - (item.returnedQty || 0) > 0
+                    "
+                    @click="openReturnModal(item)"
+                    class="btn btn-xs btn-ghost text-warning flex-shrink-0"
+                    title="Kembalikan item"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                      />
+                    </svg>
+                  </button>
                 </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Budget (Dari Quotation)</p>
-                  <p class="font-medium font-mono text-primary">
-                    {{ formatCurrency(project.budget) }}
-                  </p>
+
+                <div class="space-y-2 text-sm">
+                  <!-- Quantity -->
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Qty</span>
+                    <span class="font-mono font-semibold">{{ item.quantity }} {{ item.unit }}</span>
+                  </div>
+
+                  <!-- Return -->
+                  <div v-if="item.returnedQty" class="flex justify-between items-center">
+                    <span class="text-base-content/60">Return</span>
+                    <span class="font-mono text-warning">{{ item.returnedQty }}</span>
+                  </div>
+
+                  <!-- HPP -->
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">HPP</span>
+                    <span class="font-mono text-xs">{{ formatCurrency(item.cost || 0) }}</span>
+                  </div>
+
+                  <!-- Total HPP -->
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Total HPP</span>
+                    <span class="font-mono text-warning font-semibold">
+                      {{ formatCurrency(item.totalCost || 0) }}
+                    </span>
+                  </div>
+
+                  <!-- Harga Jual -->
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Harga Jual</span>
+                    <span class="font-mono text-xs text-success">
+                      {{ formatCurrency(item.price) }}
+                    </span>
+                  </div>
+
+                  <!-- Total Jual -->
+                  <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                    <span class="text-base-content/60 font-semibold">Total Jual</span>
+                    <span class="font-mono text-success font-bold">
+                      {{ formatCurrency(item.totalPrice) }}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Total Harga Jual</p>
-                  <p class="font-medium font-mono text-success">
-                    {{ formatCurrency(calculatedItemPrice) }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Total HPP (Modal)</p>
-                  <p class="font-medium font-mono text-warning">
+              </div>
+            </div>
+
+            <div
+              v-if="!project.items?.length"
+              class="col-span-full text-center py-8 text-base-content/60"
+            >
+              Belum ada item
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div v-else class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Return</th>
+                  <th class="text-right">HPP</th>
+                  <th class="text-right">Total HPP</th>
+                  <th class="text-right">Harga Jual</th>
+                  <th class="text-right">Total Jual</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in project.items" :key="item.id">
+                  <td>
+                    <p class="font-medium">{{ item.name }}</p>
+                    <span
+                      class="badge badge-sm"
+                      :class="item.type === 'QUOTATION' ? 'badge-ghost' : 'badge-accent'"
+                    >
+                      {{ item.type }}
+                    </span>
+                  </td>
+                  <td class="text-right">{{ item.quantity }} {{ item.unit }}</td>
+                  <td class="text-right">
+                    <span v-if="item.returnedQty" class="text-warning">
+                      {{ item.returnedQty }}
+                    </span>
+                    <span v-else class="text-base-content/40">-</span>
+                  </td>
+                  <td class="text-right font-mono text-xs">
+                    {{ formatCurrency(item.cost || 0) }}
+                  </td>
+                  <td class="text-right font-mono text-warning">
+                    {{ formatCurrency(item.totalCost || 0) }}
+                  </td>
+                  <td class="text-right font-mono text-xs text-success">
+                    {{ formatCurrency(item.price) }}
+                  </td>
+                  <td class="text-right font-mono font-semibold text-success">
+                    {{ formatCurrency(item.totalPrice) }}
+                  </td>
+                  <td>
+                    <button
+                      v-if="
+                        item.productId &&
+                        ['ONGOING', 'APPROVED'].includes(project.status) &&
+                        item.quantity - (item.returnedQty || 0) > 0
+                      "
+                      @click="openReturnModal(item)"
+                      class="btn btn-xs btn-ghost text-warning"
+                      title="Kembalikan item"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                        />
+                      </svg>
+                      <span class="hidden sm:inline">Return</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="!project.items?.length">
+                  <td colspan="8" class="text-center py-4 text-base-content/60">Belum ada item</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="4" class="text-right">Total HPP (Modal)</th>
+                  <th class="text-right font-mono text-warning">
                     {{ formatCurrency(calculatedItemCost) }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Total Expense</p>
-                  <p class="font-medium font-mono">{{ formatCurrency(calculatedExpenseCost) }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Estimasi Margin</p>
-                  <p
-                    class="font-medium font-mono"
-                    :class="calculatedMargin >= 0 ? 'text-success' : 'text-error'"
+                  </th>
+                  <th class="text-right">Total Harga Jual</th>
+                  <th class="text-right font-mono text-success">
+                    {{ formatCurrency(calculatedItemPrice) }}
+                  </th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Expenses" />
+        <div role="tabpanel" class="tab-content p-4 sm:p-6">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4"
+          >
+            <h2 class="text-base sm:text-lg font-bold">Pengeluaran (Expenses)</h2>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <AppViewToggle v-model="expensesViewMode" class="flex-shrink-0" />
+              <button
+                v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                @click="showAddExpense = true"
+                class="btn btn-sm btn-outline flex-1 sm:flex-initial"
+              >
+                + Tambah Pengeluaran
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid View -->
+          <div
+            v-if="expensesViewMode === 'GRID'"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <div
+              v-for="expense in project.expenses"
+              :key="expense.id"
+              class="card bg-base-200 hover:bg-base-300 transition-all"
+            >
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <h3 class="font-bold text-sm sm:text-base">{{ expense.description }}</h3>
+                    <span class="badge badge-ghost badge-xs sm:badge-sm mt-1">
+                      {{ expense.category }}
+                    </span>
+                  </div>
+                  <button
+                    v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                    @click="deleteExpense(expense.id)"
+                    class="btn btn-xs btn-ghost text-error flex-shrink-0"
+                    :disabled="!!processing"
                   >
-                    {{ formatCurrency(calculatedMargin) }}
-                  </p>
-                  <p class="text-xs text-base-content/50">Harga Jual - HPP - Expenses</p>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Selisih Budget</p>
-                  <p
-                    class="font-medium font-mono"
-                    :class="budgetVariance >= 0 ? 'text-success' : 'text-error'"
+
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Tanggal</span>
+                    <span class="font-mono text-xs">{{ formatDate(expense.date) }}</span>
+                  </div>
+
+                  <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                    <span class="text-base-content/60 font-semibold">Jumlah</span>
+                    <span class="font-mono font-bold text-error">
+                      {{ formatCurrency(expense.amount) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="!project.expenses?.length"
+              class="col-span-full text-center py-8 text-base-content/60"
+            >
+              Belum ada pengeluaran
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div v-else class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Deskripsi</th>
+                  <th>Kategori</th>
+                  <th class="text-right">Jumlah</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="expense in project.expenses" :key="expense.id">
+                  <td>{{ formatDate(expense.date) }}</td>
+                  <td>{{ expense.description }}</td>
+                  <td>
+                    <span class="badge badge-ghost badge-sm">{{ expense.category }}</span>
+                  </td>
+                  <td class="text-right font-mono font-semibold">
+                    {{ formatCurrency(expense.amount) }}
+                  </td>
+                  <td>
+                    <button
+                      v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                      @click="deleteExpense(expense.id)"
+                      class="btn btn-ghost btn-xs text-error"
+                      :disabled="!!processing"
+                    >
+                      Hapus
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="!project.expenses?.length">
+                  <td colspan="5" class="text-center py-4 text-base-content/60">
+                    Belum ada pengeluaran
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="3" class="text-right">Total Pengeluaran</th>
+                  <th colspan="2" class="text-right font-mono text-lg">
+                    {{ formatCurrency(calculatedExpenseCost) }}
+                  </th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Teknisi" />
+        <div role="tabpanel" class="tab-content p-4 sm:p-6">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4"
+          >
+            <h2 class="text-base sm:text-lg font-bold">Teknisi</h2>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <AppViewToggle v-model="techniciansViewMode" class="flex-shrink-0" />
+              <button
+                v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                @click="showAssignTechnician = true"
+                class="btn btn-sm btn-outline flex-1 sm:flex-initial"
+              >
+                + Assign Teknisi
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid View -->
+          <div
+            v-if="techniciansViewMode === 'GRID'"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <div
+              v-for="tech in project.technicians"
+              :key="tech.id"
+              class="card bg-base-200 hover:bg-base-300 transition-all"
+            >
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <h3 class="font-bold text-sm sm:text-base">{{ tech.technician.name }}</h3>
+                    <p class="text-xs text-base-content/60 mt-1">{{ tech.technician.phone }}</p>
+                    <span
+                      class="badge badge-xs sm:badge-sm mt-2"
+                      :class="tech.technician.type === 'INTERNAL' ? 'badge-primary' : 'badge-ghost'"
+                    >
+                      {{ tech.technician.type }}
+                    </span>
+                  </div>
+                  <button
+                    v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                    @click="removeTechnician(tech.technician.id)"
+                    class="btn btn-xs btn-ghost text-error flex-shrink-0"
+                    :disabled="!!processing"
                   >
-                    {{ budgetVariance >= 0 ? '+' : '' }}{{ budgetVariance.toFixed(2) }}%
-                  </p>
-                  <p class="text-xs text-base-content/50">(Aktual - Budget) / Budget</p>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
-              </div>
 
-              <div class="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <p class="text-sm text-base-content/60">Tanggal Mulai</p>
-                  <p class="font-medium">{{ formatDate(project.startDate) || '-' }}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-base-content/60">Tanggal Selesai</p>
-                  <p class="font-medium">{{ formatDate(project.endDate) || '-' }}</p>
-                </div>
-              </div>
-
-              <div v-if="project.description" class="mt-4">
-                <p class="text-sm text-base-content/60">Deskripsi</p>
-                <p class="mt-1">{{ project.description }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Items Management -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <div class="flex justify-between items-center mb-4">
-                <h2 class="card-title">Item & Material</h2>
-                <button
-                  v-if="['ONGOING', 'APPROVED', 'QUOTATION'].includes(project.status)"
-                  @click="showAddItem = true"
-                  class="btn btn-sm btn-outline"
-                >
-                  + Tambah Item
-                </button>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th class="text-right">Qty</th>
-                      <th class="text-right">Return</th>
-                      <th class="text-right">HPP</th>
-                      <th class="text-right">Total HPP</th>
-                      <th class="text-right">Harga Jual</th>
-                      <th class="text-right">Total Jual</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in project.items" :key="item.id">
-                      <td>
-                        <p class="font-medium">{{ item.name }}</p>
-                        <span
-                          class="badge badge-sm"
-                          :class="item.type === 'QUOTATION' ? 'badge-ghost' : 'badge-accent'"
-                        >
-                          {{ item.type }}
-                        </span>
-                      </td>
-                      <td class="text-right">{{ item.quantity }} {{ item.unit }}</td>
-                      <td class="text-right">
-                        <span v-if="item.returnedQty" class="text-warning">
-                          {{ item.returnedQty }}
-                        </span>
-                        <span v-else class="text-base-content/40">-</span>
-                      </td>
-                      <td class="text-right font-mono text-xs">
-                        {{ formatCurrency(item.cost || 0) }}
-                      </td>
-                      <td class="text-right font-mono text-warning">
-                        {{ formatCurrency(item.totalCost || 0) }}
-                      </td>
-                      <td class="text-right font-mono text-xs text-success">
-                        {{ formatCurrency(item.price) }}
-                      </td>
-                      <td class="text-right font-mono font-semibold text-success">
-                        {{ formatCurrency(item.totalPrice) }}
-                      </td>
-                      <td>
-                        <button
-                          v-if="
-                            item.productId &&
-                            ['ONGOING', 'APPROVED'].includes(project.status) &&
-                            item.quantity - (item.returnedQty || 0) > 0
-                          "
-                          @click="openReturnModal(item)"
-                          class="btn btn-xs btn-ghost text-warning"
-                          title="Kembalikan item"
-                        >
-                          ↩ Return
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-if="!project.items?.length">
-                      <td colspan="9" class="text-center py-4 text-base-content/60">
-                        Belum ada item
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colspan="3" class="text-right">Total HPP (Modal)</th>
-                      <th class="text-right font-mono text-warning">
-                        {{ formatCurrency(calculatedItemCost) }}
-                      </th>
-                      <th class="text-right">Total Harga Jual</th>
-                      <th class="text-right font-mono text-success">
-                        {{ formatCurrency(calculatedItemPrice) }}
-                      </th>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Expenses Management -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <div class="flex justify-between items-center mb-4">
-                <h2 class="card-title">Pengeluaran (Expenses)</h2>
-                <button
-                  v-if="['ONGOING', 'APPROVED'].includes(project.status)"
-                  @click="showAddExpense = true"
-                  class="btn btn-sm btn-outline"
-                >
-                  + Tambah Pengeluaran
-                </button>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Tanggal</th>
-                      <th>Deskripsi</th>
-                      <th>Kategori</th>
-                      <th class="text-right">Jumlah</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="expense in project.expenses" :key="expense.id">
-                      <td>{{ formatDate(expense.date) }}</td>
-                      <td>{{ expense.description }}</td>
-                      <td>
-                        <span class="badge badge-ghost badge-sm">{{ expense.category }}</span>
-                      </td>
-                      <td class="text-right font-mono font-semibold">
-                        {{ formatCurrency(expense.amount) }}
-                      </td>
-                      <td>
-                        <button
-                          v-if="['ONGOING', 'APPROVED'].includes(project.status)"
-                          @click="deleteExpense(expense.id)"
-                          class="btn btn-ghost btn-xs text-error"
-                          :disabled="!!processing"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-if="!project.expenses?.length">
-                      <td colspan="5" class="text-center py-4 text-base-content/60">
-                        Belum ada pengeluaran
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colspan="4" class="text-right">Total Pengeluaran</th>
-                      <th class="text-right font-mono text-lg">
-                        {{ formatCurrency(calculatedExpenseCost) }}
-                      </th>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Technician Management -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <div class="flex justify-between items-center mb-4">
-                <h2 class="card-title">Teknisi</h2>
-                <button
-                  v-if="['ONGOING', 'APPROVED'].includes(project.status)"
-                  @click="showAssignTechnician = true"
-                  class="btn btn-sm btn-outline"
-                >
-                  + Assign Teknisi
-                </button>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Nama</th>
-                      <th>Tipe</th>
-                      <th class="text-right">Fee (Est)</th>
-                      <th class="text-center">Status Bayar</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="tech in project.technicians" :key="tech.id">
-                      <td>
-                        <div class="font-bold">{{ tech.technician.name }}</div>
-                        <div class="text-xs text-base-content/60">{{ tech.technician.phone }}</div>
-                      </td>
-                      <td>
-                        <span
-                          class="badge badge-sm"
-                          :class="
-                            tech.technician.type === 'INTERNAL' ? 'badge-primary' : 'badge-ghost'
-                          "
-                        >
-                          {{ tech.technician.type }}
-                        </span>
-                      </td>
-                      <td class="text-right font-mono">
-                        <!-- For PERCENTAGE: Calculate dynamically from margin -->
-                        <!-- For FIXED: Show stored fee value -->
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Fee (Est)</span>
+                    <div class="text-right">
+                      <div class="font-mono font-semibold">
                         {{
                           tech.feeType === 'PERCENTAGE'
                             ? formatCurrency(calculatedMargin * (Number(tech.fee) / 100))
                             : formatCurrency(tech.fee)
                         }}
-                        <div class="text-xs text-base-content/60">
-                          {{ tech.feeType === 'PERCENTAGE' ? `${tech.fee}%` : 'Flat' }}
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span
-                          class="badge badge-sm"
-                          :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
-                        >
-                          {{ tech.isPaid ? 'Sudah Dibayar' : 'Belum' }}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          v-if="['ONGOING', 'APPROVED'].includes(project.status)"
-                          @click="removeTechnician(tech.technician.id)"
-                          class="btn btn-ghost btn-xs text-error"
-                          :disabled="!!processing"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-if="!project.technicians?.length">
-                      <td colspan="5" class="text-center py-4 text-base-content/60">
-                        Belum ada teknisi
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </div>
+                      <div class="text-xs text-base-content/60">
+                        {{ tech.feeType === 'PERCENTAGE' ? `${tech.fee}%` : 'Flat' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                    <span class="text-base-content/60">Status Bayar</span>
+                    <span
+                      class="badge badge-xs sm:badge-sm"
+                      :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
+                    >
+                      {{ tech.isPaid ? 'Sudah Dibayar' : 'Belum' }}
+                    </span>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div
+              v-if="!project.technicians?.length"
+              class="col-span-full text-center py-8 text-base-content/60"
+            >
+              Belum ada teknisi
             </div>
           </div>
 
-          <!-- Quotations Link -->
-          <div v-if="project.quotations?.length" class="card bg-base-100 shadow">
-            <div class="card-body">
-              <h2 class="card-title">Penawaran Terkait</h2>
-              <div class="space-y-2">
-                <NuxtLink
-                  v-for="quotation in project.quotations"
-                  :key="quotation.id"
-                  :to="`/quotations/${quotation.id}`"
-                  class="btn btn-outline btn-sm w-full"
-                >
-                  {{ quotation.quotationNo }}
-                </NuxtLink>
-              </div>
-            </div>
+          <!-- List View -->
+          <div v-else class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Tipe</th>
+                  <th class="text-right">Fee (Est)</th>
+                  <th class="text-center">Status Bayar</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tech in project.technicians" :key="tech.id">
+                  <td>
+                    <div class="font-bold">{{ tech.technician.name }}</div>
+                    <div class="text-xs text-base-content/60">{{ tech.technician.phone }}</div>
+                  </td>
+                  <td>
+                    <span
+                      class="badge badge-sm"
+                      :class="tech.technician.type === 'INTERNAL' ? 'badge-primary' : 'badge-ghost'"
+                    >
+                      {{ tech.technician.type }}
+                    </span>
+                  </td>
+                  <td class="text-right font-mono">
+                    {{
+                      tech.feeType === 'PERCENTAGE'
+                        ? formatCurrency(calculatedMargin * (Number(tech.fee) / 100))
+                        : formatCurrency(tech.fee)
+                    }}
+                    <div class="text-xs text-base-content/60">
+                      {{ tech.feeType === 'PERCENTAGE' ? `${tech.fee}%` : 'Flat' }}
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span
+                      class="badge badge-sm"
+                      :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
+                    >
+                      {{ tech.isPaid ? 'Sudah Dibayar' : 'Belum' }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      v-if="['ONGOING', 'APPROVED'].includes(project.status)"
+                      @click="removeTechnician(tech.technician.id)"
+                      class="btn btn-ghost btn-xs text-error"
+                      :disabled="!!processing"
+                    >
+                      Hapus
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="!project.technicians?.length">
+                  <td colspan="5" class="text-center py-4 text-base-content/60">
+                    Belum ada teknisi
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
 
-        <!-- Sidebar -->
-        <div class="space-y-6">
-          <!-- Stats -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <h3 class="font-semibold mb-2">Statistik</h3>
-              <div class="space-y-3">
-                <div class="flex justify-between">
-                  <span class="text-sm text-base-content/60">Total HPP (Modal)</span>
-                  <span class="text-sm font-bold text-warning">
-                    {{ formatCurrency(calculatedItemCost) }}
-                  </span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-sm text-base-content/60">Total Expense</span>
-                  <span class="text-sm font-bold">{{ formatCurrency(calculatedExpenseCost) }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-sm text-base-content/60">Estimasi Margin</span>
-                  <span
-                    class="text-sm font-bold"
-                    :class="calculatedMargin >= 0 ? 'text-success' : 'text-error'"
-                  >
-                    {{ formatCurrency(calculatedMargin) }}
-                  </span>
-                </div>
-                <div class="divider my-1"></div>
-                <div class="flex justify-between">
-                  <span class="text-sm text-base-content/60">Dibuat</span>
-                  <span class="text-sm">{{ formatDate(project.createdAt) }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-sm text-base-content/60">Diupdate</span>
-                  <span class="text-sm">{{ formatDate(project.updatedAt) }}</span>
-                </div>
-              </div>
-            </div>
+      <!-- Quotations Link -->
+      <div v-if="project.quotations?.length" class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title">Penawaran Terkait</h2>
+          <div class="space-y-2">
+            <NuxtLink
+              v-for="quotation in project.quotations"
+              :key="quotation.id"
+              :to="`/quotations/${quotation.id}`"
+              class="btn btn-outline btn-sm w-full"
+            >
+              {{ quotation.quotationNo }}
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -480,13 +718,12 @@
               </div>
               <div class="form-control">
                 <label class="label"><span class="label-text">Satuan</span></label>
-                <input
-                  v-model="newItem.unit"
-                  type="text"
-                  class="input input-bordered w-full"
-                  placeholder="pcs, m, roll"
-                  required
-                />
+                <select v-model="newItem.unit" class="select select-bordered w-full" required>
+                  <option value="" disabled>Pilih satuan</option>
+                  <option v-for="unit in units" :key="unit.id" :value="unit.name">
+                    {{ unit.name }}
+                  </option>
+                </select>
               </div>
             </div>
 
@@ -779,7 +1016,22 @@ const returnItem = ref<any>(null)
 const returnQty = ref(1)
 const returnNotes = ref('')
 
+// View modes for tabs - Default to GRID on mobile, LIST on desktop
+const itemsViewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
+const expensesViewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
+const techniciansViewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
+
 const { data: availableTechnicians } = await useFetch('/api/technicians')
+
+// Fetch units from master data
+const { data: unitsData } = await useFetch('/api/units')
+const units = computed(() => (unitsData.value as any)?.data || [])
 
 const newItem = reactive({
   name: '',

@@ -1,12 +1,12 @@
 <template>
   <div class="container mx-auto p-6 space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold">Daftar Supplier</h1>
         <p class="text-base-content/60">Kelola data supplier untuk Purchase Order</p>
       </div>
-      <button class="btn btn-primary" @click="openCreateModal">
+      <button class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto" @click="openCreateModal">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5 mr-2"
@@ -25,14 +25,133 @@
       </button>
     </div>
 
-    <!-- Suppliers Table -->
+    <!-- Search & View Toggle -->
     <div class="card bg-base-100 shadow">
+      <div class="card-body py-4">
+        <div class="flex flex-row gap-4 items-center">
+          <!-- View Toggle - Left on all screens -->
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
+          <div class="form-control flex-1">
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Cari supplier..."
+              class="input input-bordered"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suppliers Grid -->
+    <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="pending" class="col-span-full text-center py-12">
+        <span class="loading loading-spinner loading-lg"></span>
+      </div>
+
+      <div
+        v-else-if="!filteredSuppliers?.length"
+        class="col-span-full text-center py-12 text-base-content/60"
+      >
+        <p>Belum ada supplier</p>
+      </div>
+
+      <div
+        v-for="supplier in filteredSuppliers"
+        :key="supplier.id"
+        class="card bg-base-100 shadow card-hover border border-base-200"
+      >
+        <div class="card-body p-5">
+          <h3 class="card-title text-lg">{{ supplier.name }}</h3>
+
+          <div class="space-y-2 text-sm mt-2">
+            <div v-if="supplier.contactPerson" class="flex items-center gap-2 text-base-content/70">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+              </svg>
+              <span>{{ supplier.contactPerson }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path
+                  d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"
+                />
+              </svg>
+              <span>{{ supplier.phone }}</span>
+            </div>
+            <div v-if="supplier.email" class="flex items-center gap-2 text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path
+                  d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"
+                />
+                <path d="M3 7l9 6l9 -6" />
+              </svg>
+              <span class="truncate">{{ supplier.email }}</span>
+            </div>
+            <div v-if="supplier.address" class="flex items-start gap-2 text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mt-0.5"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                <path
+                  d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"
+                />
+              </svg>
+              <span class="line-clamp-2">{{ supplier.address }}</span>
+            </div>
+          </div>
+
+          <div class="card-actions justify-end mt-4 pt-4 border-t border-base-200">
+            <button class="btn btn-ghost btn-sm" @click="openEditModal(supplier)">Edit</button>
+            <button class="btn btn-ghost btn-sm text-error" @click="confirmDelete(supplier)">
+              Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div v-else class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <div v-if="pending" class="text-center py-12">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div v-else-if="!suppliers?.length" class="text-center py-12 text-base-content/60">
+        <div v-else-if="!filteredSuppliers?.length" class="text-center py-12 text-base-content/60">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-12 w-12 mx-auto mb-4 opacity-50"
@@ -63,7 +182,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="supplier in suppliers" :key="supplier.id" class="hover">
+              <tr v-for="supplier in filteredSuppliers" :key="supplier.id" class="hover">
                 <td class="font-bold">{{ supplier.name }}</td>
                 <td>{{ supplier.contactPerson || '-' }}</td>
                 <td>{{ supplier.phone }}</td>
@@ -122,7 +241,22 @@
           <h3 class="font-bold text-lg">
             {{ isEditing ? 'Edit Supplier' : 'Tambah Supplier Baru' }}
           </h3>
-          <button @click="closeModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
+          <button @click="closeModal" class="btn btn-sm btn-circle btn-ghost">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
 
         <form @submit.prevent="saveSupplier" class="space-y-4">
@@ -131,7 +265,7 @@
             <input
               v-model="form.name"
               type="text"
-              class="input input-bordered"
+              class="input input-bordered w-full"
               placeholder="PT ABC Indonesia"
               required
             />
@@ -142,7 +276,7 @@
             <input
               v-model="form.contactPerson"
               type="text"
-              class="input input-bordered"
+              class="input input-bordered w-full"
               placeholder="Bapak/Ibu..."
             />
           </div>
@@ -152,7 +286,7 @@
             <input
               v-model="form.phone"
               type="text"
-              class="input input-bordered"
+              class="input input-bordered w-full"
               placeholder="021-12345678"
               required
             />
@@ -163,7 +297,7 @@
             <input
               v-model="form.email"
               type="email"
-              class="input input-bordered"
+              class="input input-bordered w-full"
               placeholder="sales@company.com"
             />
           </div>
@@ -172,7 +306,7 @@
             <label class="label"><span class="label-text">Alamat</span></label>
             <textarea
               v-model="form.address"
-              class="textarea textarea-bordered"
+              class="textarea textarea-bordered w-full"
               rows="2"
               placeholder="Alamat lengkap..."
             ></textarea>
@@ -222,6 +356,23 @@
 const { showAlert } = useAlert()
 
 const { data: suppliers, pending, refresh } = await useFetch('/api/suppliers')
+
+const viewMode = ref<'GRID' | 'LIST'>('GRID')
+const search = ref('')
+
+const filteredSuppliers = computed(() => {
+  if (!suppliers.value) return []
+  if (!search.value) return suppliers.value
+
+  const searchLower = search.value.toLowerCase()
+  return suppliers.value.filter(
+    (s: any) =>
+      s.name.toLowerCase().includes(searchLower) ||
+      s.phone.toLowerCase().includes(searchLower) ||
+      s.email?.toLowerCase().includes(searchLower) ||
+      s.contactPerson?.toLowerCase().includes(searchLower)
+  )
+})
 
 const showModal = ref(false)
 const showDeleteModal = ref(false)

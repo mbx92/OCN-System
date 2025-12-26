@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold">Pengguna</h1>
         <p class="text-base-content/60">Kelola akun pengguna sistem</p>
       </div>
-      <button @click="openModal()" class="btn btn-primary">
+      <button @click="openModal()" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
@@ -29,7 +29,7 @@
     <div class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>Nama</th>
@@ -53,20 +53,22 @@
               </tr>
               <tr v-for="user in users" :key="user.id" class="hover">
                 <td>
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-2 sm:gap-3">
                     <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content w-10 rounded-full">
-                        <span>{{ user.name?.charAt(0)?.toUpperCase() || 'U' }}</span>
+                      <div class="bg-primary text-primary-content w-8 sm:w-10 rounded-full">
+                        <span class="text-xs sm:text-sm">
+                          {{ user.name?.charAt(0)?.toUpperCase() || 'U' }}
+                        </span>
                       </div>
                     </div>
                     <div>
-                      <div class="font-bold">{{ user.name }}</div>
+                      <div class="font-bold text-sm sm:text-base">{{ user.name }}</div>
                       <div class="text-xs text-base-content/60">{{ user.phone || '-' }}</div>
                     </div>
                   </div>
                 </td>
-                <td class="font-mono text-sm">{{ user.username }}</td>
-                <td>{{ user.email }}</td>
+                <td class="font-mono text-xs sm:text-sm">{{ user.username }}</td>
+                <td class="text-xs sm:text-sm">{{ user.email }}</td>
                 <td>
                   <span
                     class="badge"
@@ -87,10 +89,12 @@
                 </td>
                 <td>
                   <div class="flex gap-1">
-                    <button @click="editUser(user)" class="btn btn-ghost btn-xs">Edit</button>
+                    <button @click="editUser(user)" class="btn btn-ghost btn-xs text-xs">
+                      Edit
+                    </button>
                     <button
                       @click="toggleStatus(user)"
-                      class="btn btn-ghost btn-xs"
+                      class="btn btn-ghost btn-xs text-xs"
                       :class="user.isActive ? 'text-error' : 'text-success'"
                     >
                       {{ user.isActive ? 'Nonaktifkan' : 'Aktifkan' }}

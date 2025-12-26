@@ -26,5 +26,11 @@
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
   },
-  "prisma.schemaPath": "prisma/schema.prisma"
+  "prisma.schemaPath": "prisma/schema.prisma",
+  // Disable some annoying warnings
+  "css.lint.unknownAtRules": "ignore",
+  "tailwindCSS.validate": true,
+  "tailwindCSS.experimental.classRegex": [
+    ["class:\\s*?[\"'`]([^\"'`]*).*?[\"'`]", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ]
 }

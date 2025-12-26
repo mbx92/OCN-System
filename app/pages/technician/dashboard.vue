@@ -108,8 +108,13 @@
 
     <!-- My Projects -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body">
-        <h2 class="card-title">Proyek Saya</h2>
+      <div class="card-body p-4 sm:p-6">
+        <div
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4"
+        >
+          <h2 class="text-lg font-bold">Proyek Saya</h2>
+          <AppViewToggle v-model="viewMode" />
+        </div>
 
         <div v-if="loading" class="text-center py-8">
           <span class="loading loading-spinner loading-lg"></span>
@@ -133,8 +138,53 @@
           <p class="text-lg">Belum ada proyek yang ditugaskan</p>
         </div>
 
+        <!-- Grid View -->
+        <div
+          v-else-if="viewMode === 'GRID'"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          <div
+            v-for="project in myProjects"
+            :key="project.id"
+            @click="navigateTo(`/projects/${project.id}`)"
+            class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
+          >
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex-1">
+                  <h3 class="font-mono text-sm font-bold">{{ project.projectNumber }}</h3>
+                  <p class="text-sm font-medium mt-1 line-clamp-2">{{ project.title }}</p>
+                </div>
+                <span
+                  class="badge badge-xs sm:badge-sm flex-shrink-0 ml-2"
+                  :class="getStatusClass(project.status)"
+                >
+                  {{ getStatusLabel(project.status) }}
+                </span>
+              </div>
+
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Pelanggan</span>
+                  <span class="text-xs font-medium">{{ project.customer?.name }}</span>
+                </div>
+
+                <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                  <span class="text-base-content/60">Deadline</span>
+                  <span class="text-xs">{{ formatDate(project.endDate) }}</span>
+                </div>
+              </div>
+
+              <div class="card-actions justify-end mt-3">
+                <button class="btn btn-ghost btn-xs sm:btn-sm w-full">Lihat Detail</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
         <div v-else class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>No. Proyek</th>
@@ -202,6 +252,10 @@ const { user } = useAuth()
 const { formatCurrency, formatDate } = useFormatter()
 
 const loading = ref(false)
+// Default to GRID on mobile, LIST on desktop
+const viewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
 
 const stats = ref({
   activeProjects: 0,

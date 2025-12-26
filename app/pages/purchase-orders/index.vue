@@ -5,8 +5,8 @@
         <h1 class="text-2xl font-bold">Purchase Orders (PO)</h1>
         <p class="text-base-content/60">Kelola pembelian barang ke supplier</p>
       </div>
-      <div class="flex gap-2">
-        <button @click="openCreateModal" class="btn btn-primary gap-2">
+      <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <button @click="openCreateModal" class="btn btn-primary gap-2 btn-sm sm:btn-md">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -23,7 +23,7 @@
           </svg>
           PO dari Pending
         </button>
-        <button @click="openDirectModal" class="btn btn-outline btn-primary gap-2">
+        <button @click="openDirectModal" class="btn btn-outline btn-primary gap-2 btn-sm sm:btn-md">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -46,13 +46,29 @@
     <!-- Pending PO Items List -->
     <div class="card bg-base-100 shadow">
       <div class="card-body">
-        <h2 class="card-title">Item yang Perlu di-PO</h2>
+        <div class="flex flex-col gap-4 mb-4">
+          <h2 class="card-title">Item yang Perlu di-PO</h2>
+
+          <!-- Search & View Toggle -->
+          <div class="flex flex-row gap-4">
+            <AppViewToggle v-model="pendingViewMode" />
+            <input
+              v-model="pendingSearch"
+              type="text"
+              placeholder="Cari item, produk, atau proyek..."
+              class="input input-bordered flex-1"
+            />
+          </div>
+        </div>
 
         <div v-if="pendingItemsQuery.pending.value" class="text-center py-8">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div v-else-if="!pendingItems?.length" class="text-center py-8 text-base-content/60">
+        <div
+          v-else-if="!filteredPendingItems?.length"
+          class="text-center py-8 text-base-content/60"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-12 w-12 mx-auto mb-2 opacity-50"
@@ -67,10 +83,16 @@
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p>Tidak ada item yang perlu di-PO saat ini</p>
+          <p>
+            {{
+              pendingSearch
+                ? 'Tidak ditemukan item yang cocok'
+                : 'Tidak ada item yang perlu di-PO saat ini'
+            }}
+          </p>
         </div>
 
-        <div v-else class="overflow-x-auto">
+        <div v-else>
           <div class="alert alert-warning mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -86,51 +108,188 @@
               />
             </svg>
             <span>
-              {{ pendingItems.length }} item terdeteksi memiliki stok kurang saat approval proyek
+              {{ filteredPendingItems.length }} item terdeteksi memiliki stok kurang saat approval
+              proyek
             </span>
           </div>
 
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Item / Produk</th>
-                <th>Project</th>
-                <th>Qty Butuh</th>
-                <th>Stok Saat Ini</th>
-                <th>Kekurangan</th>
-                <th>Supplier</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in pendingItems" :key="item.id">
-                <td>
-                  <div class="font-bold">{{ item.name }}</div>
-                  <span v-if="item.product" class="text-xs text-base-content/60">
+          <!-- Grid View -->
+          <div
+            v-if="pendingViewMode === 'GRID'"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <div
+              v-for="item in filteredPendingItems"
+              :key="item.id"
+              class="card bg-base-200 hover:bg-base-300 transition-all"
+            >
+              <div class="card-body p-4">
+                <div class="mb-3">
+                  <h3 class="font-bold">{{ item.name }}</h3>
+                  <p v-if="item.product" class="text-xs text-base-content/60 font-mono">
                     {{ item.product.sku }}
-                  </span>
-                </td>
-                <td>
-                  <div class="font-medium">{{ item.project?.projectNumber }}</div>
-                  <div class="text-xs text-base-content/60">{{ item.project?.title }}</div>
-                </td>
-                <td class="text-right font-mono">{{ item.quantity }}</td>
-                <td class="text-right font-mono">
-                  <span :class="(item.product?.stock?.available || 0) < 0 ? 'text-error' : ''">
-                    {{ item.product?.stock?.available || 0 }}
-                  </span>
-                </td>
-                <td class="text-right font-mono text-error">
-                  {{ Math.max(0, item.quantity - (item.product?.stock?.available || 0)) }}
-                </td>
-                <td>
-                  <span v-if="item.product?.suppliers?.[0]?.supplier?.name">
-                    {{ item.product.suppliers[0].supplier.name }}
-                  </span>
-                  <span v-else class="text-base-content/40">-</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </p>
+                </div>
+
+                <div class="space-y-2 text-sm">
+                  <!-- Project -->
+                  <div class="flex items-start gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"
+                      />
+                    </svg>
+                    <div class="flex-1">
+                      <div class="font-medium">{{ item.project?.projectNumber }}</div>
+                      <div class="text-xs text-base-content/60">{{ item.project?.title }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Quantity Needed -->
+                  <div class="flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
+                      />
+                    </svg>
+                    <span class="flex-1">Qty Butuh</span>
+                    <span class="font-mono font-bold">{{ item.quantity }}</span>
+                  </div>
+
+                  <!-- Current Stock -->
+                  <div class="flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                    <span class="flex-1">Stok Saat Ini</span>
+                    <span
+                      class="font-mono"
+                      :class="(item.product?.stock?.available || 0) < 0 ? 'text-error' : ''"
+                    >
+                      {{ item.product?.stock?.available || 0 }}
+                    </span>
+                  </div>
+
+                  <!-- Shortage -->
+                  <div class="flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    <span class="flex-1">Kekurangan</span>
+                    <span class="font-mono font-bold text-error">
+                      {{ Math.max(0, item.quantity - (item.product?.stock?.available || 0)) }}
+                    </span>
+                  </div>
+
+                  <!-- Supplier -->
+                  <div class="flex items-start gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3 21v-4m0 0V5a2 2 0 0 1 2-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 0 0-2 2zm9-13.5V9"
+                      />
+                    </svg>
+                    <span class="flex-1">
+                      {{ item.product?.suppliers?.[0]?.supplier?.name || '-' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div v-else class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Item / Produk</th>
+                  <th>Project</th>
+                  <th>Qty Butuh</th>
+                  <th>Stok Saat Ini</th>
+                  <th>Kekurangan</th>
+                  <th>Supplier</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in filteredPendingItems" :key="item.id">
+                  <td>
+                    <div class="font-bold">{{ item.name }}</div>
+                    <span v-if="item.product" class="text-xs text-base-content/60">
+                      {{ item.product.sku }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="font-medium">{{ item.project?.projectNumber }}</div>
+                    <div class="text-xs text-base-content/60">{{ item.project?.title }}</div>
+                  </td>
+                  <td class="text-right font-mono">{{ item.quantity }}</td>
+                  <td class="text-right font-mono">
+                    <span :class="(item.product?.stock?.available || 0) < 0 ? 'text-error' : ''">
+                      {{ item.product?.stock?.available || 0 }}
+                    </span>
+                  </td>
+                  <td class="text-right font-mono text-error">
+                    {{ Math.max(0, item.quantity - (item.product?.stock?.available || 0)) }}
+                  </td>
+                  <td>
+                    <span v-if="item.product?.suppliers?.[0]?.supplier?.name">
+                      {{ item.product.suppliers[0].supplier.name }}
+                    </span>
+                    <span v-else class="text-base-content/40">-</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -138,13 +297,26 @@
     <!-- PO List -->
     <div class="card bg-base-100 shadow">
       <div class="card-body">
-        <h2 class="card-title">Daftar Purchase Order</h2>
+        <div class="flex flex-col gap-4 mb-4">
+          <h2 class="card-title">Daftar Purchase Order</h2>
+
+          <!-- Search & View Toggle -->
+          <div class="flex flex-row gap-4">
+            <AppViewToggle v-model="viewMode" />
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Cari No. PO, Supplier, atau Proyek..."
+              class="input input-bordered flex-1"
+            />
+          </div>
+        </div>
 
         <div v-if="poListQuery.pending.value" class="text-center py-8">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div v-else-if="!poList?.length" class="text-center py-8 text-base-content/60">
+        <div v-else-if="!filteredPOList?.length" class="text-center py-8 text-base-content/60">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-12 w-12 mx-auto mb-2 opacity-50"
@@ -159,9 +331,115 @@
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <p>Belum ada Purchase Order</p>
+          <p>{{ search ? 'Tidak ditemukan PO yang cocok' : 'Belum ada Purchase Order' }}</p>
         </div>
 
+        <!-- Grid View -->
+        <div
+          v-else-if="viewMode === 'GRID'"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          <div
+            v-for="po in filteredPOList"
+            :key="po.id"
+            class="card bg-base-200 hover:bg-base-300 cursor-pointer transition-all"
+            @click="navigateTo(`/purchase-orders/${po.id}`)"
+          >
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <h3 class="font-bold font-mono text-lg">{{ po.poNumber }}</h3>
+                  <p class="text-xs text-base-content/60">{{ formatDate(po.createdAt) }}</p>
+                </div>
+                <span class="badge" :class="getPoStatusClass(po.status)">
+                  {{ getPoStatusLabel(po.status) }}
+                </span>
+              </div>
+
+              <div class="space-y-2 text-sm">
+                <!-- Supplier -->
+                <div class="flex items-start gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-4 h-4 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3 21v-4m0 0V5a2 2 0 0 1 2-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 0 0-2 2zm9-13.5V9"
+                    />
+                  </svg>
+                  <span class="flex-1">{{ po.supplier?.name || '-' }}</span>
+                </div>
+
+                <!-- Project -->
+                <div class="flex items-start gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-4 h-4 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"
+                    />
+                  </svg>
+                  <span class="flex-1">
+                    {{ po.project ? po.project.projectNumber : '-' }}
+                  </span>
+                </div>
+
+                <!-- Items Count -->
+                <div class="flex items-start gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-4 h-4 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4"
+                    />
+                  </svg>
+                  <span class="flex-1">{{ po.items?.length || 0 }} item</span>
+                </div>
+
+                <!-- Total -->
+                <div class="flex items-start gap-2 font-bold">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-4 h-4 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                    />
+                  </svg>
+                  <span class="flex-1 font-mono">{{ formatCurrency(po.totalAmount) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
         <div v-else class="overflow-x-auto">
           <table class="table w-full">
             <thead class="bg-base-200">
@@ -177,7 +455,7 @@
             </thead>
             <tbody>
               <tr
-                v-for="po in poList"
+                v-for="po in filteredPOList"
                 :key="po.id"
                 class="hover cursor-pointer"
                 @click="navigateTo(`/purchase-orders/${po.id}`)"
@@ -213,11 +491,24 @@
 
     <!-- Create PO Modal (Pending Items) -->
     <dialog class="modal" :class="{ 'modal-open': showCreateModal }">
-      <div class="modal-box w-11/12 max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="font-bold text-xl">Buat Purchase Order Baru</h3>
+      <div class="modal-box w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 class="font-bold text-lg sm:text-xl">Buat Purchase Order Baru</h3>
           <button @click="showCreateModal = false" class="btn btn-sm btn-circle btn-ghost">
-            ✕
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
@@ -248,7 +539,9 @@
           </div>
 
           <!-- Supplier Selection & Notes -->
-          <div class="bg-base-200 p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            class="bg-base-200 p-4 sm:p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+          >
             <div class="form-control">
               <label class="label">
                 <span class="label-text font-medium">Pilih Supplier</span>
@@ -279,11 +572,87 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-lg border border-base-200">
-            <table class="table w-full">
+          <!-- Mobile: Grid View, Desktop: Table -->
+          <!-- Grid View for Mobile -->
+          <div class="md:hidden space-y-3">
+            <div
+              v-for="item in pendingItems"
+              :key="item.id"
+              class="card bg-base-200 hover:bg-base-300 transition-all"
+            >
+              <div class="card-body p-4">
+                <div class="flex items-start gap-3 mb-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-sm"
+                      v-model="selectedItems"
+                      :value="item"
+                    />
+                  </label>
+                  <div class="flex-1">
+                    <h3 class="font-bold text-sm">{{ item.name }}</h3>
+                    <p class="text-xs text-base-content/60 font-mono mt-1">
+                      {{ item.product?.sku }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Project</span>
+                    <div class="text-right">
+                      <div class="font-medium text-xs">{{ item.project?.title }}</div>
+                      <div class="text-xs text-base-content/60">
+                        {{ item.project?.projectNumber }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Qty Butuh</span>
+                    <span class="font-bold text-error">
+                      {{ item.quantity }}
+                      <span class="text-xs ml-1">{{ item.unit }}</span>
+                    </span>
+                  </div>
+
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Stok</span>
+                    <div class="text-right text-xs">
+                      <div>Total: {{ item.product?.stock?.quantity || 0 }}</div>
+                      <div class="text-base-content/60">
+                        Reserved: {{ item.product?.stock?.reserved || 0 }}
+                      </div>
+                      <div
+                        class="font-bold"
+                        :class="
+                          (item.product?.stock?.available || 0) < 0 ? 'text-error' : 'text-success'
+                        "
+                      >
+                        Avail: {{ item.product?.stock?.available || 0 }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                    <span class="text-base-content/60">Supplier</span>
+                    <span v-if="item.product?.suppliers?.[0]" class="badge badge-outline badge-xs">
+                      {{ item.product.suppliers[0].supplier.name }}
+                    </span>
+                    <span v-else class="text-xs text-error italic">No Supplier</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table View for Desktop -->
+          <div class="hidden md:block overflow-x-auto rounded-lg border border-base-200">
+            <table class="table w-full table-sm sm:table-md">
               <thead class="bg-base-200">
                 <tr>
-                  <th class="w-12">
+                  <th class="w-8 sm:w-12">
                     <label>
                       <input
                         type="checkbox"
@@ -313,13 +682,13 @@
                     </label>
                   </th>
                   <td>
-                    <div class="font-bold">{{ item.name }}</div>
+                    <div class="font-bold text-sm sm:text-base">{{ item.name }}</div>
                     <div class="text-xs text-base-content/60 font-mono mt-1">
                       {{ item.product?.sku }}
                     </div>
                   </td>
                   <td>
-                    <div class="font-medium text-sm">{{ item.project?.title }}</div>
+                    <div class="font-medium text-xs sm:text-sm">{{ item.project?.title }}</div>
                     <div class="text-xs text-base-content/60">
                       {{ item.project?.projectNumber }}
                     </div>
@@ -356,10 +725,16 @@
           </div>
         </div>
 
-        <div class="modal-action mt-8">
-          <button class="btn" @click="showCreateModal = false" :disabled="processing">Batal</button>
+        <div class="modal-action mt-6 sm:mt-8 flex-col sm:flex-row gap-2">
           <button
-            class="btn btn-primary"
+            class="btn w-full sm:w-auto"
+            @click="showCreateModal = false"
+            :disabled="processing"
+          >
+            Batal
+          </button>
+          <button
+            class="btn btn-primary w-full sm:w-auto"
             :disabled="selectedItems.length === 0 || processing"
             @click="createPoFromSelection"
           >
@@ -375,18 +750,34 @@
 
     <!-- Direct PO Modal -->
     <dialog class="modal" :class="{ 'modal-open': showDirectModal }">
-      <div class="modal-box w-11/12 max-w-4xl">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="font-bold text-xl">Buat PO Manual</h3>
+      <div class="modal-box w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 class="font-bold text-lg sm:text-xl">Buat PO Manual</h3>
           <button @click="showDirectModal = false" class="btn btn-sm btn-circle btn-ghost">
-            ✕
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
         <!-- Supplier Selection -->
         <div class="mb-4">
           <label class="block text-sm font-medium mb-2">Supplier</label>
-          <select v-model="directForm.supplierId" class="select select-bordered">
+          <select
+            v-model="directForm.supplierId"
+            class="select select-bordered w-full select-sm sm:select-md"
+          >
             <option value="">Pilih Supplier</option>
             <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
@@ -395,12 +786,12 @@
         <!-- Items -->
         <div class="mb-4">
           <div class="flex justify-between items-center mb-2">
-            <label class="label-text font-medium">Item</label>
-            <button @click="addDirectItem" class="btn btn-sm btn-ghost">+ Tambah Item</button>
+            <label class="label-text font-medium text-sm sm:text-base">Item</label>
+            <button @click="addDirectItem" class="btn btn-xs sm:btn-sm btn-ghost">+ Tambah</button>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="table table-sm">
+          <div class="overflow-x-auto -mx-4 sm:mx-0">
+            <table class="table table-xs sm:table-sm">
               <thead class="bg-base-200">
                 <tr>
                   <th>Produk</th>
@@ -445,7 +836,20 @@
                   </td>
                   <td>
                     <button @click="removeDirectItem(idx)" class="btn btn-ghost btn-xs text-error">
-                      ✕
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
                     </button>
                   </td>
                 </tr>
@@ -476,12 +880,16 @@
           ></textarea>
         </div>
 
-        <div class="modal-action">
-          <button class="btn" @click="showDirectModal = false" :disabled="processingDirect">
+        <div class="modal-action flex-col sm:flex-row gap-2">
+          <button
+            class="btn w-full sm:w-auto"
+            @click="showDirectModal = false"
+            :disabled="processingDirect"
+          >
             Batal
           </button>
           <button
-            class="btn btn-primary"
+            class="btn btn-primary w-full sm:w-auto"
             :disabled="!canCreateDirect || processingDirect"
             @click="createDirectPo"
           >
@@ -507,11 +915,46 @@ const selectedSupplierId = ref('')
 const processing = ref(false)
 const poNotes = ref('')
 
+// View mode & search for both sections - Default to GRID on mobile, LIST on desktop
+const viewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
+const search = ref('')
+const pendingViewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
+const pendingSearch = ref('')
+
 const pendingItemsQuery = await useFetch('/api/purchase-orders/pending-items')
 const pendingItems = computed(() => pendingItemsQuery.data.value || [])
 
+// Filtered pending items
+const filteredPendingItems = computed(() => {
+  if (!pendingSearch.value) return pendingItems.value
+  const term = pendingSearch.value.toLowerCase()
+  return pendingItems.value.filter(
+    (item: any) =>
+      item.name.toLowerCase().includes(term) ||
+      item.product?.sku.toLowerCase().includes(term) ||
+      item.project?.projectNumber.toLowerCase().includes(term) ||
+      item.project?.title.toLowerCase().includes(term)
+  )
+})
+
 const poListQuery = await useFetch('/api/purchase-orders')
 const poList = computed(() => poListQuery.data.value || [])
+
+// Filtered PO list
+const filteredPOList = computed(() => {
+  if (!search.value) return poList.value
+  const term = search.value.toLowerCase()
+  return poList.value.filter(
+    (po: any) =>
+      po.poNumber.toLowerCase().includes(term) ||
+      po.supplier?.name.toLowerCase().includes(term) ||
+      po.project?.projectNumber.toLowerCase().includes(term)
+  )
+})
 
 const { data: suppliers } = await useFetch('/api/suppliers')
 const { data: productsData } = await useFetch('/api/products', { query: { limit: 1000 } })

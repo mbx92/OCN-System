@@ -6,8 +6,12 @@
         <h1 class="text-2xl font-bold">Pembayaran</h1>
         <p class="text-base-content/60">Kelola pembayaran proyek dan POS</p>
       </div>
-      <div class="flex gap-2">
-        <button @click="openModal('PROJECT')" class="btn btn-primary">
+      <div class="flex gap-2 w-full sm:w-auto">
+        <AppViewToggle v-model="viewMode" class="flex-shrink-0" />
+        <button
+          @click="openModal('PROJECT')"
+          class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -22,9 +26,13 @@
               d="M12 4v16m8-8H4"
             />
           </svg>
-          Bayar Proyek
+          <span class="hidden sm:inline">Bayar Proyek</span>
+          <span class="sm:hidden">Proyek</span>
         </button>
-        <button @click="openModal('POS')" class="btn btn-outline btn-success">
+        <button
+          @click="openModal('POS')"
+          class="btn btn-sm sm:btn-md btn-outline btn-success flex-1 sm:flex-initial"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -67,9 +75,76 @@
 
     <!-- Payments List -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body p-0">
-        <div class="overflow-x-auto">
-          <table class="table">
+      <div class="card-body p-4 sm:p-6">
+        <!-- Grid View -->
+        <div
+          v-if="viewMode === 'GRID'"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          <div v-if="pending" class="col-span-full text-center py-8">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
+          <div
+            v-else-if="!payments?.length"
+            class="col-span-full text-center py-8 text-base-content/60"
+          >
+            <p class="text-lg">Belum ada pembayaran</p>
+          </div>
+          <div
+            v-for="pay in payments"
+            :key="pay.id"
+            @click="navigateTo(`/finance/payments/${pay.id}`)"
+            class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
+          >
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex-1">
+                  <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
+                  <span
+                    class="badge badge-xs sm:badge-sm mt-1"
+                    :class="pay.mode === 'PROJECT' ? 'badge-primary' : 'badge-success'"
+                  >
+                    {{ pay.mode }}
+                  </span>
+                </div>
+                <span class="badge badge-ghost badge-xs sm:badge-sm">
+                  {{ getTypeLabel(pay.type) }}
+                </span>
+              </div>
+
+              <div class="space-y-2 text-sm">
+                <div v-if="pay.project" class="flex justify-between items-center">
+                  <span class="text-base-content/60">Proyek</span>
+                  <div class="text-right">
+                    <div class="text-xs font-medium">{{ pay.project.projectNumber }}</div>
+                    <div class="text-xs text-base-content/60">{{ pay.project.customer?.name }}</div>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Metode</span>
+                  <span class="text-xs">{{ pay.method }}</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Tanggal</span>
+                  <span class="text-xs">{{ formatDate(pay.paymentDate) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                  <span class="text-base-content/60 font-semibold">Jumlah</span>
+                  <span class="font-mono font-bold text-success">
+                    {{ formatCurrency(pay.amount) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div v-else class="overflow-x-auto">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>No. Pembayaran</th>
@@ -249,6 +324,10 @@ const { showAlert } = useAlert()
 
 const modeFilter = ref('')
 const page = ref(1)
+// Default to GRID on mobile, LIST on desktop
+const viewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
 const showModal = ref(false)
 const modalMode = ref<'PROJECT' | 'POS'>('PROJECT')
 const saving = ref(false)

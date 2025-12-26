@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold">Kelola Teknisi</h1>
         <p class="text-base-content/60">Manajemen teknisi dan penghasilan</p>
       </div>
-      <button @click="openModal()" class="btn btn-primary">
+      <button @click="openModal()" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
@@ -41,7 +41,7 @@
     <div class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>Nama</th>
@@ -69,21 +69,23 @@
               </tr>
               <tr v-for="tech in filteredTechnicians" :key="tech.id" class="hover">
                 <td>
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-2 sm:gap-3">
                     <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content rounded-full w-10">
-                        <span class="text-sm">{{ getInitials(tech.name) }}</span>
+                      <div class="bg-primary text-primary-content rounded-full w-8 sm:w-10">
+                        <span class="text-xs sm:text-sm">{{ getInitials(tech.name) }}</span>
                       </div>
                     </div>
                     <div>
-                      <p class="font-medium">{{ tech.name }}</p>
-                      <span class="badge badge-ghost badge-sm">{{ tech.type }}</span>
+                      <p class="font-medium text-sm sm:text-base">{{ tech.name }}</p>
+                      <span class="badge badge-ghost badge-xs sm:badge-sm">{{ tech.type }}</span>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <p class="font-mono text-sm">{{ tech.phone }}</p>
-                  <p v-if="tech.email" class="text-sm text-base-content/60">{{ tech.email }}</p>
+                  <p class="font-mono text-xs sm:text-sm">{{ tech.phone }}</p>
+                  <p v-if="tech.email" class="text-xs sm:text-sm text-base-content/60">
+                    {{ tech.email }}
+                  </p>
                 </td>
                 <td>
                   <span

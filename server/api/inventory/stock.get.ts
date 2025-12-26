@@ -5,6 +5,11 @@ export default defineEventHandler(async event => {
 
   const [stocks, total] = await Promise.all([
     prisma.stock.findMany({
+      where: {
+        product: {
+          isService: false, // Exclude services from stock
+        },
+      },
       include: {
         product: {
           select: {
@@ -25,7 +30,13 @@ export default defineEventHandler(async event => {
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.stock.count(),
+    prisma.stock.count({
+      where: {
+        product: {
+          isService: false, // Exclude services from stock count
+        },
+      },
+    }),
   ])
 
   return {

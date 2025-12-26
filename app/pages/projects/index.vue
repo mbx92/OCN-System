@@ -11,45 +11,48 @@
     <!-- Search & Filters -->
     <div class="card bg-base-100 shadow">
       <div class="card-body p-4">
-        <div class="flex flex-col xl:flex-row gap-4 justify-between items-center">
-          <!-- Search -->
-          <div class="w-full xl:w-64">
-            <div class="relative">
-              <input
-                v-model="search"
-                type="text"
-                placeholder="Cari proyek..."
-                class="input input-bordered w-full pl-10"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div class="flex flex-col gap-4">
+          <!-- Top row: View Toggle and Search on mobile -->
+          <div class="flex flex-row gap-4 items-center">
+            <!-- View Toggle - Left on all screens -->
+            <div class="flex-none">
+              <AppViewToggle v-model="viewMode" />
+            </div>
+
+            <!-- Search -->
+            <div class="flex-1">
+              <div class="relative">
+                <input
+                  v-model="search"
+                  type="text"
+                  placeholder="Cari proyek..."
+                  class="input input-bordered w-full pl-10"
                 />
-              </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
-            <!-- Status Filter -->
+          <!-- Status Filter -->
+          <div class="w-full sm:w-auto">
             <select v-model="status" class="select select-bordered w-full sm:w-auto">
               <option v-for="tab in statusTabs" :key="tab.value" :value="tab.value">
                 {{ tab.label }}
               </option>
             </select>
-
-            <!-- View Toggle -->
-            <div class="flex-none">
-              <AppViewToggle v-model="viewMode" />
-            </div>
           </div>
         </div>
       </div>

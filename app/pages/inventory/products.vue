@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold">Produk</h1>
         <p class="text-base-content/60">Kelola produk inventori</p>
       </div>
-      <button @click="openAddModal" class="btn btn-primary">
+      <button @click="openAddModal" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
@@ -28,25 +28,28 @@
     <!-- Search & Filter -->
     <div class="card bg-base-100 shadow">
       <div class="card-body py-4">
-        <div class="flex flex-col sm:flex-row gap-4">
-          <div class="form-control flex-1">
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Cari produk..."
-              class="input input-bordered"
-            />
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-row gap-4 items-center">
+            <!-- View Toggle - Left on all screens -->
+            <div class="flex-none">
+              <AppViewToggle v-model="viewMode" />
+            </div>
+            <div class="form-control flex-1">
+              <input
+                v-model="search"
+                type="text"
+                placeholder="Cari produk..."
+                class="input input-bordered"
+              />
+            </div>
           </div>
           <div class="form-control w-full sm:w-48">
             <select v-model="category" class="select select-bordered">
               <option value="">Semua Kategori</option>
-              <option value="material">Material</option>
-              <option value="tool">Alat</option>
-              <option value="service">Jasa</option>
+              <option value="NETWORK">Network</option>
+              <option value="CCTV">CCTV</option>
+              <option value="SERVICE">Service</option>
             </select>
-          </div>
-          <div class="flex-none">
-            <AppViewToggle v-model="viewMode" />
           </div>
         </div>
       </div>

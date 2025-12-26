@@ -1,20 +1,22 @@
 <template>
   <div class="space-y-6">
     <!-- Page Header -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold">Master Satuan</h1>
         <p class="text-base-content/60">Kelola satuan dan konversi</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <!-- Units List -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <div class="flex justify-between items-center">
-            <h2 class="card-title">Daftar Satuan</h2>
-            <button @click="showAddUnit = true" class="btn btn-primary btn-sm">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0"
+          >
+            <h2 class="card-title text-lg sm:text-xl">Daftar Satuan</h2>
+            <button @click="showAddUnit = true" class="btn btn-primary btn-sm w-full sm:w-auto">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-4 w-4"
@@ -34,9 +36,9 @@
           </div>
 
           <!-- Add Unit Form -->
-          <div v-if="showAddUnit" class="bg-base-200 p-4 rounded-lg mt-4">
-            <h3 class="font-semibold mb-3">Tambah Satuan Baru</h3>
-            <div class="grid grid-cols-2 gap-3">
+          <div v-if="showAddUnit" class="bg-base-200 p-3 sm:p-4 rounded-lg mt-4">
+            <h3 class="font-semibold mb-3 text-sm sm:text-base">Tambah Satuan Baru</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <input
                 v-model="newUnit.name"
                 type="text"
@@ -53,9 +55,9 @@
                 v-model="newUnit.description"
                 type="text"
                 placeholder="Deskripsi (opsional)"
-                class="input input-bordered input-sm col-span-2"
+                class="input input-bordered input-sm sm:col-span-2"
               />
-              <label class="label cursor-pointer justify-start gap-2 col-span-2">
+              <label class="label cursor-pointer justify-start gap-2 sm:col-span-2">
                 <input
                   v-model="newUnit.isBase"
                   type="checkbox"
@@ -64,11 +66,13 @@
                 <span class="label-text">Satuan dasar</span>
               </label>
             </div>
-            <div class="flex gap-2 mt-3">
-              <button @click="showAddUnit = false" class="btn btn-ghost btn-sm">Batal</button>
+            <div class="flex flex-col sm:flex-row gap-2 mt-3">
+              <button @click="showAddUnit = false" class="btn btn-ghost btn-sm w-full sm:w-auto">
+                Batal
+              </button>
               <button
                 @click="addUnit"
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary btn-sm w-full sm:w-auto"
                 :disabled="!newUnit.name || !newUnit.symbol"
               >
                 Simpan

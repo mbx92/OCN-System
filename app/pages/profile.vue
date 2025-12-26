@@ -23,21 +23,31 @@
                 <label class="label">
                   <span class="label-text">Nama Lengkap</span>
                 </label>
-                <input v-model="form.name" type="text" class="input input-bordered" required />
+                <input
+                  v-model="form.name"
+                  type="text"
+                  class="input input-bordered w-full"
+                  required
+                />
               </div>
 
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">Email</span>
                 </label>
-                <input v-model="form.email" type="email" class="input input-bordered" required />
+                <input
+                  v-model="form.email"
+                  type="email"
+                  class="input input-bordered w-full"
+                  required
+                />
               </div>
 
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">Telepon</span>
                 </label>
-                <input v-model="form.phone" type="tel" class="input input-bordered" />
+                <input v-model="form.phone" type="tel" class="input input-bordered w-full" />
               </div>
 
               <div class="form-control">
@@ -46,7 +56,7 @@
                 </label>
                 <textarea
                   v-model="form.address"
-                  class="textarea textarea-bordered"
+                  class="textarea textarea-bordered w-full"
                   rows="3"
                 ></textarea>
               </div>
@@ -74,7 +84,7 @@
                 <input
                   v-model="passwordForm.oldPassword"
                   type="password"
-                  class="input input-bordered"
+                  class="input input-bordered w-full"
                   required
                 />
               </div>
@@ -86,7 +96,7 @@
                 <input
                   v-model="passwordForm.newPassword"
                   type="password"
-                  class="input input-bordered"
+                  class="input input-bordered w-full"
                   required
                   minlength="6"
                 />
@@ -99,7 +109,7 @@
                 <input
                   v-model="passwordForm.confirmPassword"
                   type="password"
-                  class="input input-bordered"
+                  class="input input-bordered w-full"
                   required
                   minlength="6"
                 />

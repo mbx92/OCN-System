@@ -60,6 +60,7 @@ export default defineEventHandler(async event => {
     select: {
       id: true,
       purchasePrice: true,
+      isService: true,
       stock: true,
     },
   })
@@ -80,19 +81,23 @@ export default defineEventHandler(async event => {
       const product = productMap.get(item.productId)
       if (product) {
         cost = Number(product.purchasePrice)
-        currentStock = product.stock?.quantity || 0
-        reservedStock = product.stock?.reserved || 0
 
-        const available = currentStock - reservedStock
-        if (available < item.quantity) {
-          needsPo = true
+        // Only check stock for physical products, not services
+        if (!product.isService) {
+          currentStock = product.stock?.quantity || 0
+          reservedStock = product.stock?.reserved || 0
+
+          const available = currentStock - reservedStock
+          if (available < item.quantity) {
+            needsPo = true
+          }
+
+          // Prepare stock update (increment reserved)
+          stockUpdates.push({
+            productId: item.productId,
+            increment: item.quantity,
+          })
         }
-
-        // Prepare stock update (increment reserved)
-        stockUpdates.push({
-          productId: item.productId,
-          increment: item.quantity,
-        })
       }
     }
 

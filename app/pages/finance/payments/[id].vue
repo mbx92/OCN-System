@@ -213,7 +213,22 @@
       <div class="modal-box w-11/12 max-w-4xl p-0">
         <div class="flex justify-between items-center p-4 border-b">
           <h3 class="font-bold text-lg">Preview Invoice</h3>
-          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
+          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
         <div id="invoice-print" class="p-6 bg-white text-black">
           <PaymentInvoice v-if="payment" :payment="payment" />

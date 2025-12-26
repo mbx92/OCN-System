@@ -6,23 +6,30 @@
         <h1 class="text-2xl font-bold">Garansi</h1>
         <p class="text-base-content/60">Kelola garansi proyek yang sudah selesai</p>
       </div>
-      <button @click="openCreateModal" class="btn btn-primary">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div class="flex gap-2 w-full sm:w-auto">
+        <AppViewToggle v-model="viewMode" class="flex-shrink-0" />
+        <button
+          @click="openCreateModal"
+          class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        Daftarkan Garansi
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          <span class="hidden sm:inline">Daftarkan Garansi</span>
+          <span class="sm:hidden">Daftar</span>
+        </button>
+      </div>
     </div>
 
     <!-- Status Filter -->
@@ -55,9 +62,78 @@
 
     <!-- Warranties List -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body p-0">
-        <div class="overflow-x-auto">
-          <table class="table">
+      <div class="card-body p-4 sm:p-6">
+        <!-- Grid View -->
+        <div
+          v-if="viewMode === 'GRID'"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          <div v-if="pending" class="col-span-full text-center py-8">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
+          <div
+            v-else-if="!warranties?.length"
+            class="col-span-full text-center py-8 text-base-content/60"
+          >
+            <p class="text-lg">Belum ada garansi</p>
+          </div>
+          <div
+            v-for="w in warranties"
+            :key="w.id"
+            class="card bg-base-200 hover:bg-base-300 transition-all"
+          >
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex-1">
+                  <h3 class="font-mono text-sm font-bold mb-1">{{ w.warrantyNumber }}</h3>
+                  <NuxtLink :to="`/projects/${w.project?.id}`" class="link link-primary text-xs">
+                    {{ w.project?.projectNumber }}
+                  </NuxtLink>
+                  <p class="text-xs text-base-content/60 mt-1">{{ w.project?.title }}</p>
+                </div>
+                <span class="badge badge-xs sm:badge-sm" :class="getStatusClass(w.status)">
+                  {{ getStatusLabel(w.status) }}
+                </span>
+              </div>
+
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Pelanggan</span>
+                  <span class="text-right">
+                    <div class="font-medium text-xs">{{ w.project?.customer?.name }}</div>
+                    <div class="text-xs text-base-content/60">{{ w.project?.customer?.phone }}</div>
+                  </span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Periode</span>
+                  <div class="text-right text-xs">
+                    <div>{{ formatDate(w.startDate) }}</div>
+                    <div>s/d {{ formatDate(w.endDate) }}</div>
+                    <div class="font-medium mt-1" :class="getTimeLeftClass(w.endDate)">
+                      {{ getTimeLeft(w.endDate) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                  <span class="text-base-content/60">Klaim</span>
+                  <span class="badge badge-ghost badge-sm">{{ w._count?.claims || 0 }}</span>
+                </div>
+              </div>
+
+              <div v-if="w.status === 'ACTIVE'" class="card-actions justify-end mt-3">
+                <button @click="openClaimModal(w)" class="btn btn-warning btn-xs sm:btn-sm w-full">
+                  Ajukan Klaim
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div v-else class="overflow-x-auto">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>No. Garansi</th>
@@ -236,6 +312,10 @@ const { showAlert } = useAlert()
 
 const statusFilter = ref('')
 const page = ref(1)
+// Default to GRID on mobile, LIST on desktop
+const viewMode = ref<'LIST' | 'GRID'>(
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
+)
 
 // Create warranty modal
 const showCreateModal = ref(false)

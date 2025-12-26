@@ -9,22 +9,48 @@
       <header
         class="navbar bg-base-100 border-b border-base-200 sticky top-0 z-40 no-print h-[73px] min-h-[73px]"
       >
+        <!-- Desktop sidebar toggle -->
+        <div class="flex-none hidden lg:block">
+          <button @click="toggleSidebar" class="btn btn-square btn-ghost">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M4 6l16 0" />
+              <path d="M4 12l16 0" />
+              <path d="M4 18l16 0" />
+            </svg>
+          </button>
+        </div>
+
         <!-- Mobile menu button -->
         <div class="flex-none lg:hidden">
           <label for="main-drawer" class="btn btn-square btn-ghost">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-6 w-6"
-              fill="none"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
+              stroke-width="2"
               stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M4 6l16 0" />
+              <path d="M4 12l16 0" />
+              <path d="M4 18l16 0" />
             </svg>
           </label>
         </div>
@@ -42,30 +68,37 @@
               v-if="isDark"
               xmlns="http://www.w3.org/2000/svg"
               class="h-5 w-5"
-              fill="none"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
+              stroke-width="2"
               stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"
               />
             </svg>
             <svg
               v-else
               xmlns="http://www.w3.org/2000/svg"
               class="h-5 w-5"
-              fill="none"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
+              stroke-width="2"
               stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"
               />
             </svg>
           </button>
@@ -116,27 +149,43 @@
     <!-- Sidebar -->
     <aside class="drawer-side z-50">
       <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-      <div class="w-72 min-h-full bg-base-100 flex flex-col">
+      <div
+        :class="[
+          'min-h-full bg-base-100 flex flex-col transition-all duration-300',
+          isCollapsed ? 'w-16' : 'w-48',
+        ]"
+      >
         <!-- Sidebar header -->
-        <div class="p-4 border-b border-base-200 h-[73px] min-h-[73px] flex items-center">
-          <NuxtLink to="/dashboard" class="flex items-center gap-3">
-            <div class="bg-primary text-primary-content rounded-lg p-2">
+        <div
+          class="p-4 border-b border-base-200 h-[73px] min-h-[73px] flex items-center justify-center"
+        >
+          <NuxtLink
+            to="/dashboard"
+            :class="isCollapsed ? 'flex justify-center' : 'flex items-center gap-3'"
+          >
+            <div class="bg-primary text-primary-content rounded-lg p-2 flex-shrink-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-6 w-6"
-                fill="none"
+                width="24"
+                height="24"
                 viewBox="0 0 24 24"
+                stroke-width="2"
                 stroke="currentColor"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M3 12l3 0" />
+                <path d="M12 3l0 3" />
+                <path d="M7.8 7.8l-2.2 -2.2" />
+                <path d="M16.2 7.8l2.2 -2.2" />
+                <path d="M7.8 16.2l-2.2 2.2" />
+                <path d="M12 12l9 3l-4 2l-2 4l-3 -9" />
               </svg>
             </div>
-            <div>
+            <div v-show="!isCollapsed">
               <h1 class="text-lg font-bold text-primary">OCN System</h1>
               <p class="text-xs text-base-content/60">CCTV & Networking</p>
             </div>
@@ -144,113 +193,158 @@
         </div>
 
         <!-- Navigation menu -->
-        <nav class="flex-1 overflow-y-auto p-4">
-          <ul class="menu menu-lg gap-1">
+        <nav class="flex-1 overflow-y-auto p-2">
+          <ul class="menu gap-1" :class="isCollapsed ? 'p-0' : ''">
             <!-- Dashboard -->
             <li>
-              <NuxtLink to="/dashboard" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/dashboard"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Dashboard' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                  />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+                  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
                 </svg>
-                Dashboard
+                <span v-show="!isCollapsed">Dashboard</span>
               </NuxtLink>
             </li>
 
             <!-- Customers -->
             <li v-if="canAccess('customers.view')">
-              <NuxtLink to="/customers" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/customers"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Pelanggan' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
                 </svg>
-                Pelanggan
+                <span v-show="!isCollapsed">Pelanggan</span>
               </NuxtLink>
             </li>
 
             <!-- Quotations -->
             <li v-if="canAccess('quotations.view')">
-              <NuxtLink to="/quotations" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/quotations"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Penawaran' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                   <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"
                   />
+                  <path d="M9 9l1 0" />
+                  <path d="M9 13l6 0" />
+                  <path d="M9 17l6 0" />
                 </svg>
-                Penawaran
+                <span v-show="!isCollapsed">Penawaran</span>
               </NuxtLink>
             </li>
 
             <!-- Projects -->
             <li v-if="canAccess('projects.view.all') || canAccess('projects.view.assigned')">
-              <NuxtLink to="/projects" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/projects"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Proyek' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
+                  <path d="M12 12l8 -4.5" />
+                  <path d="M12 12l0 9" />
+                  <path d="M12 12l-8 -4.5" />
                 </svg>
-                Proyek
+                <span v-show="!isCollapsed">Proyek</span>
               </NuxtLink>
             </li>
 
             <!-- Inventory submenu -->
             <li v-if="canAccess('inventory.view')">
               <details>
-                <summary class="flex items-center gap-3">
+                <summary class="flex items-center gap-3" :title="isCollapsed ? 'Inventori' : ''">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
+                    stroke-width="2"
                     stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M3 21l18 0" />
                     <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4"
                     />
+                    <path d="M5 21l0 -10.15" />
+                    <path d="M19 21l0 -10.15" />
+                    <path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4" />
                   </svg>
-                  Inventori
+                  <span v-show="!isCollapsed">Inventori</span>
                 </summary>
-                <ul>
+                <ul v-show="!isCollapsed">
                   <li>
                     <NuxtLink to="/inventory/products" active-class="active">Produk</NuxtLink>
                   </li>
@@ -261,67 +355,93 @@
 
             <!-- Purchase Orders -->
             <li v-if="canAccess('po.view')">
-              <NuxtLink to="/purchase-orders" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/purchase-orders"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Purchase Order' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                  <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                  <path d="M17 17h-11v-14h-2" />
+                  <path d="M6 5l14 1l-1 7h-13" />
                 </svg>
-                Purchase Order
+                <span v-show="!isCollapsed">Purchase Order</span>
               </NuxtLink>
             </li>
 
             <!-- Suppliers -->
             <li v-if="canAccess('po.view')">
-              <NuxtLink to="/suppliers" class="flex items-center gap-3" active-class="active">
+              <NuxtLink
+                to="/suppliers"
+                class="flex items-center gap-3"
+                active-class="active"
+                :title="isCollapsed ? 'Suppliers' : ''"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
+                  class="h-5 w-5 flex-shrink-0"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
+                  stroke-width="2"
                   stroke="currentColor"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M3 21l18 0" />
+                  <path d="M9 8l1 0" />
+                  <path d="M9 12l1 0" />
+                  <path d="M9 16l1 0" />
+                  <path d="M14 8l1 0" />
+                  <path d="M14 12l1 0" />
+                  <path d="M14 16l1 0" />
+                  <path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" />
                 </svg>
-                Suppliers
+                <span v-show="!isCollapsed">Suppliers</span>
               </NuxtLink>
             </li>
 
             <!-- Finance submenu -->
             <li v-if="canAccess('finance.view.all')">
               <details>
-                <summary class="flex items-center gap-3">
+                <summary class="flex items-center gap-3" :title="isCollapsed ? 'Keuangan' : ''">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
+                    stroke-width="2"
                     stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M16.7 8a3 3 0 0 0 -2.7 -2h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4a3 3 0 0 1 -2.7 -2"
                     />
+                    <path d="M12 3v3m0 12v3" />
                   </svg>
-                  Keuangan
+                  <span v-show="!isCollapsed">Keuangan</span>
                 </summary>
-                <ul>
+                <ul v-show="!isCollapsed">
                   <li>
                     <NuxtLink to="/finance/payments" active-class="active">Pembayaran</NuxtLink>
                   </li>
@@ -336,30 +456,27 @@
             <!-- Maintenance -->
             <li v-if="canAccess('projects.view.all')">
               <details>
-                <summary class="flex items-center gap-3">
+                <summary class="flex items-center gap-3" :title="isCollapsed ? 'Maintenance' : ''">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
+                    stroke-width="2"
                     stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5"
                     />
                   </svg>
-                  Maintenance
+                  <span v-show="!isCollapsed">Maintenance</span>
                 </summary>
-                <ul>
+                <ul v-show="!isCollapsed">
                   <li>
                     <NuxtLink to="/maintenance/warranty" active-class="active">Garansi</NuxtLink>
                   </li>
@@ -370,35 +487,33 @@
               </details>
             </li>
 
-            <div class="divider my-2"></div>
+            <div v-show="!isCollapsed" class="divider my-2"></div>
 
             <!-- Settings -->
             <li v-if="canAccess('settings.view')">
               <details>
-                <summary class="flex items-center gap-3">
+                <summary class="flex items-center gap-3" :title="isCollapsed ? 'Pengaturan' : ''">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
+                    stroke-width="2"
                     stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"
                     />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
+                    <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
                   </svg>
-                  Pengaturan
+                  <span v-show="!isCollapsed">Pengaturan</span>
                 </summary>
-                <ul>
+                <ul v-show="!isCollapsed">
                   <li>
                     <NuxtLink to="/settings/company" active-class="active">Perusahaan</NuxtLink>
                   </li>
@@ -417,32 +532,11 @@
                 </ul>
               </details>
             </li>
-
-            <!-- Users -->
-            <li v-if="canAccess('users.view')">
-              <NuxtLink to="/users" class="flex items-center gap-3" active-class="active">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-                User Management
-              </NuxtLink>
-            </li>
           </ul>
         </nav>
 
         <!-- User info at bottom -->
-        <div v-if="user" class="p-4 border-t border-base-200">
+        <div v-if="user && !isCollapsed" class="p-4 border-t border-base-200">
           <div class="flex items-center gap-3">
             <div class="avatar placeholder">
               <div
@@ -475,7 +569,24 @@
           }"
         >
           <span>{{ alert.message }}</span>
-          <button @click="dismissAlert(alert.id)" class="btn btn-ghost btn-sm btn-circle">✕</button>
+          <button @click="dismissAlert(alert.id)" class="btn btn-ghost btn-sm btn-circle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </TransitionGroup>
     </div>
@@ -487,6 +598,11 @@ const { user, canAccess, logout } = useAuth()
 const { alerts, dismiss: dismissAlert } = useAlert()
 
 const isDark = ref(false)
+const isCollapsed = ref(false)
+
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const userInitials = computed(() => {
   if (!user.value?.name) return '?'

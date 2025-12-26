@@ -13,6 +13,9 @@ export default defineEventHandler(async event => {
       project: {
         status: { in: ['APPROVED', 'ONGOING'] },
       },
+      product: {
+        isService: false, // Exclude services - they don't have physical stock
+      },
     },
     include: {
       project: {

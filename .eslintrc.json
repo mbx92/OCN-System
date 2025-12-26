@@ -23,6 +23,10 @@
     "no-console": "off",
     "prefer-const": "warn",
     "no-unused-vars": "off",
-    "no-undef": "off"
+    "no-undef": "off",
+    "vue/html-self-closing": "off",
+    "vue/singleline-html-element-content-newline": "off",
+    "vue/max-attributes-per-line": "off",
+    "vue/html-indent": "off"
   }
 }

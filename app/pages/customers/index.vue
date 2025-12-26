@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold">Pelanggan</h1>
         <p class="text-base-content/60">Kelola data pelanggan</p>
       </div>
-      <NuxtLink to="/customers/create" class="btn btn-primary">
+      <NuxtLink to="/customers/create" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
@@ -28,7 +28,11 @@
     <!-- Search -->
     <div class="card bg-base-100 shadow">
       <div class="card-body py-4">
-        <div class="flex flex-col sm:flex-row gap-4">
+        <div class="flex flex-row gap-4 items-center">
+          <!-- View Toggle - Left on all screens -->
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
           <div class="form-control flex-1">
             <div class="relative">
               <input
@@ -53,9 +57,6 @@
                 />
               </svg>
             </div>
-          </div>
-          <div class="flex-none">
-            <AppViewToggle v-model="viewMode" />
           </div>
         </div>
       </div>
