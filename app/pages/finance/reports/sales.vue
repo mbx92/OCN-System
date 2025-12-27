@@ -36,15 +36,15 @@ toDate.value = lastDay.toISOString().split('T')[0]
 async function loadSalesReport() {
   loading.value = true
   try {
-    // Load projects
-    const { data: projectsData } = await useFetch('/api/projects', {
+    // Load projects using $fetch for fresh data
+    const projectsData = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
       query: {
         limit: 1000,
       },
     })
 
-    if (projectsData.value) {
-      let allProjects = projectsData.value.data || []
+    if (projectsData) {
+      let allProjects = projectsData.data || []
 
       // Filter by date
       if (fromDate.value || toDate.value) {
@@ -59,15 +59,15 @@ async function loadSalesReport() {
       projects.value = allProjects
     }
 
-    // Load payments
-    const { data: paymentsData } = await useFetch('/api/payments', {
+    // Load payments using $fetch for fresh data
+    const paymentsData = await $fetch<{ data: any[]; meta: any }>('/api/payments', {
       query: {
         limit: 1000,
       },
     })
 
-    if (paymentsData.value) {
-      let allPayments = paymentsData.value.data || []
+    if (paymentsData) {
+      let allPayments = paymentsData.data || []
 
       // Filter by date
       if (fromDate.value || toDate.value) {
@@ -233,7 +233,7 @@ onMounted(() => {
   const today = new Date()
   fromDate.value = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
   toDate.value = today.toISOString().split('T')[0]
-  
+
   loadSalesReport()
 })
 </script>
@@ -280,21 +280,21 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Dari Tanggal</span>
             </label>
-            <input v-model="fromDate" type="date" class="input input-bordered" />
+            <input v-model="fromDate" type="date" class="input input-bordered w-full" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Sampai Tanggal</span>
             </label>
-            <input v-model="toDate" type="date" class="input input-bordered" />
+            <input v-model="toDate" type="date" class="input input-bordered w-full" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Kelompokkan Per</span>
             </label>
-            <select v-model="groupBy" class="select select-bordered">
+            <select v-model="groupBy" class="select select-bordered w-full">
               <option value="day">Hari</option>
               <option value="month">Bulan</option>
               <option value="year">Tahun</option>

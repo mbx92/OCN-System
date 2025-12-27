@@ -232,7 +232,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Kategori</span>
             </label>
-            <select v-model="selectedCategory" class="select select-bordered">
+            <select v-model="selectedCategory" class="select select-bordered w-full">
               <option value="">Semua Kategori</option>
               <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
             </select>
@@ -242,7 +242,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Tipe Produk</span>
             </label>
-            <select v-model="selectedType" class="select select-bordered">
+            <select v-model="selectedType" class="select select-bordered w-full">
               <option value="">Semua Tipe</option>
               <option value="PRODUCT">Produk</option>
               <option value="SERVICE">Jasa</option>
@@ -254,7 +254,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Status Stok</span>
             </label>
-            <select v-model="stockStatus" class="select select-bordered">
+            <select v-model="stockStatus" class="select select-bordered w-full">
               <option value="all">Semua</option>
               <option value="low">Stok Rendah</option>
               <option value="out">Habis</option>

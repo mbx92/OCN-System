@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 
 export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
+  const user = event.context.user // Get current user from session
 
   if (!id) {
     throw createError({
@@ -54,8 +55,10 @@ export default defineEventHandler(async event => {
       })
 
       if (stock) {
-        const newQuantity = stock.quantity - actualUsed
-        const newReserved = stock.reserved - item.quantity
+        const newQuantity = Math.max(0, stock.quantity - actualUsed)
+        // Ensure reserved never goes negative
+        const releasedReserved = Math.min(stock.reserved, item.quantity)
+        const newReserved = Math.max(0, stock.reserved - item.quantity)
         const newAvailable = newQuantity - newReserved
 
         // Update stock with recalculated values
@@ -68,6 +71,20 @@ export default defineEventHandler(async event => {
           },
         })
 
+        // Record RELEASE movement (reserve freed)
+        if (releasedReserved > 0) {
+          await prisma.stockMovement.create({
+            data: {
+              productId: item.productId,
+              stockId: stock.id,
+              type: 'RELEASE',
+              quantity: -releasedReserved,
+              reference: project.projectNumber,
+              notes: `Reserve released: ${item.name}`,
+            },
+          })
+        }
+
         // Record DEDUCT movement
         if (actualUsed > 0) {
           await prisma.stockMovement.create({
@@ -76,8 +93,8 @@ export default defineEventHandler(async event => {
               stockId: stock.id,
               type: 'DEDUCT',
               quantity: -actualUsed,
-              reference: id,
-              notes: `Project completed: ${item.name} (${actualUsed} used)`,
+              reference: project.projectNumber,
+              notes: `Project completed: ${item.name}`,
             },
           })
         }
@@ -90,12 +107,45 @@ export default defineEventHandler(async event => {
               stockId: stock.id,
               type: 'RETURN',
               quantity: item.returnedQty,
-              reference: id,
-              notes: `Project completed: ${item.name} (${item.returnedQty} returned)`,
+              reference: project.projectNumber,
+              notes: `Returned: ${item.name}`,
             },
           })
         }
       }
+    }
+  }
+
+  // Sync ProjectExpenses to main Expense table
+  const projectExpenses = await prisma.projectExpense.findMany({
+    where: { projectId: id },
+  })
+
+  // Create Expense entries for each ProjectExpense (type: PROJECT)
+  for (const expense of projectExpenses) {
+    // Check if already synced (by checking description + projectId + date)
+    const existing = await prisma.expense.findFirst({
+      where: {
+        projectId: id,
+        type: 'PROJECT',
+        description: expense.description,
+        date: expense.date,
+      },
+    })
+
+    if (!existing) {
+      await prisma.expense.create({
+        data: {
+          type: 'PROJECT',
+          category: expense.category,
+          description: expense.description,
+          amount: expense.amount,
+          receipt: expense.receipt,
+          date: expense.date,
+          projectId: id,
+          createdBy: user?.id || project.customerId, // Use logged-in user, fallback to customerId
+        },
+      })
     }
   }
 

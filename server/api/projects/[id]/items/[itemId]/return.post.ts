@@ -55,13 +55,19 @@ export default defineEventHandler(async event => {
     })
   }
 
-  // Update item returnedQty
+  // Calculate new totals based on actual used qty
+  const newReturnedQty = (item.returnedQty || 0) + returnQty
+  const actualUsedQty = item.quantity - newReturnedQty
+  const newTotalPrice = actualUsedQty * Number(item.price)
+  const newTotalCost = actualUsedQty * Number(item.cost)
+
+  // Update item returnedQty and recalculate totals
   const updatedItem = await prisma.projectItem.update({
     where: { id: itemId },
     data: {
-      returnedQty: {
-        increment: returnQty,
-      },
+      returnedQty: newReturnedQty,
+      totalPrice: newTotalPrice,
+      totalCost: newTotalCost,
     },
   })
 
@@ -71,6 +77,12 @@ export default defineEventHandler(async event => {
   //
   // If we need to track movements for return, we can add it here:
   if (item.productId) {
+    // Get project for reference
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { projectNumber: true },
+    })
+
     const stock = await prisma.stock.findUnique({
       where: { productId: item.productId },
     })
@@ -83,10 +95,8 @@ export default defineEventHandler(async event => {
           stockId: stock.id,
           type: 'RETURN_PENDING',
           quantity: returnQty,
-          reference: projectId,
-          notes:
-            notes ||
-            `Item marked for return: ${item.name} (${returnQty} pcs) - stock will be adjusted on project completion`,
+          reference: project?.projectNumber || projectId,
+          notes: notes || `Return pending: ${item.name}`,
         },
       })
     }

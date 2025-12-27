@@ -256,7 +256,7 @@ onMounted(() => {
   const today = new Date()
   fromDate.value = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
   toDate.value = today.toISOString().split('T')[0]
-  
+
   loadProfitLossReport()
 })
 </script>
@@ -303,21 +303,21 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Dari Tanggal</span>
             </label>
-            <input type="date" v-model="fromDate" class="input input-bordered" />
+            <input type="date" v-model="fromDate" class="input input-bordered w-full" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Sampai Tanggal</span>
             </label>
-            <input type="date" v-model="toDate" class="input input-bordered" />
+            <input type="date" v-model="toDate" class="input input-bordered w-full" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Grup Berdasarkan</span>
             </label>
-            <select v-model="groupBy" class="select select-bordered">
+            <select v-model="groupBy" class="select select-bordered w-full">
               <option value="month">Bulan</option>
               <option value="quarter">Kuartal</option>
               <option value="year">Tahun</option>

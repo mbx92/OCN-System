@@ -285,19 +285,19 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Dari Tanggal</span>
             </label>
-            <input v-model="fromDate" type="date" class="input input-bordered" />
+            <input v-model="fromDate" type="date" class="input input-bordered w-full" />
           </div>
           <div class="form-control">
             <label class="label">
               <span class="label-text">Sampai Tanggal</span>
             </label>
-            <input v-model="toDate" type="date" class="input input-bordered" />
+            <input v-model="toDate" type="date" class="input input-bordered w-full" />
           </div>
           <div class="form-control">
             <label class="label">
               <span class="label-text">Teknisi</span>
             </label>
-            <select v-model="selectedTechnician" class="select select-bordered">
+            <select v-model="selectedTechnician" class="select select-bordered w-full">
               <option value="">Semua Teknisi</option>
               <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
                 {{ tech.name }}
@@ -308,7 +308,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Group By</span>
             </label>
-            <select v-model="groupBy" class="select select-bordered">
+            <select v-model="groupBy" class="select select-bordered w-full">
               <option value="day">Per Hari</option>
               <option value="month">Per Bulan</option>
               <option value="year">Per Tahun</option>

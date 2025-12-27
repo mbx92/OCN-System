@@ -1010,6 +1010,52 @@ async function main() {
   })
   console.log('✅ Assigned 2 technicians to project')
 
+  // Reserve stock for project items
+  const projectItems = await prisma.projectItem.findMany({
+    where: { projectId: project1.id, productId: { not: null } },
+    include: { product: { include: { stock: true } } },
+  })
+
+  for (const item of projectItems) {
+    if (item.productId && item.product && item.product.type !== 'SERVICE') {
+      // Update or create stock
+      let stock = item.product.stock
+      if (stock) {
+        const newReserved = stock.reserved + item.quantity
+        const newAvailable = stock.quantity - newReserved
+        stock = await prisma.stock.update({
+          where: { productId: item.productId },
+          data: {
+            reserved: newReserved,
+            available: newAvailable,
+          },
+        })
+      } else {
+        stock = await prisma.stock.create({
+          data: {
+            productId: item.productId,
+            quantity: 0,
+            reserved: item.quantity,
+            available: -item.quantity,
+          },
+        })
+      }
+
+      // Create stock movement record
+      await prisma.stockMovement.create({
+        data: {
+          productId: item.productId,
+          stockId: stock.id,
+          type: 'RESERVE',
+          quantity: -item.quantity,
+          reference: project1.projectNumber,
+          notes: `Reserved: ${item.name}`,
+        },
+      })
+    }
+  }
+  console.log('✅ Reserved stock for project items')
+
   // Add expenses to project
   await prisma.projectExpense.createMany({
     data: [

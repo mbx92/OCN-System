@@ -268,19 +268,13 @@
         <form @submit.prevent="savePayment">
           <div class="space-y-4">
             <!-- Project Selection (PROJECT mode only) -->
-            <div v-if="modalMode === 'PROJECT'">
-              <label class="block text-sm font-medium mb-2">Proyek *</label>
-              <select
+            <div v-if="modalMode === 'PROJECT'" class="form-control">
+              <label class="label"><span class="label-text">Proyek *</span></label>
+              <AppProjectSelect
                 v-model="form.projectId"
-                @change="onProjectSelect"
-                class="select select-bordered w-full"
-                required
-              >
-                <option value="">Pilih Proyek</option>
-                <option v-for="p in projects" :key="p.id" :value="p.id">
-                  {{ p.projectNumber }} - {{ p.title }} ({{ formatCurrency(getProjectTotal(p)) }})
-                </option>
-              </select>
+                placeholder="Cari proyek..."
+                @select="onProjectSelectFromComponent"
+              />
               <p v-if="selectedProject" class="text-sm text-base-content/60 mt-1">
                 Total Harga Jual:
                 <span class="font-mono font-bold text-success">
@@ -434,6 +428,12 @@ const onProjectSelect = () => {
   if (selectedProject.value) {
     form.amount = getProjectTotal(selectedProject.value)
   }
+}
+
+// Handler for AppProjectSelect component
+const onProjectSelectFromComponent = (project: any) => {
+  form.projectId = project.id
+  form.amount = getProjectTotal(project)
 }
 
 const getTypeLabel = (type: string) => {

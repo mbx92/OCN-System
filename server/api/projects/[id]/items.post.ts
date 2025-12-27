@@ -56,6 +56,12 @@ export default defineEventHandler(async event => {
     cost = 0
   }
 
+  // Get project to get projectNumber for reference
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { projectNumber: true },
+  })
+
   const item = await prisma.projectItem.create({
     data: {
       projectId: id,
@@ -107,9 +113,9 @@ export default defineEventHandler(async event => {
           productId,
           stockId: stock.id,
           type: 'RESERVE',
-          quantity: quantity,
-          reference: id,
-          notes: `Reserved for project item: ${name}`,
+          quantity: -quantity,
+          reference: project?.projectNumber || id,
+          notes: `Reserved: ${name}`,
         },
       })
     }

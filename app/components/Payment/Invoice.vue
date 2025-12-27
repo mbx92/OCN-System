@@ -66,7 +66,7 @@
       <thead>
         <tr class="bg-gray-100 border-y border-gray-400">
           <th class="py-2 px-1 text-left w-8">No.</th>
-          <th class="py-2 px-1 text-left w-16">Kode Item</th>
+          <th class="py-2 px-1 text-left" style="min-width: 80px; max-width: 100px">Kode Item</th>
           <th class="py-2 px-1 text-left">Nama Item</th>
           <th class="py-2 px-1 text-center w-20">Jml</th>
           <th class="py-2 px-1 text-left w-16">Satuan</th>
@@ -78,7 +78,7 @@
       <tbody>
         <tr v-for="(item, idx) in items" :key="item.id" class="border-b border-gray-200">
           <td class="py-1 px-1">{{ idx + 1 }}</td>
-          <td class="py-1 px-1 font-mono">{{ item.product?.sku || '-' }}</td>
+          <td class="py-1 px-1 font-mono text-[10px] break-all">{{ item.product?.sku || '-' }}</td>
           <td class="py-1 px-1">{{ item.name }}</td>
           <td class="py-1 px-1 text-center">{{ item.quantity }}</td>
           <td class="py-1 px-1">{{ item.unit }}</td>

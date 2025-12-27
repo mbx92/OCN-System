@@ -66,7 +66,8 @@
           <div
             v-for="item in filteredStocks"
             :key="item.id"
-            class="card bg-base-200 hover:bg-base-300 transition-all"
+            @click="openMovementsModal(item)"
+            class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
           >
             <div class="card-body p-4">
               <div class="flex justify-between items-start mb-3">
@@ -165,6 +166,11 @@
                   <span class="font-mono">{{ item.product.minStock || 5 }}</span>
                 </div>
               </div>
+
+              <!-- Click hint -->
+              <div class="text-xs text-base-content/40 mt-2 text-center">
+                Klik untuk lihat riwayat
+              </div>
             </div>
           </div>
         </div>
@@ -180,10 +186,16 @@
                 <th class="text-right">Available</th>
                 <th class="text-right">Min. Stok</th>
                 <th>Status</th>
+                <th class="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in filteredStocks" :key="item.id" class="hover">
+              <tr
+                v-for="item in filteredStocks"
+                :key="item.id"
+                class="hover cursor-pointer"
+                @click="openMovementsModal(item)"
+              >
                 <td>
                   <div class="font-bold">{{ item.product.name }}</div>
                   <div class="text-xs text-base-content/60">{{ item.product.sku }}</div>
@@ -197,6 +209,19 @@
                     {{ getStatusLabel(item) }}
                   </span>
                 </td>
+                <td class="text-center">
+                  <button class="btn btn-ghost btn-xs" @click.stop="openMovementsModal(item)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    Riwayat
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -208,16 +233,99 @@
         </div>
       </div>
     </div>
+
+    <!-- Stock Movements Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showMovementsModal }">
+      <div class="modal-box max-w-3xl">
+        <h3 class="font-bold text-lg mb-2">Riwayat Pergerakan Stok</h3>
+        <p v-if="selectedItem" class="text-sm text-base-content/60 mb-4">
+          {{ selectedItem.product.name }} ({{ selectedItem.product.sku }})
+        </p>
+
+        <div v-if="loadingMovements" class="text-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+
+        <div v-else-if="!movements?.length" class="text-center py-8 text-base-content/60">
+          <svg
+            class="w-12 h-12 mx-auto mb-2 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <p>Belum ada riwayat pergerakan stok</p>
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Tipe</th>
+                <th class="text-right">Qty</th>
+                <th>Referensi</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="mov in movements" :key="mov.id">
+                <td class="text-sm">{{ formatDate(mov.createdAt) }}</td>
+                <td>
+                  <span class="badge badge-sm" :class="getMovementTypeClass(mov.type)">
+                    {{ getMovementTypeLabel(mov.type) }}
+                  </span>
+                </td>
+                <td
+                  class="text-right font-mono"
+                  :class="mov.quantity > 0 ? 'text-success' : 'text-error'"
+                >
+                  {{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}
+                </td>
+                <td class="text-sm">
+                  <span v-if="mov.reference" class="font-mono text-xs">{{ mov.reference }}</span>
+                  <span v-else class="text-base-content/40">-</span>
+                </td>
+                <td class="text-sm text-base-content/60 max-w-xs truncate">
+                  {{ mov.notes || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn" @click="showMovementsModal = false">Tutup</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showMovementsModal = false">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+const { formatDate } = useFormatter()
+
 const page = ref(1)
 // Default to GRID on mobile, LIST on desktop
 const viewMode = ref<'LIST' | 'GRID'>(
   typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
 )
 const search = ref('')
+
+// Modal state
+const showMovementsModal = ref(false)
+const selectedItem = ref<any>(null)
+const movements = ref<any[]>([])
+const loadingMovements = ref(false)
 
 const { data: stockData, pending } = await useFetch('/api/inventory/stock', {
   query: { page, limit: 10 },
@@ -259,5 +367,62 @@ const getStatusLabel = (item: any) => {
   if (item.available <= 0) return 'Habis'
   if (item.available <= (item.product.minStock || 5)) return 'Rendah'
   return 'OK'
+}
+
+// Movement type helpers
+const getMovementTypeClass = (type: string) => {
+  switch (type) {
+    case 'IN':
+    case 'PURCHASE':
+      return 'badge-success'
+    case 'OUT':
+    case 'DEDUCT':
+      return 'badge-error'
+    case 'RESERVE':
+      return 'badge-warning'
+    case 'RELEASE':
+      return 'badge-info'
+    case 'RETURN':
+    case 'RETURN_PENDING':
+      return 'badge-info'
+    case 'ADJUSTMENT':
+      return 'badge-ghost'
+    default:
+      return 'badge-ghost'
+  }
+}
+
+const getMovementTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    IN: 'Masuk',
+    OUT: 'Keluar',
+    PURCHASE: 'Pembelian',
+    DEDUCT: 'Pemakaian',
+    RESERVE: 'Reserve',
+    RELEASE: 'Lepas Reserve',
+    RETURN: 'Retur',
+    RETURN_PENDING: 'Retur (Pending)',
+    ADJUSTMENT: 'Penyesuaian',
+  }
+  return labels[type] || type
+}
+
+// Open movements modal
+async function openMovementsModal(item: any) {
+  selectedItem.value = item
+  showMovementsModal.value = true
+  loadingMovements.value = true
+  movements.value = []
+
+  try {
+    const response = await $fetch<{ data: any[] }>('/api/inventory/movements', {
+      query: { productId: item.product.id, limit: 50 },
+    })
+    movements.value = response?.data || []
+  } catch (error) {
+    console.error('Error loading movements:', error)
+  } finally {
+    loadingMovements.value = false
+  }
 }
 </script>

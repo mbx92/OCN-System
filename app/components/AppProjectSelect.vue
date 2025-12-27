@@ -16,7 +16,7 @@
           <span class="loading loading-spinner loading-xs text-base-content/50"></span>
         </div>
         <div
-          v-else-if="selectedProduct"
+          v-else-if="selectedProject"
           class="absolute right-3 top-3 cursor-pointer"
           @click="clearSelection"
         >
@@ -37,20 +37,29 @@
     </div>
     <ul
       v-if="isOpen && (results.length > 0 || loading)"
-      class="absolute z-1 menu p-2 shadow bg-base-100 rounded-box w-full max-h-60 overflow-y-auto flex-nowrap mt-1 border border-base-200"
+      class="absolute z-50 menu p-2 shadow bg-base-100 rounded-box w-full max-h-60 overflow-y-auto flex-nowrap mt-1 border border-base-200"
       @mousedown.prevent
     >
-      <li v-for="product in results" :key="product.id">
-        <a @click="selectProduct(product)" class="flex flex-col items-start gap-0 py-2">
+      <li v-for="project in results" :key="project.id">
+        <a @click="selectProject(project)" class="flex flex-col items-start gap-0 py-2">
           <div class="flex justify-between w-full font-semibold">
-            <span>{{ product.name }}</span>
-            <span class="text-xs badge badge-ghost">
-              {{ formatCurrency(product.sellingPrice) }}
+            <span class="font-mono text-primary">{{ project.projectNumber }}</span>
+            <span
+              class="badge badge-xs"
+              :class="{
+                'badge-warning': project.status === 'ONGOING',
+                'badge-success': project.status === 'COMPLETED',
+                'badge-info': project.status === 'APPROVED',
+                'badge-ghost': project.status === 'DRAFT',
+              }"
+            >
+              {{ project.status }}
             </span>
           </div>
+          <div class="text-sm truncate w-full">{{ project.title }}</div>
           <div class="flex justify-between w-full text-xs text-base-content/60">
-            <span>SKU: {{ product.sku }}</span>
-            <span>Stok: {{ product.stock || 0 }} {{ product.unit }}</span>
+            <span>{{ project.customer?.name || '-' }}</span>
+            <span class="font-mono">{{ formatCurrency(getProjectTotal(project)) }}</span>
           </div>
         </a>
       </li>
@@ -58,7 +67,7 @@
         v-if="results.length === 0 && !loading && searchQuery"
         class="px-4 py-2 text-sm text-base-content/60 text-center"
       >
-        Produk tidak ditemukan
+        Proyek tidak ditemukan
       </li>
     </ul>
   </div>
@@ -74,7 +83,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'select', product: any): void
+  (e: 'select', project: any): void
   (e: 'clear'): void
 }>()
 
@@ -84,7 +93,7 @@ const searchQuery = ref(props.modelValue || '')
 const isOpen = ref(false)
 const loading = ref(false)
 const results = ref<any[]>([])
-const selectedProduct = ref<any>(null)
+const selectedProject = ref<any>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
 
 // Watch props to update internal state if changed externally
@@ -97,16 +106,20 @@ watch(
   }
 )
 
-const searchProducts = async (query: string) => {
-  if (!query || query.length < 2) {
-    results.value = []
-    return
+// Calculate project total from items (selling price)
+const getProjectTotal = (project: any): number => {
+  if (!project?.items?.length) {
+    // Fallback to totalAmount if items not loaded
+    return parseFloat(project?.totalAmount || project?.budget || 0)
   }
+  return project.items.reduce((sum: number, item: any) => sum + parseFloat(item.totalPrice || 0), 0)
+}
 
+const searchProjects = async (query: string) => {
   loading.value = true
   try {
-    const response = await $fetch<{ data: any[]; meta: any }>('/api/products', {
-      params: { search: query, limit: 50 },
+    const response = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
+      params: { search: query, limit: 20 },
     })
     results.value = response?.data || []
   } catch (err) {
@@ -117,22 +130,39 @@ const searchProducts = async (query: string) => {
   }
 }
 
+const loadAllProjects = async () => {
+  loading.value = true
+  try {
+    const response = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
+      params: { limit: 50 },
+    })
+    results.value = response?.data || []
+  } catch (err) {
+    console.error('Load error:', err)
+    results.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
 const debouncedSearch = useDebounceFn((query: string) => {
-  searchProducts(query)
+  if (query && query.length >= 2) {
+    searchProjects(query)
+  } else if (!query) {
+    loadAllProjects()
+  }
 }, 300)
 
 const onInput = () => {
   isOpen.value = true
-  selectedProduct.value = null // Reset selection on manual edit
+  selectedProject.value = null
   emit('update:modelValue', searchQuery.value)
   debouncedSearch(searchQuery.value)
 }
 
 const onFocus = () => {
-  if (searchQuery.value) {
-    isOpen.value = true
-    searchProducts(searchQuery.value)
-  }
+  isOpen.value = true
+  loadAllProjects()
 }
 
 const onBlur = () => {
@@ -142,17 +172,17 @@ const onBlur = () => {
   }, 200)
 }
 
-const selectProduct = (product: any) => {
-  selectedProduct.value = product
-  searchQuery.value = product.name
+const selectProject = (project: any) => {
+  selectedProject.value = project
+  searchQuery.value = `${project.projectNumber} - ${project.title}`
   isOpen.value = false
-  emit('update:modelValue', product.name)
-  emit('select', product)
+  emit('update:modelValue', project.id)
+  emit('select', project)
 }
 
 const clearSelection = () => {
   searchQuery.value = ''
-  selectedProduct.value = null
+  selectedProject.value = null
   results.value = []
   emit('update:modelValue', '')
   emit('clear')

@@ -351,7 +351,8 @@ onMounted(() => {
         <div
           v-for="asset in assets"
           :key="asset.id"
-          class="card bg-base-100 shadow hover:shadow-md transition-shadow"
+          @click="navigateTo(`/finance/assets/${asset.id}`)"
+          class="card bg-base-100 shadow hover:shadow-md transition-shadow cursor-pointer"
         >
           <div class="card-body p-4">
             <div class="flex justify-between items-start mb-2">
@@ -437,10 +438,29 @@ onMounted(() => {
                     Tidak ada data asset
                   </td>
                 </tr>
-                <tr v-for="asset in assets" :key="asset.id">
-                  <td class="font-mono text-sm">{{ asset.assetNumber }}</td>
+                <tr
+                  v-for="asset in assets"
+                  :key="asset.id"
+                  class="hover cursor-pointer"
+                  @click="navigateTo(`/finance/assets/${asset.id}`)"
+                >
+                  <td class="font-mono text-sm">
+                    <NuxtLink
+                      :to="`/finance/assets/${asset.id}`"
+                      class="link link-primary"
+                      @click.stop
+                    >
+                      {{ asset.assetNumber }}
+                    </NuxtLink>
+                  </td>
                   <td>
-                    <div class="font-medium">{{ asset.name }}</div>
+                    <NuxtLink
+                      :to="`/finance/assets/${asset.id}`"
+                      class="link link-hover"
+                      @click.stop
+                    >
+                      <div class="font-medium">{{ asset.name }}</div>
+                    </NuxtLink>
                     <div v-if="asset.serialNumber" class="text-xs text-base-content/60">
                       SN: {{ asset.serialNumber }}
                     </div>
@@ -513,174 +533,174 @@ onMounted(() => {
     <!-- Modal -->
     <div v-if="showModal" class="modal modal-open">
       <div class="modal-box max-w-3xl">
-          <h3 class="font-bold text-lg mb-4">
-            {{ editingAsset ? 'Edit Asset' : 'Tambah Asset' }}
-          </h3>
+        <h3 class="font-bold text-lg mb-4">
+          {{ editingAsset ? 'Edit Asset' : 'Tambah Asset' }}
+        </h3>
 
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Name -->
-            <div class="col-span-2 form-control">
-              <label class="label">
-                <span class="label-text">Nama Asset *</span>
-              </label>
-              <input
-                v-model="form.name"
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="Nama asset"
-              />
-            </div>
-
-            <!-- Category -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Kategori *</span>
-              </label>
-              <select v-model="form.category" class="select select-bordered w-full">
-                <option value="">Pilih kategori</option>
-                <option v-for="cat in commonCategories" :key="cat" :value="cat">
-                  {{ cat }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Serial Number -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Serial Number</span>
-              </label>
-              <input
-                v-model="form.serialNumber"
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="SN/Nomor seri"
-              />
-            </div>
-
-            <!-- Purchase Date -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Tanggal Pembelian *</span>
-              </label>
-              <input v-model="form.purchaseDate" type="date" class="input input-bordered w-full" />
-            </div>
-
-            <!-- Purchase Price -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Harga Pembelian *</span>
-              </label>
-              <input
-                v-model="form.purchasePrice"
-                type="number"
-                class="input input-bordered w-full"
-                placeholder="0"
-                step="0.01"
-              />
-            </div>
-
-            <!-- Current Value -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Nilai Sekarang</span>
-              </label>
-              <input
-                v-model="form.currentValue"
-                type="number"
-                class="input input-bordered w-full"
-                placeholder="0"
-                step="0.01"
-              />
-            </div>
-
-            <!-- Depreciation Rate -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Depresiasi/Tahun (%)</span>
-              </label>
-              <input
-                v-model="form.depreciationRate"
-                type="number"
-                class="input input-bordered w-full"
-                placeholder="0"
-                step="0.1"
-                max="100"
-              />
-            </div>
-
-            <!-- Location -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Lokasi</span>
-              </label>
-              <input
-                v-model="form.location"
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="Lokasi penyimpanan"
-              />
-            </div>
-
-            <!-- Status -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Status *</span>
-              </label>
-              <select v-model="form.status" class="select select-bordered w-full">
-                <option v-for="status in assetStatuses" :key="status.value" :value="status.value">
-                  {{ status.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Condition -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Kondisi *</span>
-              </label>
-              <select v-model="form.condition" class="select select-bordered w-full">
-                <option v-for="cond in assetConditions" :key="cond.value" :value="cond.value">
-                  {{ cond.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Description -->
-            <div class="col-span-2 form-control">
-              <label class="label">
-                <span class="label-text">Deskripsi</span>
-              </label>
-              <textarea
-                v-model="form.description"
-                class="textarea textarea-bordered w-full"
-                rows="2"
-                placeholder="Deskripsi asset"
-              ></textarea>
-            </div>
-
-            <!-- Notes -->
-            <div class="col-span-2 form-control">
-              <label class="label">
-                <span class="label-text">Catatan</span>
-              </label>
-              <textarea
-                v-model="form.notes"
-                class="textarea textarea-bordered w-full"
-                rows="2"
-                placeholder="Catatan tambahan"
-              ></textarea>
-            </div>
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Name -->
+          <div class="col-span-2 form-control">
+            <label class="label">
+              <span class="label-text">Nama Asset *</span>
+            </label>
+            <input
+              v-model="form.name"
+              type="text"
+              class="input input-bordered w-full"
+              placeholder="Nama asset"
+            />
           </div>
 
-          <div class="modal-action">
-            <button @click="closeModal" class="btn">Batal</button>
-            <button @click="saveAsset" class="btn btn-primary">
-              {{ editingAsset ? 'Update' : 'Simpan' }}
-            </button>
+          <!-- Category -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Kategori *</span>
+            </label>
+            <select v-model="form.category" class="select select-bordered w-full">
+              <option value="">Pilih kategori</option>
+              <option v-for="cat in commonCategories" :key="cat" :value="cat">
+                {{ cat }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Serial Number -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Serial Number</span>
+            </label>
+            <input
+              v-model="form.serialNumber"
+              type="text"
+              class="input input-bordered w-full"
+              placeholder="SN/Nomor seri"
+            />
+          </div>
+
+          <!-- Purchase Date -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Tanggal Pembelian *</span>
+            </label>
+            <input v-model="form.purchaseDate" type="date" class="input input-bordered w-full" />
+          </div>
+
+          <!-- Purchase Price -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Harga Pembelian *</span>
+            </label>
+            <input
+              v-model="form.purchasePrice"
+              type="number"
+              class="input input-bordered w-full"
+              placeholder="0"
+              step="0.01"
+            />
+          </div>
+
+          <!-- Current Value -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Nilai Sekarang</span>
+            </label>
+            <input
+              v-model="form.currentValue"
+              type="number"
+              class="input input-bordered w-full"
+              placeholder="0"
+              step="0.01"
+            />
+          </div>
+
+          <!-- Depreciation Rate -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Depresiasi/Tahun (%)</span>
+            </label>
+            <input
+              v-model="form.depreciationRate"
+              type="number"
+              class="input input-bordered w-full"
+              placeholder="0"
+              step="0.1"
+              max="100"
+            />
+          </div>
+
+          <!-- Location -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Lokasi</span>
+            </label>
+            <input
+              v-model="form.location"
+              type="text"
+              class="input input-bordered w-full"
+              placeholder="Lokasi penyimpanan"
+            />
+          </div>
+
+          <!-- Status -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Status *</span>
+            </label>
+            <select v-model="form.status" class="select select-bordered w-full">
+              <option v-for="status in assetStatuses" :key="status.value" :value="status.value">
+                {{ status.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Condition -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Kondisi *</span>
+            </label>
+            <select v-model="form.condition" class="select select-bordered w-full">
+              <option v-for="cond in assetConditions" :key="cond.value" :value="cond.value">
+                {{ cond.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="col-span-2 form-control">
+            <label class="label">
+              <span class="label-text">Deskripsi</span>
+            </label>
+            <textarea
+              v-model="form.description"
+              class="textarea textarea-bordered w-full"
+              rows="2"
+              placeholder="Deskripsi asset"
+            ></textarea>
+          </div>
+
+          <!-- Notes -->
+          <div class="col-span-2 form-control">
+            <label class="label">
+              <span class="label-text">Catatan</span>
+            </label>
+            <textarea
+              v-model="form.notes"
+              class="textarea textarea-bordered w-full"
+              rows="2"
+              placeholder="Catatan tambahan"
+            ></textarea>
           </div>
         </div>
-        <div class="modal-backdrop" @click="closeModal"></div>
+
+        <div class="modal-action">
+          <button @click="closeModal" class="btn">Batal</button>
+          <button @click="saveAsset" class="btn btn-primary">
+            {{ editingAsset ? 'Update' : 'Simpan' }}
+          </button>
+        </div>
       </div>
+      <div class="modal-backdrop" @click="closeModal"></div>
+    </div>
 
     <template #fallback>
       <div class="flex justify-center items-center h-96">

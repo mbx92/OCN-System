@@ -101,11 +101,11 @@ export default defineEventHandler(async event => {
       }
     }
 
-    return {
-      productId: item.productId || null,
+    // Build the item data - use connect for product relation if productId exists
+    const itemData: any = {
       name: item.name,
       quantity: item.quantity,
-      unit: item.unit,
+      unit: item.unit || 'pcs',
       price: item.price,
       totalPrice: item.total || item.quantity * item.price,
       cost: cost,
@@ -114,6 +114,13 @@ export default defineEventHandler(async event => {
       needsPo, // Flag for PO
       poStatus: needsPo ? 'PENDING' : 'NONE',
     }
+
+    // Only connect product if productId exists
+    if (item.productId) {
+      itemData.product = { connect: { id: item.productId } }
+    }
+
+    return itemData
   })
 
   // Transaction to ensure atomicity
@@ -163,14 +170,38 @@ export default defineEventHandler(async event => {
             available: newAvailable,
           },
         })
+
+        // Record stock movement for reserve
+        await tx.stockMovement.create({
+          data: {
+            productId: update.productId,
+            stockId: existingStock.id,
+            type: 'RESERVE',
+            quantity: -update.increment,
+            reference: projectNumber,
+            notes: `Reserved for project`,
+          },
+        })
       } else {
         // Create new stock entry
-        await tx.stock.create({
+        const newStock = await tx.stock.create({
           data: {
             productId: update.productId,
             quantity: 0,
             reserved: update.increment,
             available: -update.increment, // No stock yet, so available is negative
+          },
+        })
+
+        // Record stock movement for reserve
+        await tx.stockMovement.create({
+          data: {
+            productId: update.productId,
+            stockId: newStock.id,
+            type: 'RESERVE',
+            quantity: -update.increment,
+            reference: projectNumber,
+            notes: `Reserved for project`,
           },
         })
       }
