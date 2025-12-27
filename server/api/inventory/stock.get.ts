@@ -7,7 +7,7 @@ export default defineEventHandler(async event => {
     prisma.stock.findMany({
       where: {
         product: {
-          isService: false, // Exclude services from stock
+          type: { not: 'SERVICE' }, // Exclude services from stock
         },
       },
       include: {
@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
     prisma.stock.count({
       where: {
         product: {
-          isService: false, // Exclude services from stock count
+          type: { not: 'SERVICE' }, // Exclude services from stock count
         },
       },
     }),

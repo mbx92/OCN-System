@@ -32,14 +32,20 @@
     <div class="card bg-base-100 shadow">
       <div class="card-body">
         <!-- Search & View Toggle -->
-        <div class="flex flex-row gap-4 mb-4">
-          <AppViewToggle v-model="viewMode" />
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Cari produk atau SKU..."
-            class="input input-bordered flex-1"
-          />
+        <div class="flex flex-col lg:flex-row gap-4 mb-4">
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
+          <div class="flex-1">
+            <div class="form-control">
+              <input
+                v-model="search"
+                type="text"
+                placeholder="Cari produk atau SKU..."
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
         </div>
 
         <div v-if="pending" class="text-center py-8">

@@ -16,23 +16,31 @@
             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0"
           >
             <h2 class="card-title text-lg sm:text-xl">Daftar Satuan</h2>
-            <button @click="showAddUnit = true" class="btn btn-primary btn-sm w-full sm:w-auto">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div class="flex gap-2 w-full sm:w-auto">
+              <div class="flex-none">
+                <AppViewToggle v-model="viewMode" />
+              </div>
+              <button
+                @click="showAddUnit = true"
+                class="btn btn-primary btn-sm flex-1 sm:flex-none"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Tambah
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Tambah
+              </button>
+            </div>
           </div>
 
           <!-- Add Unit Form -->
@@ -80,8 +88,51 @@
             </div>
           </div>
 
+          <!-- Units Grid -->
+          <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <div v-if="!units?.length" class="col-span-full text-center text-base-content/60 py-8">
+              Belum ada satuan
+            </div>
+            <div
+              v-for="unit in units"
+              :key="unit.id"
+              class="card bg-base-200 border border-base-300"
+            >
+              <div class="card-body p-4">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h3 class="font-bold text-base">{{ unit.name }}</h3>
+                    <p class="text-sm text-base-content/60 mt-1">{{ unit.symbol }}</p>
+                    <p v-if="unit.description" class="text-xs text-base-content/50 mt-1">
+                      {{ unit.description }}
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span v-if="unit.isBase" class="badge badge-primary badge-sm">Base</span>
+                    <button @click="deleteUnit(unit.id)" class="btn btn-ghost btn-xs text-error">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Units Table -->
-          <div class="overflow-x-auto mt-4">
+          <div v-else class="overflow-x-auto mt-4">
             <table class="table table-sm">
               <thead>
                 <tr>
@@ -292,6 +343,8 @@
 
 <script setup lang="ts">
 const { success, error: showError } = useAlert()
+
+const viewMode = ref<'GRID' | 'LIST'>('GRID')
 
 // Fetch data
 const { data: units, refresh: refreshUnits } = await useFetch('/api/units')

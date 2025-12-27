@@ -2,7 +2,7 @@
   <dialog :class="{ 'modal-open': state.isOpen }" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg" :class="getTitleClass()">{{ state.title }}</h3>
-      <p class="py-4">{{ state.message }}</p>
+      <p class="py-4 whitespace-pre-line">{{ state.message }}</p>
       <div class="modal-action">
         <button class="btn" @click="handleCancel">{{ state.cancelText }}</button>
         <button class="btn" :class="getConfirmButtonClass()" @click="handleConfirm">

@@ -51,34 +51,65 @@
               </select>
             </div>
 
-            <!-- Is Service -->
-            <div class="flex items-center gap-3 pt-6">
-              <input
-                v-model="form.isService"
-                type="checkbox"
-                class="checkbox checkbox-primary"
-                id="isService"
-              />
-              <label for="isService" class="cursor-pointer">
-                <span class="font-medium">Ini adalah Jasa</span>
-                <span class="block text-xs text-base-content/60">Jasa tidak menghitung stok</span>
-              </label>
+            <!-- Type -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-2">Tipe *</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    v-model="form.type"
+                    type="radio"
+                    value="PRODUCT"
+                    class="radio radio-primary"
+                  />
+                  <span>
+                    <div class="font-medium">Produk</div>
+                    <div class="text-xs text-base-content/60">Barang dengan serial number</div>
+                  </span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    v-model="form.type"
+                    type="radio"
+                    value="SERVICE"
+                    class="radio radio-secondary"
+                  />
+                  <span>
+                    <div class="font-medium">Jasa</div>
+                    <div class="text-xs text-base-content/60">Layanan tanpa qty</div>
+                  </span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    v-model="form.type"
+                    type="radio"
+                    value="MATERIAL"
+                    class="radio radio-accent"
+                  />
+                  <span>
+                    <div class="font-medium">Material</div>
+                    <div class="text-xs text-base-content/60">
+                      Bahan habis pakai (kabel, paku, dll)
+                    </div>
+                  </span>
+                </label>
+              </div>
             </div>
 
             <!-- Selling Unit -->
-            <div>
+            <div v-if="form.type !== 'SERVICE'">
               <label class="block text-sm font-medium mb-2">Unit Jual *</label>
               <input
                 v-model="form.unit"
                 type="text"
                 class="input input-bordered w-full"
                 placeholder="pcs, meter, set"
-                required
+                :required="form.type !== 'SERVICE'"
               />
             </div>
 
             <!-- Purchase Unit -->
-            <div>
+            <div v-if="form.type !== 'SERVICE'">
               <label class="block text-sm font-medium mb-2">Unit Beli (opsional)</label>
               <input
                 v-model="form.purchaseUnit"
@@ -90,7 +121,7 @@
             </div>
 
             <!-- Conversion Factor -->
-            <div>
+            <div v-if="form.type !== 'SERVICE'">
               <label class="block text-sm font-medium mb-2">Faktor Konversi</label>
               <input
                 v-model.number="form.conversionFactor"
@@ -128,7 +159,7 @@
             </div>
 
             <!-- Min Stock -->
-            <div>
+            <div v-if="form.type !== 'SERVICE'">
               <label class="block text-sm font-medium mb-2">Stok Minimum</label>
               <input
                 v-model.number="form.minStock"
@@ -170,6 +201,7 @@ const saving = ref(false)
 const form = reactive({
   sku: '',
   name: '',
+  type: 'PRODUCT' as 'PRODUCT' | 'SERVICE' | 'MATERIAL',
   category: '',
   unit: '',
   purchaseUnit: '',
@@ -177,7 +209,6 @@ const form = reactive({
   purchasePrice: 0,
   sellingPrice: 0,
   minStock: 0,
-  isService: false,
 })
 
 // Load product if editing
@@ -187,14 +218,14 @@ if (isEdit.value) {
     const p = data.value as any
     form.sku = p.sku
     form.name = p.name
+    form.type = p.type || 'PRODUCT'
     form.category = p.category
-    form.unit = p.unit
+    form.unit = p.unit || ''
     form.purchaseUnit = p.purchaseUnit || ''
     form.conversionFactor = parseFloat(p.conversionFactor) || 1
     form.purchasePrice = parseFloat(p.purchasePrice) || 0
     form.sellingPrice = parseFloat(p.sellingPrice) || 0
     form.minStock = p.minStock || 0
-    form.isService = p.isService || false
   }
 }
 

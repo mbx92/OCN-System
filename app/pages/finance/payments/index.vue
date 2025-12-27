@@ -7,7 +7,6 @@
         <p class="text-base-content/60">Kelola pembayaran proyek dan POS</p>
       </div>
       <div class="flex gap-2 w-full sm:w-auto">
-        <AppViewToggle v-model="viewMode" class="flex-shrink-0" />
         <button
           @click="openModal('PROJECT')"
           class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
@@ -71,6 +70,51 @@
       >
         POS
       </button>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <!-- View Toggle -->
+          <AppViewToggle v-model="viewMode" />
+
+          <!-- Search -->
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari nomor pembayaran..."
+            class="input input-bordered flex-1"
+          />
+
+          <!-- Project Filter -->
+          <select v-model="projectFilter" class="select select-bordered w-full lg:w-48">
+            <option value="">Semua Project</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">
+              {{ p.projectNumber }} - {{ p.title?.substring(0, 20) }}
+            </option>
+          </select>
+
+          <!-- From Date -->
+          <input v-model="fromDate" type="date" class="input input-bordered w-full lg:w-40" />
+
+          <!-- To Date -->
+          <input v-model="toDate" type="date" class="input input-bordered w-full lg:w-40" />
+
+          <!-- Reset Button -->
+          <button @click="resetFilters" class="btn btn-ghost">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Payments List -->
@@ -324,6 +368,12 @@ const { showAlert } = useAlert()
 
 const modeFilter = ref('')
 const page = ref(1)
+// Filter states
+const searchQuery = ref('')
+const projectFilter = ref('')
+const fromDate = ref('')
+const toDate = ref('')
+
 // Default to GRID on mobile, LIST on desktop
 const viewMode = ref<'LIST' | 'GRID'>(
   typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
@@ -346,8 +396,16 @@ const {
   pending,
   refresh,
 } = await useFetch('/api/payments', {
-  query: { mode: modeFilter, page, limit: 20 },
-  watch: [modeFilter, page],
+  query: {
+    mode: modeFilter,
+    page,
+    limit: 20,
+    search: searchQuery,
+    projectId: projectFilter,
+    fromDate,
+    toDate,
+  },
+  watch: [modeFilter, page, searchQuery, projectFilter, fromDate, toDate],
 })
 
 const payments = computed(() => (paymentsData.value as any)?.data || [])
@@ -422,5 +480,15 @@ const savePayment = async () => {
   } finally {
     saving.value = false
   }
+}
+
+// Reset all filters
+const resetFilters = () => {
+  searchQuery.value = ''
+  projectFilter.value = ''
+  fromDate.value = ''
+  toDate.value = ''
+  modeFilter.value = ''
+  page.value = 1
 }
 </script>

@@ -6,58 +6,59 @@
         <h1 class="text-2xl font-bold">Garansi</h1>
         <p class="text-base-content/60">Kelola garansi proyek yang sudah selesai</p>
       </div>
-      <div class="flex gap-2 w-full sm:w-auto">
-        <AppViewToggle v-model="viewMode" class="flex-shrink-0" />
-        <button
-          @click="openCreateModal"
-          class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
+      <button @click="openCreateModal" class="btn btn-sm sm:btn-md btn-primary w-full sm:w-auto">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <span class="hidden sm:inline">Daftarkan Garansi</span>
-          <span class="sm:hidden">Daftar</span>
-        </button>
-      </div>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        Daftarkan Garansi
+      </button>
     </div>
 
-    <!-- Status Filter -->
-    <div class="tabs tabs-boxed w-fit">
-      <button class="tab" :class="{ 'tab-active': !statusFilter }" @click="statusFilter = ''">
-        Semua
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab-active': statusFilter === 'ACTIVE' }"
-        @click="statusFilter = 'ACTIVE'"
-      >
-        Aktif
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab-active': statusFilter === 'CLAIMED' }"
-        @click="statusFilter = 'CLAIMED'"
-      >
-        Klaim
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab-active': statusFilter === 'EXPIRED' }"
-        @click="statusFilter = 'EXPIRED'"
-      >
-        Expired
-      </button>
+    <!-- Search & Filter -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <!-- View Toggle -->
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
+
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="form-control">
+              <input
+                v-model="search"
+                type="text"
+                placeholder="Cari nomor garansi, proyek, atau customer..."
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="flex flex-col sm:flex-row gap-3 lg:flex-none lg:w-auto">
+            <div class="form-control w-full sm:w-48">
+              <select v-model="statusFilter" class="select select-bordered w-full">
+                <option value="">Semua Status</option>
+                <option value="ACTIVE">Aktif</option>
+                <option value="CLAIMED">Klaim</option>
+                <option value="EXPIRED">Expired</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Warranties List -->
@@ -311,6 +312,7 @@ const { formatDate } = useFormatter()
 const { showAlert } = useAlert()
 
 const statusFilter = ref('')
+const search = ref('')
 const page = ref(1)
 // Default to GRID on mobile, LIST on desktop
 const viewMode = ref<'LIST' | 'GRID'>(
@@ -343,7 +345,23 @@ const {
   watch: [statusFilter, page],
 })
 
-const warranties = computed(() => (warrantiesData.value as any)?.data || [])
+const warranties = computed(() => {
+  let items = (warrantiesData.value as any)?.data || []
+
+  // Filter by search
+  if (search.value) {
+    const searchLower = search.value.toLowerCase()
+    items = items.filter(
+      (w: any) =>
+        w.warrantyNumber?.toLowerCase().includes(searchLower) ||
+        w.project?.projectNumber?.toLowerCase().includes(searchLower) ||
+        w.project?.title?.toLowerCase().includes(searchLower) ||
+        w.project?.customer?.name?.toLowerCase().includes(searchLower)
+    )
+  }
+
+  return items
+})
 
 // Fetch completed projects for dropdown
 const { data: projectsData } = await useFetch('/api/projects', {

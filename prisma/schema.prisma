@@ -25,6 +25,7 @@ model User {
   technicianProfile Technician? @relation("UserTechnician")
   activities        Activity[]
   sessions          Session[]
+  expenses          Expense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -35,6 +36,12 @@ enum UserRole {
   ADMIN // Administrative staff
   TECHNICIAN // Limited access to their projects
   VIEWER // Read-only access
+}
+
+enum ProductType {
+  PRODUCT // Physical products with serial numbers
+  SERVICE // Services without qty tracking
+  MATERIAL // Consumable materials
 }
 
 model Session {
@@ -96,29 +103,32 @@ model Customer {
 // ================================
 
 model Project {
-  id               String              @id @default(cuid())
-  projectNumber    String              @unique // AUTO: PRJ-YYYYMM-XXX
-  customerId       String
-  customer         Customer            @relation(fields: [customerId], references: [id])
-  title            String
-  description      String?
-  status           ProjectStatus       @default(QUOTATION)
-  budget           Decimal             @db.Decimal(15, 2)
-  actualCost       Decimal             @default(0) @db.Decimal(15, 2)
-  finalPrice       Decimal?            @db.Decimal(15, 2)
-  paymentTerms     Json? // {type: 'FULL'|'DP', details: {...}}
-  startDate        DateTime?
-  endDate          DateTime?
-  quotations       Quotation[]
-  purchaseOrders   PurchaseOrder[]
-  expenses         ProjectExpense[]
-  payments         Payment[]
-  items            ProjectItem[]
-  warranties       Warranty[]
-  technicians      ProjectTechnician[]
-  financialSummary FinancialSummary?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id                     String              @id @default(cuid())
+  projectNumber          String              @unique // AUTO: PRJ-YYYYMM-XXX
+  customerId             String
+  customer               Customer            @relation(fields: [customerId], references: [id])
+  title                  String
+  description            String?
+  status                 ProjectStatus       @default(QUOTATION)
+  budget                 Decimal             @db.Decimal(15, 2)
+  actualCost             Decimal             @default(0) @db.Decimal(15, 2)
+  finalPrice             Decimal?            @db.Decimal(15, 2)
+  businessCashPercentage Decimal?            @default(30) @db.Decimal(5, 2)
+  paymentTerms           Json? // {type: 'FULL'|'DP', details: {...}}
+  startDate              DateTime?
+  endDate                DateTime?
+  quotations             Quotation[]
+  purchaseOrders         PurchaseOrder[]
+  expenses               ProjectExpense[]
+  payments               Payment[]
+  items                  ProjectItem[]
+  warranties             Warranty[]
+  technicians            ProjectTechnician[]
+  financialSummary       FinancialSummary?
+  generalExpenses        Expense[]
+  technicianPayments     TechnicianPayment[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 }
 
 enum ProjectStatus {
@@ -132,24 +142,24 @@ enum ProjectStatus {
 }
 
 model ProjectItem {
-  id         String   @id @default(cuid())
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  productId  String?
-  product    Product? @relation(fields: [productId], references: [id])
-  name       String // Product name or custom item
-  quantity   Int
-  unit       String
-  price      Decimal  @db.Decimal(15, 2)
-  totalPrice Decimal  @db.Decimal(15, 2)
-  cost       Decimal  @default(0) @db.Decimal(15, 2) // Purchase price
-  totalCost  Decimal  @default(0) @db.Decimal(15, 2) // Total purchase price
-  type       String // QUOTATION, ACTUAL, ADDITIONAL
-  returnedQty Int      @default(0) // Qty returned to stock
-  needsPo     Boolean  @default(false)
-  poStatus    String   @default("NONE") // NONE, PENDING, ORDERED
+  id                 String              @id @default(cuid())
+  projectId          String
+  project            Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  productId          String?
+  product            Product?            @relation(fields: [productId], references: [id])
+  name               String // Product name or custom item
+  quantity           Int
+  unit               String
+  price              Decimal             @db.Decimal(15, 2)
+  totalPrice         Decimal             @db.Decimal(15, 2)
+  cost               Decimal             @default(0) @db.Decimal(15, 2) // Purchase price
+  totalCost          Decimal             @default(0) @db.Decimal(15, 2) // Total purchase price
+  type               String // QUOTATION, ACTUAL, ADDITIONAL
+  returnedQty        Int                 @default(0) // Qty returned to stock
+  needsPo            Boolean             @default(false)
+  poStatus           String              @default("NONE") // NONE, PENDING, ORDERED
   purchaseOrderItems PurchaseOrderItem[]
-  addedAt     DateTime @default(now())
+  addedAt            DateTime            @default(now())
 }
 
 model ProjectExpense {
@@ -176,7 +186,7 @@ model Quotation {
   customerId  String
   customer    Customer? @relation(fields: [customerId], references: [id])
   title       String?
-  items       Json      // Array of items with price
+  items       Json // Array of items with price
   totalAmount Decimal   @db.Decimal(15, 2)
   status      String    @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
   validUntil  DateTime
@@ -190,33 +200,35 @@ model Quotation {
 // ================================
 
 model Product {
-  id               String            @id @default(cuid())
-  sku              String            @unique
-  name             String
-  category         String // CCTV, NETWORK, ACCESSORIES, SERVICE
-  unit             String // selling unit: pcs, meter, set, etc
-  purchaseUnit     String? // buying unit: roll, box, etc (if different from selling)
-  conversionFactor Decimal           @default(1) @db.Decimal(15, 4) // 1 purchaseUnit = conversionFactor * unit
-  purchasePrice    Decimal           @default(0) @db.Decimal(15, 2)
-  sellingPrice     Decimal           @default(0) @db.Decimal(15, 2)
-  minStock         Int               @default(0)
-  isService        Boolean           @default(false) // Service items don't track stock
+  id                 String              @id @default(cuid())
+  sku                String              @unique
+  name               String
+  type               ProductType         @default(PRODUCT) // PRODUCT, SERVICE, MATERIAL
+  category           String // CCTV, NETWORK, ACCESSORIES, SERVICE
+  unit               String? // selling unit: pcs, meter, set, etc (nullable for SERVICE)
+  purchaseUnit       String? // buying unit: roll, box, etc (if different from selling)
+  conversionFactor   Decimal             @default(1) @db.Decimal(15, 4) // 1 purchaseUnit = conversionFactor * unit
+  purchasePrice      Decimal             @default(0) @db.Decimal(15, 2)
+  sellingPrice       Decimal             @default(0) @db.Decimal(15, 2)
+  minStock           Int                 @default(0)
+  isService          Boolean             @default(false) // Deprecated: use type instead
+  serialNumbers      Json?               @default("[]") // For products with serial number tracking
   stock              Stock?
   suppliers          SupplierProduct[]
   projectItems       ProjectItem[]
   stockMovements     StockMovement[]
   purchaseOrderItems PurchaseOrderItem[] @relation("POItemProduct")
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 }
 
 model Stock {
-  id          String   @id @default(cuid())
-  productId   String   @unique
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity    Int      @default(0)
-  reserved    Int      @default(0) // Reserved for projects
-  available   Int      @default(0) // quantity - reserved
+  id          String          @id @default(cuid())
+  productId   String          @unique
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int             @default(0)
+  reserved    Int             @default(0) // Reserved for projects
+  available   Int             @default(0) // quantity - reserved
   lastUpdated DateTime        @updatedAt
   movements   StockMovement[]
 }
@@ -284,18 +296,18 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String         @id @default(cuid())
+  id              String        @id @default(cuid())
   purchaseOrderId String
-  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   projectItemId   String?
-  projectItem     ProjectItem?   @relation(fields: [projectItemId], references: [id])
+  projectItem     ProjectItem?  @relation(fields: [projectItemId], references: [id])
   productId       String?
-  product         Product?       @relation("POItemProduct", fields: [productId], references: [id])
+  product         Product?      @relation("POItemProduct", fields: [productId], references: [id])
   name            String
   quantity        Int
-  price           Decimal        @db.Decimal(15, 2)
-  total           Decimal        @db.Decimal(15, 2)
-  receivedQty     Int            @default(0)
+  price           Decimal       @db.Decimal(15, 2)
+  total           Decimal       @db.Decimal(15, 2)
+  receivedQty     Int           @default(0)
 }
 
 // ================================
@@ -313,6 +325,7 @@ model Technician {
   feePercentage Decimal?            @db.Decimal(5, 2) // Default percentage
   minFee        Decimal             @default(150000) @db.Decimal(15, 2) // Minimum fee for small projects
   assignments   ProjectTechnician[]
+  payments      TechnicianPayment[]
 
   // Dashboard access
   canViewProjects Boolean @default(true)
@@ -393,18 +406,18 @@ enum PaymentType {
 // ================================
 
 model Warranty {
-  id              String         @id @default(cuid())
-  projectId       String
-  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  warrantyNumber  String         @unique // WAR-YYYYMM-XXX
-  startDate       DateTime // Usually project completion date
-  endDate         DateTime // Based on warranty period
-  warrantyMonths  Int            @default(12) // Default 12 months
-  status          WarrantyStatus @default(ACTIVE)
-  notes           String?
-  claims          WarrantyClaim[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String          @id @default(cuid())
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  warrantyNumber String          @unique // WAR-YYYYMM-XXX
+  startDate      DateTime // Usually project completion date
+  endDate        DateTime // Based on warranty period
+  warrantyMonths Int             @default(12) // Default 12 months
+  status         WarrantyStatus  @default(ACTIVE)
+  notes          String?
+  claims         WarrantyClaim[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 enum WarrantyStatus {
@@ -415,17 +428,17 @@ enum WarrantyStatus {
 }
 
 model WarrantyClaim {
-  id            String            @id @default(cuid())
-  warrantyId    String
-  warranty      Warranty          @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
-  claimNumber   String            @unique // CLM-YYYYMMDD-XXX
-  description   String
-  reportedDate  DateTime          @default(now())
-  resolvedDate  DateTime?
-  resolution    String?
-  status        WarrantyClaimStatus @default(PENDING)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id           String              @id @default(cuid())
+  warrantyId   String
+  warranty     Warranty            @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+  claimNumber  String              @unique // CLM-YYYYMMDD-XXX
+  description  String
+  reportedDate DateTime            @default(now())
+  resolvedDate DateTime?
+  resolution   String?
+  status       WarrantyClaimStatus @default(PENDING)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 enum WarrantyClaimStatus {
@@ -433,6 +446,91 @@ enum WarrantyClaimStatus {
   IN_PROGRESS
   RESOLVED
   REJECTED
+}
+
+// ================================
+// EXPENSES & ASSET MANAGEMENT
+// ================================
+
+model Expense {
+  id            String      @id @default(cuid())
+  type          ExpenseType @default(OPERATIONAL)
+  category      String // TRANSPORT, MEAL, TOOL, OPERATIONAL, SALARY, etc
+  description   String
+  amount        Decimal     @db.Decimal(15, 2)
+  receipt       String? // Path to receipt image
+  date          DateTime
+  projectId     String? // Optional: link to project
+  project       Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy     String
+  createdByUser User        @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+enum ExpenseType {
+  PROJECT // Expenses from project (auto from ProjectExpense)
+  OPERATIONAL // Manual operational expenses
+  SALARY // Technician salary/fee payments
+  ASSET // Asset purchase
+}
+
+model Asset {
+  id               String         @id @default(cuid())
+  assetNumber      String         @unique // AUTO: AST-YYYYMM-XXX
+  name             String
+  category         String // EQUIPMENT, VEHICLE, ELECTRONICS, FURNITURE, etc
+  description      String?
+  purchaseDate     DateTime
+  purchasePrice    Decimal        @db.Decimal(15, 2)
+  currentValue     Decimal?       @db.Decimal(15, 2)
+  serialNumber     String?
+  location         String? // Where the asset is stored/used
+  condition        AssetCondition @default(GOOD)
+  status           AssetStatus    @default(ACTIVE)
+  depreciationRate Decimal?       @db.Decimal(5, 2) // Percentage per year
+  notes            String?
+  photo            String? // Path to photo
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+enum AssetCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+}
+
+enum AssetStatus {
+  ACTIVE // In use
+  IDLE // Not currently in use
+  MAINTENANCE // Under maintenance
+  DISPOSED // Sold or discarded
+}
+
+model TechnicianPayment {
+  id            String        @id @default(cuid())
+  paymentNumber String        @unique // AUTO: TP-YYYYMM-XXX
+  technicianId  String
+  technician    Technician    @relation(fields: [technicianId], references: [id])
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  period        String // YYYY-MM or project based
+  amount        Decimal       @db.Decimal(15, 2)
+  description   String? // e.g., "Fee for Project PRJ-2025-001"
+  status        PaymentStatus @default(PENDING)
+  paidDate      DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
 }
 
 // ================================

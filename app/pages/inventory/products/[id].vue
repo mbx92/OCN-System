@@ -20,7 +20,7 @@
     </button>
 
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold">{{ isEdit ? 'Edit Produk' : 'Tambah Produk' }}</h1>
+      <h1 class="text-2xl font-bold">Edit Produk</h1>
     </div>
 
     <div class="card bg-base-100 shadow">
@@ -151,7 +151,7 @@
             </button>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="loading loading-spinner"></span>
-              {{ isEdit ? 'Update' : 'Simpan' }}
+              Update
             </button>
           </div>
         </form>
@@ -164,7 +164,6 @@
 const route = useRoute()
 const { showAlert } = useAlert()
 
-const isEdit = computed(() => !!route.params.id)
 const saving = ref(false)
 
 const form = reactive({
@@ -180,40 +179,30 @@ const form = reactive({
   isService: false,
 })
 
-// Load product if editing
-if (isEdit.value) {
-  const { data } = await useFetch(`/api/products/${route.params.id}`)
-  if (data.value) {
-    const p = data.value as any
-    form.sku = p.sku
-    form.name = p.name
-    form.category = p.category
-    form.unit = p.unit
-    form.purchaseUnit = p.purchaseUnit || ''
-    form.conversionFactor = parseFloat(p.conversionFactor) || 1
-    form.purchasePrice = parseFloat(p.purchasePrice) || 0
-    form.sellingPrice = parseFloat(p.sellingPrice) || 0
-    form.minStock = p.minStock || 0
-    form.isService = p.isService || false
-  }
+// Load product
+const { data } = await useFetch(`/api/products/${route.params.id}`)
+if (data.value) {
+  const p = data.value as any
+  form.sku = p.sku
+  form.name = p.name
+  form.category = p.category
+  form.unit = p.unit
+  form.purchaseUnit = p.purchaseUnit || ''
+  form.conversionFactor = parseFloat(p.conversionFactor) || 1
+  form.purchasePrice = parseFloat(p.purchasePrice) || 0
+  form.sellingPrice = parseFloat(p.sellingPrice) || 0
+  form.minStock = p.minStock || 0
+  form.isService = p.isService || false
 }
 
 const saveProduct = async () => {
   saving.value = true
   try {
-    if (isEdit.value) {
-      await $fetch(`/api/products/${route.params.id}`, {
-        method: 'PUT',
-        body: form,
-      })
-      showAlert('Produk berhasil diupdate!', 'success')
-    } else {
-      await $fetch('/api/products', {
-        method: 'POST',
-        body: form,
-      })
-      showAlert('Produk berhasil ditambahkan!', 'success')
-    }
+    await $fetch(`/api/products/${route.params.id}`, {
+      method: 'PUT',
+      body: form,
+    })
+    showAlert('Produk berhasil diupdate!', 'success')
     navigateTo('/inventory/products')
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal menyimpan produk', 'error')

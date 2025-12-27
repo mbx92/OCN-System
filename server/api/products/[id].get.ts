@@ -27,5 +27,9 @@ export default defineEventHandler(async event => {
     })
   }
 
-  return product
+  // Transform stock object to number
+  return {
+    ...product,
+    stock: product.stock?.available || 0,
+  }
 })

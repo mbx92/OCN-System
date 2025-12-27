@@ -25,37 +25,25 @@
       </NuxtLink>
     </div>
 
-    <!-- Search -->
+    <!-- Search & Filter -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body py-4">
-        <div class="flex flex-row gap-4 items-center">
-          <!-- View Toggle - Left on all screens -->
+      <div class="card-body">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <!-- View Toggle -->
           <div class="flex-none">
             <AppViewToggle v-model="viewMode" />
           </div>
-          <div class="form-control flex-1">
-            <div class="relative">
+
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="form-control">
               <input
                 v-model="search"
                 type="text"
                 placeholder="Cari nama, perusahaan, telepon..."
-                class="input input-bordered w-full pl-10"
+                class="input input-bordered w-full"
                 @input="debouncedSearch"
               />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
             </div>
           </div>
         </div>
@@ -77,7 +65,7 @@
       <div
         v-for="customer in customers?.data"
         :key="customer.id"
-        class="card bg-base-100 shadow card-hover cursor-pointer border border-base-200"
+        class="card bg-base-100 shadow hover:shadow-md transition-shadow cursor-pointer"
         @click="navigateTo(`/customers/${customer.id}`)"
       >
         <div class="card-body p-5">

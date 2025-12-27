@@ -4,528 +4,1047 @@ import bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting database seed...')
+  console.log('🌱 Starting comprehensive database seed...')
 
-  // Create owner account
+  // ==================== CLEANUP ====================
+  console.log('🗑️  Cleaning up existing data...')
+  // Delete in correct order (respect foreign keys)
+  await prisma.quotation.deleteMany()
+  await prisma.projectItem.deleteMany()
+  await prisma.project.deleteMany()
+  await prisma.customer.deleteMany()
+  await prisma.stock.deleteMany()
+  await prisma.product.deleteMany()
+  await prisma.supplier.deleteMany()
+  await prisma.unitConversion.deleteMany()
+  await prisma.unit.deleteMany()
+  await prisma.company.deleteMany()
+  await prisma.technician.deleteMany()
+  await prisma.user.deleteMany()
+  console.log('✅ Cleanup complete')
+
+  // ==================== USERS & TECHNICIANS ====================
   const ownerPassword = await bcrypt.hash('password123', 10)
-  const owner = await prisma.user.upsert({
-    where: { username: 'owner' },
-    update: {},
-    create: {
+  const owner = await prisma.user.create({
+    data: {
       email: 'owner@ocn.com',
       username: 'owner',
       password: ownerPassword,
-      name: 'Business Owner',
+      name: 'Budi Santoso',
       role: 'OWNER',
       phone: '081234567890',
     },
   })
-  console.log('✅ Created owner:', owner.email)
+  console.log('✅ Owner:', owner.email)
 
-  // Create admin account
   const adminPassword = await bcrypt.hash('password123', 10)
-  const admin = await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
+  const admin = await prisma.user.create({
+    data: {
       email: 'admin@ocn.com',
       username: 'admin',
       password: adminPassword,
-      name: 'Administrator',
+      name: 'Siti Admin',
       role: 'ADMIN',
       phone: '081234567891',
     },
   })
-  console.log('✅ Created admin:', admin.email)
+  console.log('✅ Admin:', admin.email)
 
-  // Create technician user
+  // Technician 1 - Internal with PERCENTAGE fee
   const techPassword = await bcrypt.hash('password123', 10)
-  const tech1User = await prisma.user.upsert({
-    where: { username: 'tech1' },
-    update: {},
-    create: {
-      email: 'tech1@ocn.com',
-      username: 'tech1',
+  const tech1User = await prisma.user.create({
+    data: {
+      email: 'andi@ocn.com',
+      username: 'andi',
       password: techPassword,
-      name: 'Andi Teknisi',
+      name: 'Andi Wijaya',
       role: 'TECHNICIAN',
       phone: '081234567892',
     },
   })
-  console.log('✅ Created technician user:', tech1User.email)
 
-  // Create technician profile
-  const tech1 = await prisma.technician.upsert({
-    where: { userId: tech1User.id },
-    update: {},
-    create: {
+  const tech1 = await prisma.technician.create({
+    data: {
       userId: tech1User.id,
-      name: 'Andi Teknisi',
+      name: 'Andi Wijaya',
       phone: '081234567892',
-      type: 'FREELANCE',
+      type: 'INTERNAL',
       feeType: 'PERCENTAGE',
-      feePercentage: 10,
-      minFee: 150000,
+      feePercentage: 15,
+      minFee: 200000,
       canViewProjects: true,
       canViewEarnings: true,
     },
   })
-  console.log('✅ Created technician profile:', tech1.name)
+  console.log('✅ Technician (Internal):', tech1.name)
 
-  // Create second technician
-  const tech2User = await prisma.user.upsert({
-    where: { username: 'tech2' },
-    update: {},
-    create: {
-      email: 'tech2@ocn.com',
-      username: 'tech2',
+  // Technician 2 - Freelance with FIXED fee
+  const tech2User = await prisma.user.create({
+    data: {
+      email: 'budi@ocn.com',
+      username: 'budi',
       password: techPassword,
-      name: 'Budi Teknisi',
+      name: 'Budi Hartono',
       role: 'TECHNICIAN',
       phone: '081234567893',
     },
   })
 
-  await prisma.technician.upsert({
-    where: { userId: tech2User.id },
-    update: {},
-    create: {
+  const tech2 = await prisma.technician.create({
+    data: {
       userId: tech2User.id,
-      name: 'Budi Teknisi',
+      name: 'Budi Hartono',
       phone: '081234567893',
+      type: 'FREELANCE',
+      feeType: 'FIXED',
+      minFee: 500000,
+      canViewProjects: true,
+      canViewEarnings: false,
+    },
+  })
+  console.log('✅ Technician (Freelance):', tech2.name)
+
+  // Technician 3 - Freelance with PERCENTAGE
+  const tech3User = await prisma.user.create({
+    data: {
+      email: 'charlie@ocn.com',
+      username: 'charlie',
+      password: techPassword,
+      name: 'Charlie Pranata',
+      role: 'TECHNICIAN',
+      phone: '081234567894',
+    },
+  })
+
+  const tech3 = await prisma.technician.create({
+    data: {
+      userId: tech3User.id,
+      name: 'Charlie Pranata',
+      phone: '081234567894',
       type: 'FREELANCE',
       feeType: 'PERCENTAGE',
       feePercentage: 12,
       minFee: 150000,
-      canViewProjects: true,
-      canViewEarnings: true,
+      canViewProjects: false,
+      canViewEarnings: false,
     },
   })
-  console.log('✅ Created technician:', tech2User.name)
+  console.log('✅ Technician (Freelance):', tech3.name)
 
-  // Create company settings
-  await prisma.company.upsert({
-    where: { id: 'default' },
-    update: {},
-    create: {
+  // ==================== COMPANY SETTINGS ====================
+  await prisma.company.create({
+    data: {
       id: 'default',
-      name: 'OCN CCTV & Networking',
+      name: 'OCN CCTV & Networking Solutions',
       settings: {
-        companyFundPercentage: 35,
-        defaultTechnicianFee: 10,
+        companyFundPercentage: 30,
+        defaultTechnicianFee: 15,
         minTechnicianFee: 150000,
         currency: 'IDR',
-        paymentMethods: ['CASH', 'TRANSFER'],
+        paymentMethods: ['CASH', 'TRANSFER', 'TEMPO'],
         quotationValidDays: 14,
       },
     },
   })
-  console.log('✅ Created company settings')
+  console.log('✅ Company settings')
 
-  // Create sample products
-  const products = [
-    {
-      sku: 'CCTV-HIK-2MP',
-      name: 'CCTV Hikvision 2MP Indoor',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 350000,
-      sellingPrice: 450000,
-    },
-    {
-      sku: 'CCTV-HIK-4MP',
-      name: 'CCTV Hikvision 4MP Indoor',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 550000,
-      sellingPrice: 700000,
-    },
-    {
-      sku: 'CCTV-HIK-2MP-OUT',
-      name: 'CCTV Hikvision 2MP Outdoor',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 450000,
-      sellingPrice: 600000,
-    },
-    {
-      sku: 'DVR-HIK-4CH',
-      name: 'DVR Hikvision 4 Channel',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 750000,
-      sellingPrice: 950000,
-    },
-    {
-      sku: 'DVR-HIK-8CH',
-      name: 'DVR Hikvision 8 Channel',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 1200000,
-      sellingPrice: 1500000,
-    },
-    {
-      sku: 'NVR-HIK-8CH',
-      name: 'NVR Hikvision 8 Channel',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 1800000,
-      sellingPrice: 2300000,
-    },
-    {
-      sku: 'HDD-1TB',
-      name: 'HDD WD Purple 1TB',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 650000,
-      sellingPrice: 800000,
-    },
-    {
-      sku: 'HDD-2TB',
-      name: 'HDD WD Purple 2TB',
-      category: 'CCTV',
-      unit: 'pcs',
-      purchasePrice: 950000,
-      sellingPrice: 1200000,
-    },
-    {
-      sku: 'CAB-RG59',
-      name: 'Kabel RG59+Power',
-      category: 'ACCESSORIES',
-      unit: 'meter',
-      purchasePrice: 3000,
-      sellingPrice: 5000,
-    },
-    {
-      sku: 'CAB-UTP-CAT6',
-      name: 'Kabel UTP Cat6',
-      category: 'NETWORK',
-      unit: 'meter',
-      purchasePrice: 2500,
-      sellingPrice: 4000,
-    },
-    {
-      sku: 'SWITCH-8',
-      name: 'Switch 8 Port Gigabit',
-      category: 'NETWORK',
-      unit: 'pcs',
-      purchasePrice: 250000,
-      sellingPrice: 350000,
-    },
-    {
-      sku: 'ROUTER-MIK',
-      name: 'Router Mikrotik RB750Gr3',
-      category: 'NETWORK',
-      unit: 'pcs',
-      purchasePrice: 800000,
-      sellingPrice: 1000000,
-    },
-    {
-      sku: 'AP-UNIFI',
-      name: 'Access Point Ubiquiti UniFi',
-      category: 'NETWORK',
-      unit: 'pcs',
-      purchasePrice: 1200000,
-      sellingPrice: 1500000,
-    },
-    {
-      sku: 'SRV-INSTALL',
-      name: 'Jasa Instalasi',
-      category: 'SERVICE',
-      unit: 'lot',
-      purchasePrice: 0,
-      sellingPrice: 500000,
-    },
-    {
-      sku: 'SRV-CONFIG',
-      name: 'Jasa Konfigurasi',
-      category: 'SERVICE',
-      unit: 'lot',
-      purchasePrice: 0,
-      sellingPrice: 300000,
-    },
-  ]
-
-  for (const product of products) {
-    const created = await prisma.product.upsert({
-      where: { sku: product.sku },
-      update: {},
-      create: product,
-    })
-
-    // Create stock entry with consistent quantity
-    const stockQty = Math.floor(Math.random() * 50) + 5
-    await prisma.stock.upsert({
-      where: { productId: created.id },
-      update: {},
-      create: {
-        productId: created.id,
-        quantity: stockQty,
-        reserved: 0,
-        available: stockQty, // available = quantity - reserved
-      },
-    })
-  }
-  console.log('✅ Created sample products with stock')
-
-  // Create sample suppliers
-  const suppliers = [
-    {
-      name: 'PT Hikvision Indonesia',
-      contactPerson: 'Pak David',
-      phone: '021-12345678',
-      email: 'sales@hikvision.co.id',
-      address: 'Jakarta',
-    },
-    {
-      name: 'Synnex Metrodata',
-      contactPerson: 'Bu Sari',
-      phone: '021-87654321',
-      email: 'sales@synnex.co.id',
-      address: 'Jakarta',
-    },
-    {
-      name: 'Toko Elektronik Jaya',
-      contactPerson: 'Pak Anton',
-      phone: '081234567899',
-      email: 'jaya@gmail.com',
-      address: 'Surabaya',
-    },
-  ]
-
-  for (const supplier of suppliers) {
-    await prisma.supplier.upsert({
-      where: { id: supplier.name.toLowerCase().replace(/\s+/g, '-') },
-      update: {},
-      create: {
-        id: supplier.name.toLowerCase().replace(/\s+/g, '-'),
-        ...supplier,
-      },
-    })
-  }
-  console.log('✅ Created sample suppliers')
-
-  // Create sample customers
-  const customers = [
-    {
-      name: 'PT Maju Bersama',
-      companyName: 'PT Maju Bersama',
-      phone: '021-1111111',
-      email: 'contact@majubersama.com',
-      address: 'Jl. Sudirman No. 123, Jakarta',
-    },
-    {
-      name: 'Toko Sejahtera',
-      companyName: 'CV Sejahtera Abadi',
-      phone: '081222333444',
-      email: null,
-      address: 'Jl. Gatot Subroto No. 45, Bandung',
-    },
-    {
-      name: 'Bapak Agus',
-      companyName: null,
-      phone: '081333444555',
-      email: 'agus@gmail.com',
-      address: 'Jl. Pahlawan No. 67, Surabaya',
-    },
-  ]
-
-  for (const customer of customers) {
-    await prisma.customer.create({
-      data: customer,
-    })
-  }
-  console.log('✅ Created sample customers')
-
-  // Create sample units
+  // ==================== UNITS ====================
   const units = [
     { name: 'pcs', symbol: 'pcs', description: 'Pieces / satuan', isBase: true },
+    { name: 'unit', symbol: 'unit', description: 'Unit', isBase: true },
+    { name: 'set', symbol: 'set', description: 'Satu set lengkap', isBase: true },
     { name: 'box', symbol: 'box', description: 'Kotak / dus', isBase: false },
     { name: 'roll', symbol: 'roll', description: 'Gulungan', isBase: false },
     { name: 'meter', symbol: 'm', description: 'Meter', isBase: true },
     { name: 'bungkus', symbol: 'bks', description: 'Bungkus / pack', isBase: false },
-    { name: 'set', symbol: 'set', description: 'Satu set lengkap', isBase: true },
-    { name: 'unit', symbol: 'unit', description: 'Unit', isBase: true },
     { name: 'lot', symbol: 'lot', description: 'Lot / paket jasa', isBase: true },
+    { name: 'buah', symbol: 'buah', description: 'Buah', isBase: true },
+    { name: 'lusin', symbol: 'lusin', description: 'Lusin (12 pcs)', isBase: false },
   ]
 
   const createdUnits: Record<string, string> = {}
   for (const unit of units) {
-    const created = await prisma.unit.upsert({
-      where: { name: unit.name },
-      update: {},
-      create: unit,
+    const created = await prisma.unit.create({
+      data: unit,
     })
     createdUnits[unit.name] = created.id
   }
-  console.log('✅ Created sample units')
+  console.log('✅ Units created')
 
-  // Create unit conversions
+  // Unit conversions
   const conversions = [
     { fromUnit: 'box', toUnit: 'meter', factor: 305, notes: '1 box kabel = 305 meter' },
     { fromUnit: 'roll', toUnit: 'meter', factor: 100, notes: '1 roll kabel = 100 meter' },
-    { fromUnit: 'bungkus', toUnit: 'pcs', factor: 100, notes: '1 bungkus RJ45 = 100 pcs' },
+    { fromUnit: 'bungkus', toUnit: 'pcs', factor: 100, notes: '1 bungkus connector = 100 pcs' },
+    { fromUnit: 'lusin', toUnit: 'pcs', factor: 12, notes: '1 lusin = 12 pcs' },
   ]
 
   for (const conv of conversions) {
     const fromUnitId = createdUnits[conv.fromUnit]
     const toUnitId = createdUnits[conv.toUnit]
     if (fromUnitId && toUnitId) {
-      await prisma.unitConversion.upsert({
-        where: {
-          fromUnitId_toUnitId: { fromUnitId, toUnitId },
-        },
-        update: {},
-        create: {
-          fromUnitId,
-          toUnitId,
-          factor: conv.factor,
-          notes: conv.notes,
-        },
+      await prisma.unitConversion.create({
+        data: { fromUnitId, toUnitId, factor: conv.factor, notes: conv.notes },
       })
     }
   }
-  console.log('✅ Created unit conversions')
+  console.log('✅ Unit conversions created')
 
-  // Create sample quotations
-  const allCustomers = await prisma.customer.findMany()
-  const allProducts = await prisma.product.findMany()
+  // ==================== SUPPLIERS ====================
+  const suppliers = [
+    {
+      id: 'hikvision-indonesia',
+      name: 'PT Hikvision Indonesia',
+      contactPerson: 'David Tan',
+      phone: '021-29341234',
+      email: 'sales@hikvision.co.id',
+      address: 'Menara Hijau, Jakarta Selatan',
+    },
+    {
+      id: 'synnex-metrodata',
+      name: 'Synnex Metrodata Indonesia',
+      contactPerson: 'Sari Wijaya',
+      phone: '021-87654321',
+      email: 'sales@synnex.co.id',
+      address: 'Gedung Plaza, Jakarta Pusat',
+    },
+    {
+      id: 'toko-elektronik-jaya',
+      name: 'Toko Elektronik Jaya',
+      contactPerson: 'Anton Susanto',
+      phone: '081234567899',
+      email: 'jaya@gmail.com',
+      address: 'Jl. Basuki Rahmat 45, Surabaya',
+    },
+    {
+      id: 'cv-network-sentral',
+      name: 'CV Network Sentral',
+      contactPerson: 'Dewi Lestari',
+      phone: '081298765432',
+      email: 'network@sentral.com',
+      address: 'Jl. Cihampelas 123, Bandung',
+    },
+  ]
 
-  // Create product lookup by SKU
-  const productBySku = new Map(allProducts.map(p => [p.sku, p]))
-
-  if (allCustomers.length > 0) {
-    const customer1 = allCustomers[0]
-
-    await prisma.quotation.upsert({
-      where: { quotationNo: 'QT-202512-001' },
-      update: {},
-      create: {
-        quotationNo: 'QT-202512-001',
-        customerId: customer1.id,
-        title: 'Instalasi CCTV 4 Camera',
-        items: [
-          {
-            productId: productBySku.get('CCTV-HIK-2MP')?.id,
-            name: 'CCTV Hikvision 2MP Indoor',
-            quantity: 4,
-            unit: 'pcs',
-            price: 450000,
-            total: 1800000,
-            description: 'Camera indoor dengan resolusi 2MP',
-          },
-          {
-            productId: productBySku.get('DVR-HIK-4CH')?.id,
-            name: 'DVR Hikvision 4 Channel',
-            quantity: 1,
-            unit: 'pcs',
-            price: 950000,
-            total: 950000,
-            description: 'DVR untuk 4 channel camera',
-          },
-          {
-            productId: productBySku.get('HDD-1TB')?.id,
-            name: 'HDD WD Purple 1TB',
-            quantity: 1,
-            unit: 'pcs',
-            price: 800000,
-            total: 800000,
-            description: 'Harddisk untuk penyimpanan rekaman',
-          },
-          {
-            productId: productBySku.get('CAB-RG59')?.id,
-            name: 'Kabel RG59+Power',
-            quantity: 100,
-            unit: 'meter',
-            price: 5000,
-            total: 500000,
-            description: 'Kabel untuk instalasi camera',
-          },
-          {
-            productId: productBySku.get('SRV-INSTALL')?.id,
-            name: 'Jasa Instalasi',
-            quantity: 1,
-            unit: 'lot',
-            price: 500000,
-            total: 500000,
-            description: 'Instalasi dan konfigurasi sistem',
-          },
-        ],
-        totalAmount: 4550000,
-        status: 'SENT',
-        validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-        notes: 'Termasuk garansi instalasi 1 tahun',
-      },
+  for (const supplier of suppliers) {
+    await prisma.supplier.create({
+      data: supplier,
     })
+  }
+  console.log('✅ Suppliers created')
 
-    if (allCustomers.length > 1) {
-      const customer2 = allCustomers[1]
-      await prisma.quotation.upsert({
-        where: { quotationNo: 'QT-202512-002' },
-        update: {},
-        create: {
-          quotationNo: 'QT-202512-002',
-          customerId: customer2.id,
-          title: 'Setup Network & WiFi',
-          items: [
-            {
-              productId: productBySku.get('ROUTER-MIK')?.id,
-              name: 'Router Mikrotik RB750Gr3',
-              quantity: 1,
-              unit: 'pcs',
-              price: 1000000,
-              total: 1000000,
-              description: 'Router untuk manajemen jaringan',
-            },
-            {
-              productId: productBySku.get('AP-UNIFI')?.id,
-              name: 'Access Point Ubiquiti UniFi',
-              quantity: 2,
-              unit: 'pcs',
-              price: 1500000,
-              total: 3000000,
-              description: 'Access point untuk WiFi coverage',
-            },
-            {
-              productId: productBySku.get('CAB-UTP-CAT6')?.id,
-              name: 'Kabel UTP Cat6',
-              quantity: 150,
-              unit: 'meter',
-              price: 4000,
-              total: 600000,
-              description: 'Kabel networking',
-            },
-            {
-              productId: productBySku.get('SRV-INSTALL')?.id,
-              name: 'Jasa Instalasi',
-              quantity: 1,
-              unit: 'lot',
-              price: 500000,
-              total: 500000,
-              description: 'Instalasi dan konfigurasi jaringan',
-            },
-            {
-              productId: productBySku.get('SRV-CONFIG')?.id,
-              name: 'Jasa Konfigurasi',
-              quantity: 1,
-              unit: 'lot',
-              price: 300000,
-              total: 300000,
-              description: 'Konfigurasi routing dan WiFi',
-            },
-          ],
-          totalAmount: 5400000,
-          status: 'DRAFT',
-          validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-          notes: 'Garansi perangkat 1 tahun, garansi instalasi 3 bulan',
+  // ==================== PRODUCTS (PRODUCT type) ====================
+  const productItems = [
+    {
+      sku: 'CAM-HIK-2MP-IN',
+      name: 'CCTV Hikvision 2MP Indoor Dome',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 350000,
+      sellingPrice: 550000,
+      minStock: 10,
+      stock: 45,
+    },
+    {
+      sku: 'CAM-HIK-4MP-IN',
+      name: 'CCTV Hikvision 4MP Indoor Dome',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 550000,
+      sellingPrice: 800000,
+      minStock: 5,
+      stock: 30,
+    },
+    {
+      sku: 'CAM-HIK-2MP-OUT',
+      name: 'CCTV Hikvision 2MP Outdoor Bullet',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 450000,
+      sellingPrice: 700000,
+      minStock: 8,
+      stock: 25,
+    },
+    {
+      sku: 'CAM-HIK-5MP-OUT',
+      name: 'CCTV Hikvision 5MP Outdoor Turret',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 750000,
+      sellingPrice: 1100000,
+      minStock: 5,
+      stock: 15,
+    },
+    {
+      sku: 'DVR-HIK-4CH',
+      name: 'DVR Hikvision 4 Channel Turbo HD',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'unit',
+      purchasePrice: 750000,
+      sellingPrice: 1100000,
+      minStock: 3,
+      stock: 12,
+    },
+    {
+      sku: 'DVR-HIK-8CH',
+      name: 'DVR Hikvision 8 Channel Turbo HD',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'unit',
+      purchasePrice: 1200000,
+      sellingPrice: 1700000,
+      minStock: 3,
+      stock: 8,
+    },
+    {
+      sku: 'DVR-HIK-16CH',
+      name: 'DVR Hikvision 16 Channel Turbo HD',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'unit',
+      purchasePrice: 2000000,
+      sellingPrice: 2800000,
+      minStock: 2,
+      stock: 5,
+    },
+    {
+      sku: 'NVR-HIK-8CH-POE',
+      name: 'NVR Hikvision 8 Channel PoE 4K',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'unit',
+      purchasePrice: 2500000,
+      sellingPrice: 3500000,
+      minStock: 2,
+      stock: 6,
+    },
+    {
+      sku: 'HDD-WD-1TB',
+      name: 'HDD WD Purple 1TB Surveillance',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 650000,
+      sellingPrice: 900000,
+      minStock: 5,
+      stock: 20,
+    },
+    {
+      sku: 'HDD-WD-2TB',
+      name: 'HDD WD Purple 2TB Surveillance',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 950000,
+      sellingPrice: 1300000,
+      minStock: 5,
+      stock: 15,
+    },
+    {
+      sku: 'HDD-WD-4TB',
+      name: 'HDD WD Purple 4TB Surveillance',
+      type: 'PRODUCT',
+      category: 'CCTV',
+      unit: 'pcs',
+      purchasePrice: 1800000,
+      sellingPrice: 2400000,
+      minStock: 3,
+      stock: 8,
+    },
+    {
+      sku: 'SWITCH-TPL-8P',
+      name: 'TP-Link Switch 8 Port Gigabit',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 250000,
+      sellingPrice: 400000,
+      minStock: 5,
+      stock: 18,
+    },
+    {
+      sku: 'SWITCH-TPL-16P',
+      name: 'TP-Link Switch 16 Port Gigabit',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 500000,
+      sellingPrice: 750000,
+      minStock: 3,
+      stock: 10,
+    },
+    {
+      sku: 'ROUTER-MIK-RB750',
+      name: 'MikroTik RouterBoard RB750Gr3',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 800000,
+      sellingPrice: 1150000,
+      minStock: 3,
+      stock: 12,
+    },
+    {
+      sku: 'ROUTER-MIK-RB951',
+      name: 'MikroTik RouterBoard RB951Ui-2HnD',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 650000,
+      sellingPrice: 950000,
+      minStock: 3,
+      stock: 8,
+    },
+    {
+      sku: 'AP-UBNT-UAP-AC',
+      name: 'Ubiquiti UniFi AP AC Lite',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 1200000,
+      sellingPrice: 1700000,
+      minStock: 5,
+      stock: 15,
+    },
+    {
+      sku: 'AP-UBNT-UAP-AC-PRO',
+      name: 'Ubiquiti UniFi AP AC Pro',
+      type: 'PRODUCT',
+      category: 'NETWORK',
+      unit: 'unit',
+      purchasePrice: 2000000,
+      sellingPrice: 2700000,
+      minStock: 3,
+      stock: 8,
+    },
+  ]
+
+  // ==================== MATERIALS (MATERIAL type) ====================
+  const materialItems = [
+    {
+      sku: 'CAB-RG59-POWER',
+      name: 'Kabel RG59 + Power CCTV',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'meter',
+      purchasePrice: 3000,
+      sellingPrice: 5500,
+      minStock: 200,
+      stock: 850,
+    },
+    {
+      sku: 'CAB-UTP-CAT6',
+      name: 'Kabel UTP Cat6 Outdoor',
+      type: 'MATERIAL',
+      category: 'NETWORK',
+      unit: 'meter',
+      purchasePrice: 2500,
+      sellingPrice: 4500,
+      minStock: 300,
+      stock: 1200,
+    },
+    {
+      sku: 'CAB-UTP-CAT5E',
+      name: 'Kabel UTP Cat5e Indoor',
+      type: 'MATERIAL',
+      category: 'NETWORK',
+      unit: 'meter',
+      purchasePrice: 1800,
+      sellingPrice: 3500,
+      minStock: 200,
+      stock: 600,
+    },
+    {
+      sku: 'CONN-RJ45',
+      name: 'Connector RJ45 Cat6',
+      type: 'MATERIAL',
+      category: 'NETWORK',
+      unit: 'pcs',
+      purchasePrice: 500,
+      sellingPrice: 1000,
+      minStock: 100,
+      stock: 450,
+    },
+    {
+      sku: 'CONN-BNC',
+      name: 'Connector BNC CCTV',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'pcs',
+      purchasePrice: 800,
+      sellingPrice: 1500,
+      minStock: 100,
+      stock: 380,
+    },
+    {
+      sku: 'MAT-PAKU-FISCHER',
+      name: 'Paku Beton Fischer S8',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'pcs',
+      purchasePrice: 500,
+      sellingPrice: 1200,
+      minStock: 200,
+      stock: 650,
+    },
+    {
+      sku: 'MAT-CABLE-TIES-20',
+      name: 'Cable Ties 20cm Hitam',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'pcs',
+      purchasePrice: 100,
+      sellingPrice: 300,
+      minStock: 500,
+      stock: 2000,
+    },
+    {
+      sku: 'MAT-CABLE-TIES-30',
+      name: 'Cable Ties 30cm Putih',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'pcs',
+      purchasePrice: 150,
+      sellingPrice: 400,
+      minStock: 300,
+      stock: 1200,
+    },
+    {
+      sku: 'MAT-PIPA-PVC-3-4',
+      name: 'Pipa PVC 3/4 inch',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'meter',
+      purchasePrice: 8000,
+      sellingPrice: 13000,
+      minStock: 50,
+      stock: 180,
+    },
+    {
+      sku: 'MAT-PIPA-PVC-1',
+      name: 'Pipa PVC 1 inch',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'meter',
+      purchasePrice: 10000,
+      sellingPrice: 16000,
+      minStock: 50,
+      stock: 150,
+    },
+    {
+      sku: 'MAT-DUCT-CABLE',
+      name: 'Cable Duct 40x40mm',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'meter',
+      purchasePrice: 15000,
+      sellingPrice: 25000,
+      minStock: 30,
+      stock: 120,
+    },
+    {
+      sku: 'MAT-BOX-JUNCTION',
+      name: 'Junction Box Outdoor',
+      type: 'MATERIAL',
+      category: 'ACCESSORIES',
+      unit: 'pcs',
+      purchasePrice: 12000,
+      sellingPrice: 20000,
+      minStock: 20,
+      stock: 85,
+    },
+  ]
+
+  // ==================== SERVICES (SERVICE type) ====================
+  const serviceItems = [
+    {
+      sku: 'SRV-INSTALL-CCTV',
+      name: 'Jasa Instalasi CCTV',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 500000,
+      minStock: 0,
+      stock: 0,
+    },
+    {
+      sku: 'SRV-INSTALL-NETWORK',
+      name: 'Jasa Instalasi Network',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 400000,
+      minStock: 0,
+      stock: 0,
+    },
+    {
+      sku: 'SRV-CONFIG-ROUTER',
+      name: 'Jasa Konfigurasi Router & Firewall',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 350000,
+      minStock: 0,
+      stock: 0,
+    },
+    {
+      sku: 'SRV-CONFIG-WIFI',
+      name: 'Jasa Konfigurasi WiFi Management',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 300000,
+      minStock: 0,
+      stock: 0,
+    },
+    {
+      sku: 'SRV-MAINTAIN-MONTHLY',
+      name: 'Jasa Maintenance Bulanan',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 750000,
+      minStock: 0,
+      stock: 0,
+    },
+    {
+      sku: 'SRV-REPAIR',
+      name: 'Jasa Perbaikan & Troubleshooting',
+      type: 'SERVICE',
+      category: 'SERVICE',
+      unit: null,
+      purchasePrice: 0,
+      sellingPrice: 250000,
+      minStock: 0,
+      stock: 0,
+    },
+  ]
+
+  // Create all products, materials, and services
+  const allItems = [...productItems, ...materialItems, ...serviceItems]
+  const createdProducts: Record<string, any> = {}
+
+  for (const item of allItems) {
+    const { stock: stockQty, ...productData } = item
+    const created = await prisma.product.create({
+      data: productData,
+    })
+    createdProducts[item.sku] = created
+
+    // Create stock only for PRODUCT and MATERIAL types
+    if (item.type !== 'SERVICE') {
+      await prisma.stock.create({
+        data: {
+          productId: created.id,
+          quantity: stockQty,
+          reserved: 0,
+          available: stockQty,
         },
       })
     }
-
-    console.log('✅ Created sample quotations with productId links')
   }
+  console.log(
+    `✅ Products: ${productItems.length}, Materials: ${materialItems.length}, Services: ${serviceItems.length}`
+  )
 
-  console.log('🎉 Database seed completed!')
+  // ==================== CUSTOMERS ====================
+  const customers = [
+    {
+      name: 'PT Maju Sejahtera',
+      companyName: 'PT Maju Sejahtera Indonesia',
+      phone: '021-55551111',
+      email: 'procurement@majusejahtera.co.id',
+      address: 'Jl. Sudirman Kav 52-53, Jakarta Selatan 12190',
+    },
+    {
+      name: 'CV Toko Elektronik Bersama',
+      companyName: 'CV Toko Elektronik Bersama',
+      phone: '021-77778888',
+      email: 'bersama@gmail.com',
+      address: 'Jl. Gatot Subroto No. 125, Bandung 40262',
+    },
+    {
+      name: 'Bapak Agus Setiawan',
+      companyName: null,
+      phone: '081333444555',
+      email: 'agus.setiawan@gmail.com',
+      address: 'Jl. Pahlawan No. 67, Surabaya 60174',
+    },
+    {
+      name: 'Ibu Dewi Lestari',
+      companyName: null,
+      phone: '081298765432',
+      email: 'dewi.lestari@yahoo.com',
+      address: 'Jl. Veteran No. 234, Yogyakarta 55164',
+    },
+    {
+      name: 'PT Teknologi Digital',
+      companyName: 'PT Teknologi Digital Indonesia',
+      phone: '021-33334444',
+      email: 'info@teknodigital.co.id',
+      address: 'Menara BCA Lt. 15, Jakarta Pusat 10310',
+    },
+  ]
+
+  const createdCustomers: any[] = []
+  for (const customer of customers) {
+    const created = await prisma.customer.create({ data: customer })
+    createdCustomers.push(created)
+  }
+  console.log(`✅ Customers: ${customers.length}`)
+
+  // ==================== QUOTATIONS ====================
+  // Quotation 1: CCTV Installation for Office
+  const quot1 = await prisma.quotation.create({
+    data: {
+      quotationNo: 'QT-2025-001',
+      customerId: createdCustomers[0].id,
+      title: 'Instalasi CCTV Kantor 8 Camera',
+      items: [
+        {
+          productId: createdProducts['CAM-HIK-2MP-IN'].id,
+          name: 'CCTV Hikvision 2MP Indoor Dome',
+          quantity: 6,
+          unit: 'pcs',
+          price: 550000,
+          cost: 350000,
+          total: 3300000,
+          totalCost: 2100000,
+          description: 'Camera indoor untuk area office',
+        },
+        {
+          productId: createdProducts['CAM-HIK-2MP-OUT'].id,
+          name: 'CCTV Hikvision 2MP Outdoor Bullet',
+          quantity: 2,
+          unit: 'pcs',
+          price: 700000,
+          cost: 450000,
+          total: 1400000,
+          totalCost: 900000,
+          description: 'Camera outdoor untuk parkir & entrance',
+        },
+        {
+          productId: createdProducts['DVR-HIK-8CH'].id,
+          name: 'DVR Hikvision 8 Channel Turbo HD',
+          quantity: 1,
+          unit: 'unit',
+          price: 1700000,
+          cost: 1200000,
+          total: 1700000,
+          totalCost: 1200000,
+          description: 'DVR 8 channel untuk recording',
+        },
+        {
+          productId: createdProducts['HDD-WD-2TB'].id,
+          name: 'HDD WD Purple 2TB Surveillance',
+          quantity: 1,
+          unit: 'pcs',
+          price: 1300000,
+          cost: 950000,
+          total: 1300000,
+          totalCost: 950000,
+          description: 'Storage untuk recording 30 hari',
+        },
+        {
+          productId: createdProducts['CAB-RG59-POWER'].id,
+          name: 'Kabel RG59 + Power CCTV',
+          quantity: 150,
+          unit: 'meter',
+          price: 5500,
+          cost: 3000,
+          total: 825000,
+          totalCost: 450000,
+          description: 'Kabel instalasi camera',
+        },
+        {
+          productId: createdProducts['CONN-BNC'].id,
+          name: 'Connector BNC CCTV',
+          quantity: 20,
+          unit: 'pcs',
+          price: 0,
+          cost: 800,
+          total: 0,
+          totalCost: 16000,
+          description: 'Include dalam jasa instalasi',
+        },
+        {
+          productId: createdProducts['SRV-INSTALL-CCTV'].id,
+          name: 'Jasa Instalasi CCTV',
+          quantity: 1,
+          unit: null,
+          price: 800000,
+          cost: 0,
+          total: 800000,
+          totalCost: 0,
+          description: 'Instalasi, konfigurasi & testing',
+        },
+      ],
+      totalAmount: 9325000,
+      status: 'APPROVED',
+      validUntil: new Date('2025-01-15'),
+      notes: 'Include garansi instalasi 1 tahun, garansi produk sesuai distributor',
+    },
+  })
+  console.log('✅ Quotation 1 (APPROVED):', quot1.quotationNo)
+
+  // Quotation 2: Network Setup
+  const quot2 = await prisma.quotation.create({
+    data: {
+      quotationNo: 'QT-2025-002',
+      customerId: createdCustomers[1].id,
+      title: 'Setup Jaringan & WiFi Management Toko',
+      items: [
+        {
+          productId: createdProducts['ROUTER-MIK-RB750'].id,
+          name: 'MikroTik RouterBoard RB750Gr3',
+          quantity: 1,
+          unit: 'unit',
+          price: 1150000,
+          cost: 800000,
+          total: 1150000,
+          totalCost: 800000,
+        },
+        {
+          productId: createdProducts['AP-UBNT-UAP-AC'].id,
+          name: 'Ubiquiti UniFi AP AC Lite',
+          quantity: 3,
+          unit: 'unit',
+          price: 1700000,
+          cost: 1200000,
+          total: 5100000,
+          totalCost: 3600000,
+        },
+        {
+          productId: createdProducts['SWITCH-TPL-8P'].id,
+          name: 'TP-Link Switch 8 Port Gigabit',
+          quantity: 1,
+          unit: 'unit',
+          price: 400000,
+          cost: 250000,
+          total: 400000,
+          totalCost: 250000,
+        },
+        {
+          productId: createdProducts['CAB-UTP-CAT6'].id,
+          name: 'Kabel UTP Cat6 Outdoor',
+          quantity: 200,
+          unit: 'meter',
+          price: 4500,
+          cost: 2500,
+          total: 900000,
+          totalCost: 500000,
+        },
+        {
+          productId: createdProducts['CONN-RJ45'].id,
+          name: 'Connector RJ45 Cat6',
+          quantity: 30,
+          unit: 'pcs',
+          price: 0,
+          cost: 500,
+          total: 0,
+          totalCost: 15000,
+        },
+        {
+          productId: createdProducts['SRV-INSTALL-NETWORK'].id,
+          name: 'Jasa Instalasi Network',
+          quantity: 1,
+          unit: null,
+          price: 400000,
+          cost: 0,
+          total: 400000,
+          totalCost: 0,
+        },
+        {
+          productId: createdProducts['SRV-CONFIG-WIFI'].id,
+          name: 'Jasa Konfigurasi WiFi Management',
+          quantity: 1,
+          unit: null,
+          price: 300000,
+          cost: 0,
+          total: 300000,
+          totalCost: 0,
+        },
+      ],
+      totalAmount: 8250000,
+      status: 'SENT',
+      validUntil: new Date('2025-01-20'),
+      notes: 'Include konfigurasi VLAN & guest network',
+    },
+  })
+  console.log('✅ Quotation 2 (SENT):', quot2.quotationNo)
+
+  // Quotation 3: Home CCTV - DRAFT
+  const quot3 = await prisma.quotation.create({
+    data: {
+      quotationNo: 'QT-2025-003',
+      customerId: createdCustomers[2].id,
+      title: 'Paket CCTV Rumah 4 Camera',
+      items: [
+        {
+          productId: createdProducts['CAM-HIK-2MP-IN'].id,
+          name: 'CCTV Hikvision 2MP Indoor Dome',
+          quantity: 2,
+          unit: 'pcs',
+          price: 550000,
+          cost: 350000,
+          total: 1100000,
+          totalCost: 700000,
+        },
+        {
+          productId: createdProducts['CAM-HIK-2MP-OUT'].id,
+          name: 'CCTV Hikvision 2MP Outdoor Bullet',
+          quantity: 2,
+          unit: 'pcs',
+          price: 700000,
+          cost: 450000,
+          total: 1400000,
+          totalCost: 900000,
+        },
+        {
+          productId: createdProducts['DVR-HIK-4CH'].id,
+          name: 'DVR Hikvision 4 Channel Turbo HD',
+          quantity: 1,
+          unit: 'unit',
+          price: 1100000,
+          cost: 750000,
+          total: 1100000,
+          totalCost: 750000,
+        },
+        {
+          productId: createdProducts['HDD-WD-1TB'].id,
+          name: 'HDD WD Purple 1TB Surveillance',
+          quantity: 1,
+          unit: 'pcs',
+          price: 900000,
+          cost: 650000,
+          total: 900000,
+          totalCost: 650000,
+        },
+        {
+          productId: createdProducts['CAB-RG59-POWER'].id,
+          name: 'Kabel RG59 + Power CCTV',
+          quantity: 80,
+          unit: 'meter',
+          price: 5500,
+          cost: 3000,
+          total: 440000,
+          totalCost: 240000,
+        },
+        {
+          productId: createdProducts['SRV-INSTALL-CCTV'].id,
+          name: 'Jasa Instalasi CCTV',
+          quantity: 1,
+          unit: null,
+          price: 500000,
+          cost: 0,
+          total: 500000,
+          totalCost: 0,
+        },
+      ],
+      totalAmount: 5440000,
+      status: 'DRAFT',
+      validUntil: new Date('2025-01-10'),
+      notes: 'Paket lengkap untuk rumah 2 lantai',
+    },
+  })
+  console.log('✅ Quotation 3 (DRAFT):', quot3.quotationNo)
+
+  // ==================== PROJECT from APPROVED QUOTATION ====================
+  const project1 = await prisma.project.create({
+    data: {
+      projectNumber: 'PRJ-2025-001',
+      customerId: createdCustomers[0].id,
+      title: quot1.title,
+      description: 'Project instalasi CCTV dari quotation QT-2025-001',
+      budget: quot1.totalAmount,
+      finalPrice: quot1.totalAmount,
+      businessCashPercentage: 30,
+      status: 'ONGOING',
+      startDate: new Date('2025-01-05'),
+      items: {
+        create: quot1.items.map((item: any) => ({
+          ...(item.productId ? { product: { connect: { id: item.productId } } } : {}),
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit || '',
+          price: item.price,
+          cost: item.cost || 0,
+          totalPrice: item.total,
+          totalCost: item.totalCost || 0,
+          type: 'QUOTATION',
+        })),
+      },
+    },
+  })
+  console.log('✅ Project 1 (ONGOING):', project1.projectNumber)
+
+  // Assign technicians to project
+  await prisma.projectTechnician.create({
+    data: {
+      projectId: project1.id,
+      technicianId: tech1.id,
+      fee: 25, // 25% dari technician wage
+      feeType: 'PERCENTAGE',
+      isPaid: false,
+    },
+  })
+
+  await prisma.projectTechnician.create({
+    data: {
+      projectId: project1.id,
+      technicianId: tech2.id,
+      fee: 600000, // Fixed fee
+      feeType: 'FIXED',
+      isPaid: false,
+    },
+  })
+  console.log('✅ Assigned 2 technicians to project')
+
+  // Add expenses to project
+  await prisma.projectExpense.createMany({
+    data: [
+      {
+        projectId: project1.id,
+        description: 'Transport instalasi',
+        amount: 150000,
+        category: 'TRANSPORT',
+        date: new Date('2025-01-05'),
+      },
+      {
+        projectId: project1.id,
+        description: 'Makan siang tim',
+        amount: 100000,
+        category: 'OTHER',
+        date: new Date('2025-01-05'),
+      },
+    ],
+  })
+  console.log('✅ Added expenses to project')
+
+  console.log('\n🎉 Comprehensive seed completed!')
+  console.log('\n📊 Summary:')
+  console.log(`   Users: 5 (1 owner, 1 admin, 3 technicians)`)
+  console.log(`   Products: ${productItems.length}`)
+  console.log(`   Materials: ${materialItems.length}`)
+  console.log(`   Services: ${serviceItems.length}`)
+  console.log(`   Suppliers: ${suppliers.length}`)
+  console.log(`   Customers: ${customers.length}`)
+  console.log(`   Quotations: 3 (1 approved, 1 sent, 1 draft)`)
+  console.log(`   Projects: 1 (ongoing with 2 technicians)`)
+  console.log('\n🔑 Login credentials:')
+  console.log('   Owner: owner / password123')
+  console.log('   Admin: admin / password123')
+  console.log('   Tech: andi / password123')
 }
 
 main()

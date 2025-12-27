@@ -135,7 +135,7 @@
                     <button
                       @click="openProductModal(index)"
                       type="button"
-                      class="btn btn-ghost btn-sm btn-square flex-shrink-0"
+                      class="btn btn-ghost btn-sm btn-square shrink-0"
                       title="Pilih dari daftar produk"
                     >
                       <svg
@@ -327,9 +327,9 @@
                 <td class="text-center">
                   <span
                     class="badge badge-sm"
-                    :class="product.stock?.available > 0 ? 'badge-success' : 'badge-error'"
+                    :class="product.stock > 0 ? 'badge-success' : 'badge-error'"
                   >
-                    {{ product.stock?.available || 0 }} {{ product.unit }}
+                    {{ product.stock || 0 }} {{ product.unit }}
                   </span>
                 </td>
                 <td>

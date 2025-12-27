@@ -25,21 +25,25 @@
       </button>
     </div>
 
-    <!-- Search & View Toggle -->
+    <!-- Search & Filter -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body py-4">
-        <div class="flex flex-row gap-4 items-center">
-          <!-- View Toggle - Left on all screens -->
+      <div class="card-body">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <!-- View Toggle -->
           <div class="flex-none">
             <AppViewToggle v-model="viewMode" />
           </div>
-          <div class="form-control flex-1">
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Cari supplier..."
-              class="input input-bordered"
-            />
+
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="form-control">
+              <input
+                v-model="search"
+                type="text"
+                placeholder="Cari supplier..."
+                class="input input-bordered w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -61,7 +65,7 @@
       <div
         v-for="supplier in filteredSuppliers"
         :key="supplier.id"
-        class="card bg-base-100 shadow card-hover border border-base-200"
+        class="card bg-base-100 shadow hover:shadow-md transition-shadow"
       >
         <div class="card-body p-5">
           <h3 class="card-title text-lg">{{ supplier.name }}</h3>

@@ -42,26 +42,28 @@
 
     <template v-else-if="quotation">
       <!-- Page Header -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-2xl font-bold">Penawaran #{{ quotation.quotationNo }}</h1>
-            <span class="badge" :class="getStatusClass(quotation.status)">
+      <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div class="flex-1">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+            <h1 class="text-xl sm:text-2xl font-bold">Penawaran #{{ quotation.quotationNo }}</h1>
+            <span class="badge w-fit" :class="getStatusClass(quotation.status)">
               {{ getStatusLabel(quotation.status) }}
             </span>
           </div>
-          <p class="text-base-content/60">{{ quotation.customer?.name }}</p>
+          <p class="text-sm sm:text-base text-base-content/60">{{ quotation.customer?.name }}</p>
         </div>
-        <div class="flex gap-2">
+
+        <!-- Desktop Actions -->
+        <div class="hidden sm:flex gap-2 flex-shrink-0">
           <!-- Edit Button (DRAFT only) -->
           <NuxtLink
             v-if="quotation.status === 'DRAFT'"
             :to="`/quotations/${quotation.id}/edit`"
-            class="btn btn-outline"
+            class="btn btn-outline btn-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
+              class="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -80,7 +82,7 @@
           <button
             v-if="quotation.status === 'DRAFT'"
             @click="sendQuotation"
-            class="btn btn-info text-white"
+            class="btn btn-info btn-sm text-white"
             :disabled="!!processing"
           >
             <span v-if="processing === 'sending'" class="loading loading-spinner"></span>
@@ -91,7 +93,7 @@
           <button
             v-if="['DRAFT', 'SENT'].includes(quotation.status)"
             @click="rejectQuotation"
-            class="btn btn-error text-white"
+            class="btn btn-error btn-sm text-white"
             :disabled="!!processing"
           >
             <span v-if="processing === 'rejecting'" class="loading loading-spinner"></span>
@@ -102,7 +104,7 @@
           <button
             v-if="['DRAFT', 'SENT'].includes(quotation.status)"
             @click="approveQuotation"
-            class="btn btn-success text-white"
+            class="btn btn-success btn-sm text-white"
             :disabled="!!processing"
           >
             <span v-if="processing === 'approving'" class="loading loading-spinner"></span>
@@ -110,10 +112,10 @@
           </button>
 
           <!-- Print Button -->
-          <button @click="printQuotation" class="btn btn-outline">
+          <button @click="printQuotation" class="btn btn-outline btn-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
+              class="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -125,7 +127,89 @@
                 d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
               />
             </svg>
-            Cetak
+          </button>
+        </div>
+
+        <!-- Mobile Actions -->
+        <div class="sm:hidden grid grid-cols-4 gap-2 w-full">
+          <!-- Edit Button (DRAFT only) -->
+          <NuxtLink
+            v-if="quotation.status === 'DRAFT'"
+            :to="`/quotations/${quotation.id}/edit`"
+            class="btn btn-outline btn-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Edit
+          </NuxtLink>
+
+          <!-- Send Button (DRAFT only) -->
+          <button
+            v-if="quotation.status === 'DRAFT'"
+            @click="sendQuotation"
+            class="btn btn-info btn-sm text-white"
+            :disabled="!!processing"
+          >
+            <span v-if="processing === 'sending'" class="loading loading-spinner loading-xs"></span>
+            <span v-else>Kirim</span>
+          </button>
+
+          <!-- Reject Button (DRAFT or SENT) -->
+          <button
+            v-if="['DRAFT', 'SENT'].includes(quotation.status)"
+            @click="rejectQuotation"
+            class="btn btn-error btn-sm text-white"
+            :disabled="!!processing"
+          >
+            <span
+              v-if="processing === 'rejecting'"
+              class="loading loading-spinner loading-xs"
+            ></span>
+            <span v-else>Tolak</span>
+          </button>
+
+          <!-- Approve Button (SENT or DRAFT) -->
+          <button
+            v-if="['DRAFT', 'SENT'].includes(quotation.status)"
+            @click="approveQuotation"
+            class="btn btn-success btn-sm text-white"
+            :disabled="!!processing"
+          >
+            <span
+              v-if="processing === 'approving'"
+              class="loading loading-spinner loading-xs"
+            ></span>
+            <span v-else>Setujui</span>
+          </button>
+
+          <!-- Print Button -->
+          <button @click="printQuotation" class="btn btn-outline btn-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -136,18 +220,20 @@
           <!-- Customer Info -->
           <div class="card bg-base-100 shadow">
             <div class="card-body">
-              <h2 class="card-title">Informasi Penawaran</h2>
-              <div class="grid grid-cols-2 gap-4 text-sm">
+              <h2 class="card-title text-base sm:text-lg">Informasi Penawaran</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p class="text-base-content/60">Pelanggan</p>
+                  <p class="text-base-content/60 text-xs sm:text-sm">Pelanggan</p>
                   <p class="font-bold">{{ quotation.customer?.name }}</p>
-                  <p v-if="quotation.customer?.email" class="text-info">
+                  <p v-if="quotation.customer?.email" class="text-info text-xs sm:text-sm">
                     {{ quotation.customer.email }}
                   </p>
-                  <p v-if="quotation.customer?.phone">{{ quotation.customer.phone }}</p>
+                  <p v-if="quotation.customer?.phone" class="text-xs sm:text-sm">
+                    {{ quotation.customer.phone }}
+                  </p>
                 </div>
                 <div>
-                  <p class="text-base-content/60">Berlaku Hingga</p>
+                  <p class="text-base-content/60 text-xs sm:text-sm">Berlaku Hingga</p>
                   <p class="font-bold" :class="{ 'text-error': isExpired }">
                     {{ formatDate(quotation.validUntil) }}
                   </p>
@@ -159,9 +245,11 @@
           <!-- Items -->
           <div class="card bg-base-100 shadow">
             <div class="card-body">
-              <h2 class="card-title">Item Penawaran</h2>
-              <div class="overflow-x-auto">
-                <table class="table">
+              <h2 class="card-title text-base sm:text-lg">Item Penawaran</h2>
+
+              <!-- Desktop Table -->
+              <div class="hidden sm:block overflow-x-auto">
+                <table class="table table-sm">
                   <thead>
                     <tr>
                       <th>ITEM</th>
@@ -181,7 +269,11 @@
                       <td class="text-center">{{ item.quantity }} {{ item.unit }}</td>
                       <td class="text-right font-mono">{{ formatCurrency(item.price) }}</td>
                       <td class="text-right font-mono font-bold">
-                        {{ formatCurrency(item.totalPrice) }}
+                        {{
+                          formatCurrency(
+                            item.total || item.totalPrice || item.quantity * item.price
+                          )
+                        }}
                       </td>
                     </tr>
                   </tbody>
@@ -194,6 +286,38 @@
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              <!-- Mobile List -->
+              <div class="sm:hidden space-y-3">
+                <div
+                  v-for="item in quotation.items"
+                  :key="item.id"
+                  class="bg-base-200 p-3 rounded-lg"
+                >
+                  <div class="font-bold text-sm mb-1">{{ item.name }}</div>
+                  <div v-if="item.product" class="text-xs text-base-content/60 mb-2">
+                    {{ item.product.sku }}
+                  </div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-base-content/60">
+                      {{ item.quantity }} {{ item.unit }} × {{ formatCurrency(item.price) }}
+                    </span>
+                    <span class="font-mono font-bold text-primary">
+                      {{
+                        formatCurrency(item.total || item.totalPrice || item.quantity * item.price)
+                      }}
+                    </span>
+                  </div>
+                </div>
+                <div class="bg-primary/10 p-3 rounded-lg">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold">Total</span>
+                    <span class="font-mono font-bold text-primary text-lg">
+                      {{ formatCurrency(quotation.totalAmount) }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

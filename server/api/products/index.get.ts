@@ -3,12 +3,17 @@ export default defineEventHandler(async event => {
   const page = parseInt(query.page as string) || 1
   const limit = parseInt(query.limit as string) || 10
   const category = query.category as string
+  const type = query.type as string
   const search = query.search as string
 
   const where: any = {}
 
   if (category) {
     where.category = category
+  }
+
+  if (type) {
+    where.type = type
   }
 
   if (search) {
@@ -31,8 +36,14 @@ export default defineEventHandler(async event => {
     prisma.product.count({ where }),
   ])
 
+  // Transform stock object to number
+  const transformedProducts = products.map(product => ({
+    ...product,
+    stock: product.stock?.available || 0,
+  }))
+
   return {
-    data: products,
+    data: transformedProducts,
     meta: {
       total,
       page,

@@ -25,8 +25,116 @@
       </button>
     </div>
 
+    <!-- View Toggle -->
+    <div class="flex justify-end">
+      <AppViewToggle v-model="viewMode" />
+    </div>
+
+    <!-- Users Grid -->
+    <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="pending" class="col-span-full text-center py-12">
+        <span class="loading loading-spinner loading-lg"></span>
+      </div>
+
+      <div v-else-if="!users?.length" class="col-span-full text-center py-12 text-base-content/60">
+        <p class="text-lg">Belum ada pengguna</p>
+      </div>
+
+      <div
+        v-for="user in users"
+        :key="user.id"
+        class="card bg-base-100 shadow hover:shadow-md transition-shadow"
+      >
+        <div class="card-body p-5">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="avatar placeholder">
+              <div
+                class="bg-primary text-primary-content w-12 rounded-full flex items-center justify-center"
+              >
+                <span class="text-lg">
+                  {{ user.name?.charAt(0)?.toUpperCase() || 'U' }}
+                </span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-base">{{ user.name }}</h3>
+              <p class="text-sm text-base-content/60">{{ user.phone || '-' }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2 text-base-content/70">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span class="font-mono">{{ user.username }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span class="truncate">{{ user.email }}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-3">
+            <span
+              class="badge flex-1 justify-center"
+              :class="{
+                'badge-primary': user.role === 'OWNER',
+                'badge-secondary': user.role === 'ADMIN',
+                'badge-accent': user.role === 'TECHNICIAN',
+                'badge-ghost': user.role === 'VIEWER',
+              }"
+            >
+              {{ getRoleLabel(user.role) }}
+            </span>
+            <span
+              class="badge flex-1 justify-center"
+              :class="user.isActive ? 'badge-success' : 'badge-error'"
+            >
+              {{ user.isActive ? 'Aktif' : 'Nonaktif' }}
+            </span>
+          </div>
+
+          <div class="card-actions justify-end mt-4 pt-4 border-t border-base-200">
+            <button @click="editUser(user)" class="btn btn-ghost btn-sm">Edit</button>
+            <button
+              @click="toggleStatus(user)"
+              class="btn btn-ghost btn-sm"
+              :class="user.isActive ? 'text-error' : 'text-success'"
+            >
+              {{ user.isActive ? 'Nonaktifkan' : 'Aktifkan' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Users Table -->
-    <div class="card bg-base-100 shadow">
+    <div v-else class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
           <table class="table table-sm sm:table-md">
@@ -55,7 +163,9 @@
                 <td>
                   <div class="flex items-center gap-2 sm:gap-3">
                     <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content w-8 sm:w-10 rounded-full">
+                      <div
+                        class="bg-primary text-primary-content w-8 sm:w-10 rounded-full flex items-center justify-center"
+                      >
                         <span class="text-xs sm:text-sm">
                           {{ user.name?.charAt(0)?.toUpperCase() || 'U' }}
                         </span>
@@ -193,6 +303,7 @@
 <script setup lang="ts">
 const { showAlert } = useAlert()
 
+const viewMode = ref<'GRID' | 'LIST'>('GRID')
 const showModal = ref(false)
 const isEditing = ref(false)
 const saving = ref(false)

@@ -577,7 +577,7 @@
                       <div class="font-mono font-semibold">
                         {{
                           tech.feeType === 'PERCENTAGE'
-                            ? formatCurrency(calculatedMargin * (Number(tech.fee) / 100))
+                            ? formatCurrency(calculatedTechnicianWage * (Number(tech.fee) / 100))
                             : formatCurrency(tech.fee)
                         }}
                       </div>
@@ -637,7 +637,7 @@
                   <td class="text-right font-mono">
                     {{
                       tech.feeType === 'PERCENTAGE'
-                        ? formatCurrency(calculatedMargin * (Number(tech.fee) / 100))
+                        ? formatCurrency(calculatedTechnicianWage * (Number(tech.fee) / 100))
                         : formatCurrency(tech.fee)
                     }}
                     <div class="text-xs text-base-content/60">
@@ -961,7 +961,7 @@
                   class="label-text-alt mt-1 text-info"
                 >
                   Estimasi:
-                  {{ formatCurrency(calculatedMargin * (assignment.feeInput / 100)) }}
+                  {{ formatCurrency(calculatedTechnicianWage * (assignment.feeInput / 100)) }}
                 </span>
               </div>
             </div>
@@ -1091,6 +1091,21 @@ const calculatedMargin = computed(() => {
   return calculatedItemPrice.value - calculatedItemCost.value - calculatedExpenseCost.value
 })
 
+// Business Cash Percentage (default 30% if not set)
+const businessCashPercentage = computed(() => {
+  return Number(project.value?.businessCashPercentage || 30)
+})
+
+// Business Cash Amount
+const calculatedBusinessCash = computed(() => {
+  return calculatedMargin.value * (businessCashPercentage.value / 100)
+})
+
+// Technician Wage = Margin - Business Cash
+const calculatedTechnicianWage = computed(() => {
+  return calculatedMargin.value - calculatedBusinessCash.value
+})
+
 // Budget vs Actual = (Actual - Budget) / Budget * 100
 const budgetVariance = computed(() => {
   const budget = Number(project.value?.budget) || 0
@@ -1162,12 +1177,28 @@ const startProject = async () => {
 }
 
 const completeProject = async () => {
+  // Check for missing data
+  const warnings: string[] = []
+  if (!project.value?.expenses?.length) {
+    warnings.push('Belum ada pengeluaran (expenses) yang diinput')
+  }
+  if (!project.value?.technicians?.length) {
+    warnings.push('Belum ada teknisi yang di-assign')
+  }
+
+  let message =
+    'Apakah Anda yakin ingin menyelesaikan proyek ini? Status akan berubah menjadi Selesai.'
+
+  if (warnings.length > 0) {
+    const warningList = warnings.map((w, i) => `${i + 1}. ${w}`).join('\n')
+    message = `Data berikut belum lengkap:\n\n${warningList}\n\nApakah Anda tetap ingin menyelesaikan proyek ini?`
+  }
+
   const isConfirmed = await confirm({
-    title: 'Selesaikan Proyek',
-    message:
-      'Apakah Anda yakin ingin menyelesaikan proyek ini? Status akan berubah menjadi Selesai.',
-    confirmText: 'Ya, Selesai',
-    type: 'success',
+    title: warnings.length > 0 ? 'Peringatan Data Belum Lengkap' : 'Selesaikan Proyek',
+    message,
+    confirmText: warnings.length > 0 ? 'Ya, Tetap Selesaikan' : 'Ya, Selesai',
+    type: warnings.length > 0 ? 'warning' : 'success',
   })
 
   if (!isConfirmed) return

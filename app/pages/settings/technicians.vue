@@ -25,20 +25,149 @@
       </button>
     </div>
 
-    <!-- Search -->
+    <!-- Search & Filter -->
     <div class="card bg-base-100 shadow">
-      <div class="card-body py-4">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Cari teknisi..."
-          class="input input-bordered w-full"
-        />
+      <div class="card-body">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
+          <div class="flex-1">
+            <div class="form-control">
+              <input
+                v-model="search"
+                type="text"
+                placeholder="Cari teknisi..."
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technician Grid -->
+    <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="pending" class="col-span-full text-center py-12">
+        <span class="loading loading-spinner loading-lg"></span>
+      </div>
+
+      <div
+        v-else-if="!filteredTechnicians?.length"
+        class="col-span-full text-center py-12 text-base-content/60"
+      >
+        <p class="text-lg">Belum ada teknisi</p>
+        <button @click="openModal()" class="btn btn-primary mt-4">Tambah Teknisi Pertama</button>
+      </div>
+
+      <div
+        v-for="tech in filteredTechnicians"
+        :key="tech.id"
+        class="card bg-base-100 shadow hover:shadow-md transition-shadow"
+      >
+        <div class="card-body p-5">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="avatar placeholder">
+              <div
+                class="bg-primary text-primary-content rounded-full w-12 flex items-center justify-center"
+              >
+                <span class="text-lg">{{ getInitials(tech.name) }}</span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-base">{{ tech.name }}</h3>
+              <span
+                class="badge badge-sm"
+                :class="tech.type === 'INTERNAL' ? 'badge-primary' : 'badge-outline'"
+              >
+                {{ tech.type }}
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2 text-base-content/70">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                />
+              </svg>
+              <span class="font-mono">{{ tech.phone }}</span>
+            </div>
+            <div v-if="tech.email" class="flex items-center gap-2 text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span class="truncate">{{ tech.email }}</span>
+            </div>
+          </div>
+
+          <div class="divider my-3"></div>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-base-content/60">Fee:</span>
+              <template v-if="tech.feeType === 'PERCENTAGE'">
+                <div class="text-right">
+                  <div class="font-mono font-semibold">{{ tech.feePercentage }}%</div>
+                  <div class="text-xs text-base-content/60">
+                    Min: {{ formatCurrency(tech.minFee) }}
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <span class="badge badge-ghost">{{ tech.feeType }}</span>
+              </template>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-base-content/60">Proyek:</span>
+              <div class="flex gap-1">
+                <span class="badge badge-ghost">{{ tech.totalProjects || 0 }}</span>
+                <span v-if="tech.activeProjects" class="badge badge-success">
+                  {{ tech.activeProjects }} aktif
+                </span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-base-content/60">Total Pendapatan:</span>
+              <span class="font-mono font-bold text-success">
+                {{ formatCurrency(tech.totalEarnings || 0) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-actions justify-end mt-4 pt-4 border-t border-base-200">
+            <button @click="openModal(tech)" class="btn btn-ghost btn-sm">Edit</button>
+            <button @click="deleteTechnician(tech)" class="btn btn-ghost btn-sm text-error">
+              Hapus
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Technician List -->
-    <div class="card bg-base-100 shadow">
+    <div v-else class="card bg-base-100 shadow">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
           <table class="table table-sm sm:table-md">
@@ -71,7 +200,9 @@
                 <td>
                   <div class="flex items-center gap-2 sm:gap-3">
                     <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content rounded-full w-8 sm:w-10">
+                      <div
+                        class="bg-primary text-primary-content rounded-full w-8 sm:w-10 flex items-center justify-center"
+                      >
                         <span class="text-xs sm:text-sm">{{ getInitials(tech.name) }}</span>
                       </div>
                     </div>
@@ -240,6 +371,7 @@
 const { showAlert } = useAlert()
 const { formatCurrency } = useFormatter()
 
+const viewMode = ref<'GRID' | 'LIST'>('GRID')
 const search = ref('')
 const showModal = ref(false)
 const saving = ref(false)

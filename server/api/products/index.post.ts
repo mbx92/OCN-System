@@ -3,14 +3,14 @@ import { z } from 'zod'
 const createProductSchema = z.object({
   sku: z.string().min(1, 'SKU wajib diisi'),
   name: z.string().min(1, 'Nama wajib diisi'),
+  type: z.enum(['PRODUCT', 'SERVICE', 'MATERIAL']).default('PRODUCT'),
   category: z.string().min(1, 'Kategori wajib dipilih'),
-  unit: z.string().min(1, 'Unit wajib diisi'),
+  unit: z.string().optional().nullable(),
   purchaseUnit: z.string().optional().nullable(),
   conversionFactor: z.number().min(1).default(1),
   purchasePrice: z.number().min(0).default(0),
   sellingPrice: z.number().min(0).default(0),
   minStock: z.number().min(0).default(0),
-  isService: z.boolean().default(false),
 })
 
 export default defineEventHandler(async event => {
@@ -42,14 +42,14 @@ export default defineEventHandler(async event => {
     data: {
       sku: data.sku,
       name: data.name,
+      type: data.type,
       category: data.category,
-      unit: data.unit,
+      unit: data.unit || null,
       purchaseUnit: data.purchaseUnit || null,
       conversionFactor: data.conversionFactor,
       purchasePrice: data.purchasePrice,
       sellingPrice: data.sellingPrice,
       minStock: data.minStock,
-      isService: data.isService,
     },
   })
 

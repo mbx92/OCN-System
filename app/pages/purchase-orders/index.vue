@@ -50,14 +50,20 @@
           <h2 class="card-title">Item yang Perlu di-PO</h2>
 
           <!-- Search & View Toggle -->
-          <div class="flex flex-row gap-4">
-            <AppViewToggle v-model="pendingViewMode" />
-            <input
-              v-model="pendingSearch"
-              type="text"
-              placeholder="Cari item, produk, atau proyek..."
-              class="input input-bordered flex-1"
-            />
+          <div class="flex flex-col lg:flex-row gap-4">
+            <div class="flex-none">
+              <AppViewToggle v-model="pendingViewMode" />
+            </div>
+            <div class="flex-1">
+              <div class="form-control">
+                <input
+                  v-model="pendingSearch"
+                  type="text"
+                  placeholder="Cari item, produk, atau proyek..."
+                  class="input input-bordered w-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -121,7 +127,7 @@
             <div
               v-for="item in filteredPendingItems"
               :key="item.id"
-              class="card bg-base-200 hover:bg-base-300 transition-all"
+              class="card bg-base-100 shadow hover:shadow-md transition-shadow"
             >
               <div class="card-body p-4">
                 <div class="mb-3">
@@ -301,14 +307,20 @@
           <h2 class="card-title">Daftar Purchase Order</h2>
 
           <!-- Search & View Toggle -->
-          <div class="flex flex-row gap-4">
-            <AppViewToggle v-model="viewMode" />
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Cari No. PO, Supplier, atau Proyek..."
-              class="input input-bordered flex-1"
-            />
+          <div class="flex flex-col lg:flex-row gap-4">
+            <div class="flex-none">
+              <AppViewToggle v-model="viewMode" />
+            </div>
+            <div class="flex-1">
+              <div class="form-control">
+                <input
+                  v-model="search"
+                  type="text"
+                  placeholder="Cari No. PO, Supplier, atau Proyek..."
+                  class="input input-bordered w-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -342,7 +354,7 @@
           <div
             v-for="po in filteredPOList"
             :key="po.id"
-            class="card bg-base-200 hover:bg-base-300 cursor-pointer transition-all"
+            class="card bg-base-100 shadow hover:shadow-md cursor-pointer transition-shadow"
             @click="navigateTo(`/purchase-orders/${po.id}`)"
           >
             <div class="card-body p-4">
