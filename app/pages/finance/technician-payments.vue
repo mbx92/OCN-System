@@ -21,6 +21,9 @@ const selectedProject = ref('')
 const selectedStatus = ref('')
 const selectedPeriod = ref('')
 const searchQuery = ref('')
+const viewMode = ref<'GRID' | 'LIST'>('LIST')
+const dateFrom = ref('')
+const dateTo = ref('')
 
 // Modal state
 const showModal = ref(false)
@@ -235,6 +238,8 @@ function resetFilters() {
   selectedStatus.value = ''
   selectedPeriod.value = ''
   searchQuery.value = ''
+  dateFrom.value = ''
+  dateTo.value = ''
   pagination.value.page = 1
   loadPayments()
 }
@@ -254,7 +259,7 @@ function getStatusInfo(status: string) {
 const totalAmount = computed(() => {
   return payments.value.reduce((sum, payment) => {
     if (payment.status !== 'CANCELLED') {
-      return sum + payment.amount
+      return sum + Number(payment.amount)
     }
     return sum
   }, 0)
@@ -263,7 +268,7 @@ const totalAmount = computed(() => {
 const totalPaid = computed(() => {
   return payments.value.reduce((sum, payment) => {
     if (payment.status === 'PAID') {
-      return sum + payment.amount
+      return sum + Number(payment.amount)
     }
     return sum
   }, 0)
@@ -272,17 +277,28 @@ const totalPaid = computed(() => {
 const totalPending = computed(() => {
   return payments.value.reduce((sum, payment) => {
     if (payment.status === 'PENDING') {
-      return sum + payment.amount
+      return sum + Number(payment.amount)
     }
     return sum
   }, 0)
 })
 
 // Watch filters
-watch([selectedTechnician, selectedProject, selectedStatus, selectedPeriod, searchQuery], () => {
-  pagination.value.page = 1
-  loadPayments()
-})
+watch(
+  [
+    selectedTechnician,
+    selectedProject,
+    selectedStatus,
+    selectedPeriod,
+    searchQuery,
+    dateFrom,
+    dateTo,
+  ],
+  () => {
+    pagination.value.page = 1
+    loadPayments()
+  }
+)
 
 // Init
 onMounted(() => {
@@ -314,101 +330,173 @@ onMounted(() => {
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-3 gap-4">
       <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
+        <div class="card-body py-3">
           <div class="text-sm text-base-content/60">Total Pembayaran</div>
-          <div class="text-2xl font-bold">{{ formatCurrency(totalAmount) }}</div>
+          <div class="text-xl font-bold">{{ formatCurrency(totalAmount) }}</div>
         </div>
       </div>
       <div class="card bg-success/10 shadow-sm">
-        <div class="card-body">
+        <div class="card-body py-3">
           <div class="text-sm text-success/80">Sudah Dibayar</div>
-          <div class="text-2xl font-bold text-success">{{ formatCurrency(totalPaid) }}</div>
+          <div class="text-xl font-bold text-success">{{ formatCurrency(totalPaid) }}</div>
         </div>
       </div>
       <div class="card bg-warning/10 shadow-sm">
-        <div class="card-body">
+        <div class="card-body py-3">
           <div class="text-sm text-warning/80">Pending</div>
-          <div class="text-2xl font-bold text-warning">{{ formatCurrency(totalPending) }}</div>
+          <div class="text-xl font-bold text-warning">{{ formatCurrency(totalPending) }}</div>
         </div>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Search -->
-          <div class="form-control">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Cari nomor/deskripsi..."
-              class="input input-bordered w-full"
+    <div class="card bg-base-100 shadow">
+      <div class="card-body py-4 flex-row items-center gap-4">
+        <!-- View Toggle -->
+        <AppViewToggle v-model="viewMode" />
+
+        <!-- Search -->
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Cari nama/nomor/deskripsi..."
+          class="input input-bordered flex-1"
+        />
+
+        <!-- Technician Filter -->
+        <select v-model="selectedTechnician" class="select select-bordered">
+          <option value="">Semua Teknisi</option>
+          <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
+            {{ tech.name }}
+          </option>
+        </select>
+
+        <!-- Project Filter -->
+        <select v-model="selectedProject" class="select select-bordered">
+          <option value="">Semua Project</option>
+          <option v-for="project in projects" :key="project.id" :value="project.id">
+            {{ project.projectNumber }} - {{ project.title }}
+          </option>
+        </select>
+
+        <!-- Status Filter -->
+        <select v-model="selectedStatus" class="select select-bordered">
+          <option value="">Semua Status</option>
+          <option v-for="status in paymentStatuses" :key="status.value" :value="status.value">
+            {{ status.label }}
+          </option>
+        </select>
+
+        <!-- Reset Button (icon only) -->
+        <button @click="resetFilters" class="btn btn-ghost btn-square" title="Reset">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="text-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="payments.length === 0" class="text-center py-12 text-base-content/60">
+      <p class="text-lg">Tidak ada data pembayaran</p>
+    </div>
+
+    <!-- Grid View -->
+    <div
+      v-else-if="viewMode === 'GRID'"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
+      <div
+        v-for="payment in payments"
+        :key="payment.id"
+        class="card bg-base-100 shadow hover:shadow-md transition-shadow"
+      >
+        <div class="card-body p-4">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-mono text-sm text-base-content/60">{{ payment.paymentNumber }}</p>
+              <h3 class="font-semibold">{{ payment.technician.name }}</h3>
+              <p class="text-xs text-base-content/60">{{ payment.technician.type || 'Teknisi' }}</p>
+            </div>
+            <span class="badge badge-sm" :class="getStatusInfo(payment.status).color">
+              {{ getStatusInfo(payment.status).label }}
+            </span>
           </div>
 
-          <!-- Technician Filter -->
-          <div class="form-control">
-            <select v-model="selectedTechnician" class="select select-bordered w-full">
-              <option value="">Semua Teknisi</option>
-              <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
-                {{ tech.name }}
-              </option>
-            </select>
+          <div class="mt-3 space-y-1 text-sm">
+            <div v-if="payment.project" class="flex justify-between">
+              <span class="text-base-content/60">Project:</span>
+              <span class="font-medium truncate max-w-32">{{ payment.project.projectNumber }}</span>
+            </div>
+            <div v-if="payment.period" class="flex justify-between">
+              <span class="text-base-content/60">Periode:</span>
+              <span>{{ payment.period }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-base-content/60">Jumlah:</span>
+              <span class="font-bold text-primary">{{ formatCurrency(payment.amount) }}</span>
+            </div>
+            <div v-if="payment.paidDate" class="flex justify-between">
+              <span class="text-base-content/60">Tgl Bayar:</span>
+              <span>{{ formatDate(payment.paidDate) }}</span>
+            </div>
           </div>
 
-          <!-- Project Filter -->
-          <div class="form-control">
-            <select v-model="selectedProject" class="select select-bordered w-full">
-              <option value="">Semua Project</option>
-              <option v-for="project in projects" :key="project.id" :value="project.id">
-                {{ project.projectNumber }} - {{ project.title }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Status Filter -->
-          <div class="form-control">
-            <select v-model="selectedStatus" class="select select-bordered w-full">
-              <option value="">Semua Status</option>
-              <option v-for="status in paymentStatuses" :key="status.value" :value="status.value">
-                {{ status.label }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Period Filter -->
-          <div class="form-control">
-            <input
-              v-model="selectedPeriod"
-              type="month"
-              class="input input-bordered w-full"
-              placeholder="Filter Periode"
-            />
-          </div>
-
-          <!-- Reset Button -->
-          <div class="form-control">
-            <button @click="resetFilters" class="btn btn-ghost w-full">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="card-actions justify-end mt-3 pt-3 border-t">
+            <button
+              v-if="payment.status === 'PENDING'"
+              @click="markAsPaid(payment)"
+              class="btn btn-success btn-xs"
+              title="Tandai Sudah Dibayar"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  d="M5 13l4 4L19 7"
                 />
               </svg>
-              Reset
+            </button>
+            <button @click="openModal(payment)" class="btn btn-ghost btn-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+            <button @click="deletePayment(payment.id)" class="btn btn-ghost btn-xs text-error">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="card bg-base-100 shadow-sm">
+    <!-- List View -->
+    <div v-else class="card bg-base-100 shadow-sm">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
           <table class="table">
@@ -425,17 +513,7 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading">
-                <td colspan="8" class="text-center py-8">
-                  <span class="loading loading-spinner loading-md"></span>
-                </td>
-              </tr>
-              <tr v-else-if="payments.length === 0">
-                <td colspan="8" class="text-center py-8 text-base-content/60">
-                  Tidak ada data pembayaran
-                </td>
-              </tr>
-              <tr v-else v-for="payment in payments" :key="payment.id">
+              <tr v-for="payment in payments" :key="payment.id">
                 <td class="font-mono text-sm">{{ payment.paymentNumber }}</td>
                 <td>
                   <div class="font-medium">{{ payment.technician.name }}</div>

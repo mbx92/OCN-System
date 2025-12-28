@@ -59,7 +59,23 @@
           <div class="text-sm truncate w-full">{{ project.title }}</div>
           <div class="flex justify-between w-full text-xs text-base-content/60">
             <span>{{ project.customer?.name || '-' }}</span>
-            <span class="font-mono">{{ formatCurrency(getProjectTotal(project)) }}</span>
+            <div class="text-right">
+              <span class="font-mono">{{ formatCurrency(getProjectTotal(project)) }}</span>
+              <span v-if="project.paidAmount > 0" class="text-success ml-1">
+                (Dibayar: {{ formatCurrency(project.paidAmount) }})
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="
+              project.remainingAmount !== undefined &&
+              project.remainingAmount < getProjectTotal(project)
+            "
+            class="w-full text-xs mt-1"
+          >
+            <span class="text-warning font-semibold">
+              Sisa: {{ formatCurrency(project.remainingAmount) }}
+            </span>
           </div>
         </a>
       </li>
@@ -97,13 +113,40 @@ const selectedProject = ref<any>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
 
 // Watch props to update internal state if changed externally
+// Only update if the value is DIFFERENT from any selected project ID
+// This prevents the bug where project ID shows instead of project name
 watch(
   () => props.modelValue,
-  val => {
-    if (val !== searchQuery.value) {
-      searchQuery.value = val || ''
+  async val => {
+    // If val is being set externally (like initial load) and matches selected project ID, ignore
+    if (selectedProject.value && selectedProject.value.id === val) {
+      return
     }
-  }
+
+    // If val is cleared
+    if (!val) {
+      searchQuery.value = ''
+      selectedProject.value = null
+      return
+    }
+
+    // If it looks like a project ID (long string), try to fetch the project
+    if (val && val.length > 10 && !searchQuery.value.includes('-')) {
+      try {
+        const response = await $fetch<{ data: any[] }>('/api/projects', {
+          params: { limit: 1, search: val },
+        })
+        const project = response?.data?.find(p => p.id === val)
+        if (project) {
+          selectedProject.value = project
+          searchQuery.value = `${project.projectNumber} - ${project.title}`
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+  },
+  { immediate: true }
 )
 
 // Calculate project total from items (selling price)

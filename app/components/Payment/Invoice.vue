@@ -3,15 +3,10 @@
     <!-- Header -->
     <div class="flex justify-between border-b-2 border-gray-800 pb-4 mb-4">
       <div class="flex items-start gap-4">
-        <div
-          class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl"
-        >
-          OC
-        </div>
+        <img src="/logo.png" alt="OCN" class="w-16 h-16 object-contain" />
         <div>
           <h1 class="text-2xl font-bold">INVOICE</h1>
-          <p class="font-bold">OC Networks</p>
-          <p class="text-xs">CV. Kanya Tama Teknologi</p>
+          <p class="font-bold">OCN CCTV & Networking Solutions</p>
           <p class="text-xs">Jalan Mertasari No. 20 Kerobokan Kelod</p>
           <p class="text-xs">082146586160</p>
         </div>
@@ -43,9 +38,9 @@
       <div class="text-right text-xs">
         <table class="ml-auto">
           <tr>
-            <td class="pr-2">Dept.</td>
+            <td class="pr-2">No. Project</td>
             <td>:</td>
-            <td class="pl-2">OCN</td>
+            <td class="pl-2 font-mono">{{ payment.project?.projectNumber || '-' }}</td>
           </tr>
           <tr>
             <td class="pr-2">User</td>
@@ -53,9 +48,21 @@
             <td class="pl-2">{{ payment.receivedBy || 'ADMIN' }}</td>
           </tr>
           <tr>
-            <td class="pr-2">PPN</td>
+            <td class="pr-2">Tipe</td>
             <td>:</td>
-            <td class="pl-2">Non</td>
+            <td class="pl-2">
+              <span
+                class="px-2 py-0.5 text-xs font-bold rounded"
+                :class="{
+                  'bg-blue-100 text-blue-800': payment.type === 'DP',
+                  'bg-green-100 text-green-800': payment.type === 'FULL',
+                  'bg-yellow-100 text-yellow-800': payment.type === 'INSTALLMENT',
+                  'bg-purple-100 text-purple-800': payment.type === 'SETTLEMENT',
+                }"
+              >
+                {{ getPaymentTypeLabel(payment.type) }}
+              </span>
+            </td>
           </tr>
         </table>
       </div>
@@ -64,38 +71,35 @@
     <!-- Items Table -->
     <table class="w-full mb-4 text-xs">
       <thead>
-        <tr class="bg-gray-100 border-y border-gray-400">
-          <th class="py-2 px-1 text-left w-8">No.</th>
-          <th class="py-2 px-1 text-left" style="min-width: 80px; max-width: 100px">Kode Item</th>
-          <th class="py-2 px-1 text-left">Nama Item</th>
-          <th class="py-2 px-1 text-center w-20">Jml</th>
-          <th class="py-2 px-1 text-left w-16">Satuan</th>
-          <th class="py-2 px-1 text-right w-24">Harga</th>
-          <th class="py-2 px-1 text-center w-12">Pot</th>
-          <th class="py-2 px-1 text-right w-28">Total</th>
+        <tr class="border-y-2 border-gray-800">
+          <th class="py-3 px-2 text-left w-8">No.</th>
+          <th class="py-3 px-2 text-left" style="min-width: 80px; max-width: 100px">Kode Item</th>
+          <th class="py-3 px-2 text-left">Nama Item</th>
+          <th class="py-3 px-2 text-center w-20">Jml</th>
+          <th class="py-3 px-2 text-left w-16">Satuan</th>
+          <th class="py-3 px-2 text-right w-24">Harga</th>
+          <th class="py-3 px-2 text-right w-28">Total</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in items" :key="item.id" class="border-b border-gray-200">
-          <td class="py-1 px-1">{{ idx + 1 }}</td>
-          <td class="py-1 px-1 font-mono text-[10px] break-all">{{ item.product?.sku || '-' }}</td>
-          <td class="py-1 px-1">{{ item.name }}</td>
-          <td class="py-1 px-1 text-center">{{ item.quantity }}</td>
-          <td class="py-1 px-1">{{ item.unit }}</td>
-          <td class="py-1 px-1 text-right font-mono">{{ formatNumber(item.price) }}</td>
-          <td class="py-1 px-1 text-center">0</td>
-          <td class="py-1 px-1 text-right font-mono">{{ formatNumber(item.totalPrice) }}</td>
+        <tr v-for="(item, idx) in items" :key="item.id" class="border-b border-gray-300">
+          <td class="py-2 px-2">{{ Number(idx) + 1 }}</td>
+          <td class="py-2 px-2 font-mono text-[10px] break-all">{{ item.product?.sku || '-' }}</td>
+          <td class="py-2 px-2">{{ item.name }}</td>
+          <td class="py-2 px-2 text-center">{{ item.quantity }}</td>
+          <td class="py-2 px-2">{{ item.unit }}</td>
+          <td class="py-2 px-2 text-right font-mono">{{ formatNumber(item.price) }}</td>
+          <td class="py-2 px-2 text-right font-mono">{{ formatNumber(item.totalPrice) }}</td>
         </tr>
         <!-- Empty rows to fill space -->
-        <tr v-for="i in emptyRows" :key="'empty-' + i" class="border-b border-gray-200">
-          <td class="py-1 px-1">&nbsp;</td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
-          <td class="py-1 px-1"></td>
+        <tr v-for="i in emptyRows" :key="'empty-' + i" class="border-b border-gray-300">
+          <td class="py-2 px-2">&nbsp;</td>
+          <td class="py-2 px-2"></td>
+          <td class="py-2 px-2"></td>
+          <td class="py-2 px-2"></td>
+          <td class="py-2 px-2"></td>
+          <td class="py-2 px-2"></td>
+          <td class="py-2 px-2"></td>
         </tr>
       </tbody>
     </table>
@@ -117,7 +121,7 @@
         </div>
         <p class="mt-4">
           <strong>Terbilang</strong>
-          : {{ terbilang(subTotal) }}
+          : {{ terbilang(subTotal) }} rupiah
         </p>
         <p class="text-xs text-gray-500 mt-2">{{ formatDateTime(new Date().toISOString()) }}</p>
       </div>
@@ -131,22 +135,12 @@
             <td class="pl-2 text-right">{{ items.length }}</td>
           </tr>
           <tr>
-            <td class="pr-2">Potongan</td>
+            <td class="pr-2">Metode Bayar</td>
             <td>:</td>
-            <td class="pl-2 text-right">0 %</td>
+            <td class="pl-2 text-right">{{ payment.method }}</td>
           </tr>
           <tr>
-            <td class="pr-2">Pajak</td>
-            <td>:</td>
-            <td class="pl-2 text-right">0 %</td>
-          </tr>
-          <tr>
-            <td class="pr-2">Biaya Lain</td>
-            <td>:</td>
-            <td class="pl-2 text-right">0</td>
-          </tr>
-          <tr>
-            <td class="pr-2">Tanggal Jt</td>
+            <td class="pr-2">Tanggal</td>
             <td>:</td>
             <td class="pl-2 text-right">{{ formatDate(payment.paymentDate) }}</td>
           </tr>
@@ -166,25 +160,17 @@
             <td>:</td>
             <td class="pl-2 text-right font-mono font-bold">{{ formatNumber(subTotal) }}</td>
           </tr>
-          <tr>
-            <td class="pr-2">DP PO</td>
-            <td>:</td>
-            <td class="pl-2 text-right font-mono">0</td>
-          </tr>
           <tr class="bg-green-100">
-            <td class="pr-2 font-bold">{{ payment.method }}</td>
+            <td class="pr-2 font-bold">Dibayar ({{ payment.method }})</td>
             <td>:</td>
             <td class="pl-2 text-right font-mono font-bold">{{ formatNumber(payment.amount) }}</td>
           </tr>
           <tr>
-            <td class="pr-2">Kredit</td>
+            <td class="pr-2">Sisa</td>
             <td>:</td>
-            <td class="pl-2 text-right font-mono">{{ formatNumber(kredit) }}</td>
-          </tr>
-          <tr>
-            <td class="pr-2">Kembali</td>
-            <td>:</td>
-            <td class="pl-2 text-right font-mono">0</td>
+            <td class="pl-2 text-right font-mono" :class="kredit > 0 ? 'text-orange-600' : ''">
+              {{ formatNumber(kredit) }}
+            </td>
           </tr>
         </table>
         <p class="text-right text-xs mt-4">{{ payment.receivedBy || 'ADMIN' }}</p>
@@ -200,8 +186,19 @@ const props = defineProps<{
 
 const { formatDate } = useFormatter()
 
+// Payment type labels
+const getPaymentTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    DP: 'DOWN PAYMENT',
+    FULL: 'LUNAS',
+    INSTALLMENT: 'CICILAN',
+    SETTLEMENT: 'PELUNASAN',
+  }
+  return labels[type] || type
+}
+
 const items = computed(() => props.payment?.project?.items || [])
-const emptyRows = computed(() => Math.max(0, 7 - items.value.length))
+const emptyRows = computed(() => Math.max(0, 5 - items.value.length))
 
 const subTotal = computed(() => {
   return items.value.reduce((sum: number, item: any) => sum + parseFloat(item.totalPrice || 0), 0)
@@ -254,7 +251,6 @@ const terbilang = (angka: number): string => {
     return terbilang(Math.floor(angka / 1000000)) + ' juta ' + terbilang(angka % 1000000)
   if (angka < 1000000000000)
     return terbilang(Math.floor(angka / 1000000000)) + ' milyar ' + terbilang(angka % 1000000000)
-
   return (
     terbilang(Math.floor(angka / 1000000000000)) + ' triliun ' + terbilang(angka % 1000000000000)
   )

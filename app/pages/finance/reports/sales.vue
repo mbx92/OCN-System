@@ -97,14 +97,16 @@ async function loadSalesReport() {
 function calculateSummary() {
   summary.value.totalProjects = projects.value.length
 
-  // Total revenue from projects
+  // Total revenue from projects - must convert Decimal to Number
   summary.value.totalRevenue = projects.value.reduce((sum, p) => {
-    return sum + (p.finalPrice || p.budget || 0)
+    // Use totalAmount from API (already calculated) or fallback to finalPrice/budget
+    const projectValue = Number(p.totalAmount) || Number(p.finalPrice) || Number(p.budget) || 0
+    return sum + projectValue
   }, 0)
 
-  // Total payments received
+  // Total payments received - must convert Decimal to Number
   summary.value.totalPayments = payments.value.reduce((sum, p) => {
-    return sum + p.amount
+    return sum + Number(p.amount || 0)
   }, 0)
 
   // Average project value
@@ -133,7 +135,7 @@ function prepareChartData() {
     }
 
     const current = dataMap.get(key)
-    current.revenue += payment.amount
+    current.revenue += Number(payment.amount || 0)
     current.count += 1
   })
 
@@ -424,16 +426,12 @@ onMounted(() => {
                     </span>
                   </td>
                   <td class="text-right font-medium">
-                    {{ formatCurrency(project.finalPrice || project.budget) }}
+                    {{
+                      formatCurrency(project.totalAmount || project.finalPrice || project.budget)
+                    }}
                   </td>
                   <td class="text-right">
-                    {{
-                      formatCurrency(
-                        payments
-                          .filter(p => p.projectId === project.id)
-                          .reduce((sum, p) => sum + p.amount, 0)
-                      )
-                    }}
+                    {{ formatCurrency(project.paidAmount || 0) }}
                   </td>
                 </tr>
               </tbody>

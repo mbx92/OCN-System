@@ -51,33 +51,37 @@
       </div>
     </div>
 
-    <!-- Mode Filter -->
-    <div class="tabs tabs-boxed w-fit">
-      <button class="tab" :class="{ 'tab-active': !modeFilter }" @click="modeFilter = ''">
-        Semua
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab-active': modeFilter === 'PROJECT' }"
-        @click="modeFilter = 'PROJECT'"
-      >
-        Proyek
-      </button>
-      <button
-        class="tab"
-        :class="{ 'tab-active': modeFilter === 'POS' }"
-        @click="modeFilter = 'POS'"
-      >
-        POS
-      </button>
-    </div>
-
-    <!-- Filters Card -->
-    <div class="card bg-base-100 shadow-sm">
+    <!-- Search & Filters Card -->
+    <div class="card bg-base-100 shadow">
       <div class="card-body">
         <div class="flex flex-col lg:flex-row gap-4">
+          <!-- Mode Tabs -->
+          <div class="flex-none">
+            <div class="tabs tabs-boxed">
+              <button class="tab" :class="{ 'tab-active': !modeFilter }" @click="modeFilter = ''">
+                Semua
+              </button>
+              <button
+                class="tab"
+                :class="{ 'tab-active': modeFilter === 'PROJECT' }"
+                @click="modeFilter = 'PROJECT'"
+              >
+                Proyek
+              </button>
+              <button
+                class="tab"
+                :class="{ 'tab-active': modeFilter === 'POS' }"
+                @click="modeFilter = 'POS'"
+              >
+                POS
+              </button>
+            </div>
+          </div>
+
           <!-- View Toggle -->
-          <AppViewToggle v-model="viewMode" />
+          <div class="flex-none">
+            <AppViewToggle v-model="viewMode" />
+          </div>
 
           <!-- Search -->
           <input
@@ -117,77 +121,73 @@
       </div>
     </div>
 
-    <!-- Payments List -->
-    <div class="card bg-base-100 shadow">
-      <div class="card-body p-4 sm:p-6">
-        <!-- Grid View -->
-        <div
-          v-if="viewMode === 'GRID'"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          <div v-if="pending" class="col-span-full text-center py-8">
-            <span class="loading loading-spinner loading-lg"></span>
+    <!-- Grid View -->
+    <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="pending" class="col-span-full text-center py-8">
+        <span class="loading loading-spinner loading-lg"></span>
+      </div>
+      <div
+        v-else-if="!payments?.length"
+        class="col-span-full text-center py-8 text-base-content/60"
+      >
+        <p class="text-lg">Belum ada pembayaran</p>
+      </div>
+      <div
+        v-for="pay in payments"
+        :key="pay.id"
+        @click="navigateTo(`/finance/payments/${pay.id}`)"
+        class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
+      >
+        <div class="card-body p-4">
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex-1">
+              <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
+              <span
+                class="badge badge-xs sm:badge-sm mt-1"
+                :class="pay.mode === 'PROJECT' ? 'badge-primary' : 'badge-success'"
+              >
+                {{ pay.mode }}
+              </span>
+            </div>
+            <span class="badge badge-ghost badge-xs sm:badge-sm">
+              {{ getTypeLabel(pay.type) }}
+            </span>
           </div>
-          <div
-            v-else-if="!payments?.length"
-            class="col-span-full text-center py-8 text-base-content/60"
-          >
-            <p class="text-lg">Belum ada pembayaran</p>
-          </div>
-          <div
-            v-for="pay in payments"
-            :key="pay.id"
-            @click="navigateTo(`/finance/payments/${pay.id}`)"
-            class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
-          >
-            <div class="card-body p-4">
-              <div class="flex justify-between items-start mb-3">
-                <div class="flex-1">
-                  <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
-                  <span
-                    class="badge badge-xs sm:badge-sm mt-1"
-                    :class="pay.mode === 'PROJECT' ? 'badge-primary' : 'badge-success'"
-                  >
-                    {{ pay.mode }}
-                  </span>
-                </div>
-                <span class="badge badge-ghost badge-xs sm:badge-sm">
-                  {{ getTypeLabel(pay.type) }}
-                </span>
+
+          <div class="space-y-2 text-sm">
+            <div v-if="pay.project" class="flex justify-between items-center">
+              <span class="text-base-content/60">Proyek</span>
+              <div class="text-right">
+                <div class="text-xs font-medium">{{ pay.project.projectNumber }}</div>
+                <div class="text-xs text-base-content/60">{{ pay.project.customer?.name }}</div>
               </div>
+            </div>
 
-              <div class="space-y-2 text-sm">
-                <div v-if="pay.project" class="flex justify-between items-center">
-                  <span class="text-base-content/60">Proyek</span>
-                  <div class="text-right">
-                    <div class="text-xs font-medium">{{ pay.project.projectNumber }}</div>
-                    <div class="text-xs text-base-content/60">{{ pay.project.customer?.name }}</div>
-                  </div>
-                </div>
+            <div class="flex justify-between items-center">
+              <span class="text-base-content/60">Metode</span>
+              <span class="text-xs">{{ pay.method }}</span>
+            </div>
 
-                <div class="flex justify-between items-center">
-                  <span class="text-base-content/60">Metode</span>
-                  <span class="text-xs">{{ pay.method }}</span>
-                </div>
+            <div class="flex justify-between items-center">
+              <span class="text-base-content/60">Tanggal</span>
+              <span class="text-xs">{{ formatDate(pay.paymentDate) }}</span>
+            </div>
 
-                <div class="flex justify-between items-center">
-                  <span class="text-base-content/60">Tanggal</span>
-                  <span class="text-xs">{{ formatDate(pay.paymentDate) }}</span>
-                </div>
-
-                <div class="flex justify-between items-center pt-2 border-t border-base-300">
-                  <span class="text-base-content/60 font-semibold">Jumlah</span>
-                  <span class="font-mono font-bold text-success">
-                    {{ formatCurrency(pay.amount) }}
-                  </span>
-                </div>
-              </div>
+            <div class="flex justify-between items-center pt-2 border-t border-base-300">
+              <span class="text-base-content/60 font-semibold">Jumlah</span>
+              <span class="font-mono font-bold text-success">
+                {{ formatCurrency(pay.amount) }}
+              </span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- List View -->
-        <div v-else class="overflow-x-auto">
+    <!-- List View -->
+    <div v-else class="card bg-base-100 shadow">
+      <div class="card-body p-0">
+        <div class="overflow-x-auto">
           <table class="table table-sm sm:table-md">
             <thead>
               <tr>
@@ -251,12 +251,22 @@
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
 
-    <!-- Pagination -->
-    <div v-if="paymentsData?.meta?.total" class="card bg-base-100 shadow p-4">
-      <AppPagination :total="paymentsData.meta.total" :per-page="20" v-model:current-page="page" />
+        <!-- Pagination -->
+        <div
+          v-if="paymentsData?.meta?.total"
+          class="flex justify-between items-center p-4 border-t border-base-200"
+        >
+          <span class="text-sm text-base-content/60">
+            Menampilkan {{ payments?.length || 0 }} dari {{ paymentsData.meta.total }} data
+          </span>
+          <AppPagination
+            :total="paymentsData.meta.total"
+            :per-page="20"
+            v-model:current-page="page"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Add Payment Modal -->
@@ -275,12 +285,38 @@
                 placeholder="Cari proyek..."
                 @select="onProjectSelectFromComponent"
               />
-              <p v-if="selectedProject" class="text-sm text-base-content/60 mt-1">
-                Total Harga Jual:
-                <span class="font-mono font-bold text-success">
-                  {{ formatCurrency(getProjectTotal(selectedProject)) }}
-                </span>
-              </p>
+              <div v-if="selectedProject" class="text-sm mt-2 space-y-1">
+                <p class="text-base-content/60">
+                  Total Harga Jual:
+                  <span class="font-mono font-bold text-success">
+                    {{ formatCurrency(getProjectTotal(selectedProject)) }}
+                  </span>
+                </p>
+                <p v-if="selectedProject.paidAmount > 0" class="text-base-content/60">
+                  Sudah Dibayar:
+                  <span class="font-mono font-bold text-info">
+                    {{ formatCurrency(selectedProject.paidAmount) }}
+                  </span>
+                </p>
+                <p
+                  v-if="
+                    selectedProject.remainingAmount !== undefined &&
+                    selectedProject.remainingAmount > 0
+                  "
+                  class="text-warning font-semibold"
+                >
+                  Sisa Pembayaran:
+                  <span class="font-mono">
+                    {{ formatCurrency(selectedProject.remainingAmount) }}
+                  </span>
+                </p>
+                <p
+                  v-else-if="selectedProject.paidAmount >= getProjectTotal(selectedProject)"
+                  class="text-success font-semibold"
+                >
+                  ✓ Sudah Lunas
+                </p>
+              </div>
             </div>
 
             <!-- Payment Type -->
@@ -433,7 +469,18 @@ const onProjectSelect = () => {
 // Handler for AppProjectSelect component
 const onProjectSelectFromComponent = (project: any) => {
   form.projectId = project.id
-  form.amount = getProjectTotal(project)
+  // Use remaining amount if available, otherwise use total
+  if (project.remainingAmount !== undefined && project.remainingAmount > 0) {
+    form.amount = project.remainingAmount
+    // Auto-set type based on payment status
+    if (project.paidAmount > 0) {
+      form.type = 'SETTLEMENT' // If already paid some, suggest settlement
+    }
+  } else if (project.paidAmount >= getProjectTotal(project)) {
+    form.amount = 0 // Already fully paid
+  } else {
+    form.amount = getProjectTotal(project)
+  }
 }
 
 const getTypeLabel = (type: string) => {

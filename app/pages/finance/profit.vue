@@ -251,11 +251,20 @@
                           {{ tech.technician?.type }}
                         </p>
                       </div>
-                      <div
-                        class="badge badge-sm"
-                        :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
-                      >
-                        {{ tech.isPaid ? 'Lunas' : 'Belum Bayar' }}
+                      <div class="flex items-center gap-2">
+                        <div
+                          class="badge badge-sm"
+                          :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
+                        >
+                          {{ tech.isPaid ? 'Lunas' : 'Belum Bayar' }}
+                        </div>
+                        <button
+                          v-if="!tech.isPaid"
+                          @click="openSavePaymentModal(tech, project)"
+                          class="btn btn-xs btn-primary"
+                        >
+                          Simpan
+                        </button>
                       </div>
                     </div>
 
@@ -358,6 +367,159 @@
         <p class="text-lg">Tidak ada data proyek</p>
       </div>
     </div>
+
+    <!-- Modal Simpan Pembayaran Teknisi -->
+    <dialog class="modal" :class="{ 'modal-open': showPaymentModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Simpan Pembayaran Teknisi</h3>
+
+        <div v-if="selectedTech" class="space-y-4">
+          <!-- Info Teknisi -->
+          <div class="bg-base-200 p-3 rounded">
+            <p class="font-semibold">{{ selectedTech.technician?.name }}</p>
+            <p class="text-sm text-base-content/60">{{ selectedTech.technician?.type }}</p>
+            <p class="text-xs text-base-content/60 mt-1">
+              Proyek: {{ selectedProject?.projectNumber }} - {{ selectedProject?.title }}
+            </p>
+          </div>
+
+          <!-- Fee Calculated -->
+          <div class="bg-success/10 p-3 rounded border border-success">
+            <div class="flex justify-between items-center">
+              <span class="text-sm">Fee dari Perhitungan:</span>
+              <span class="font-mono font-bold text-success">
+                {{ formatCurrency(calculatedFee) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Editable Amount -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Jumlah yang Dibayar</span>
+            </label>
+            <input
+              v-model.number="paymentAmount"
+              type="number"
+              class="input input-bordered w-full"
+              min="0"
+              placeholder="Masukkan jumlah"
+            />
+
+            <!-- Rounding Buttons -->
+            <div class="flex flex-wrap gap-2 mt-2">
+              <div class="text-xs text-base-content/60 w-full mb-1">Pembulatan:</div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  @click="roundDown(1000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke bawah (ribuan)"
+                >
+                  ↓ 1rb
+                </button>
+                <button
+                  type="button"
+                  @click="roundUp(1000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke atas (ribuan)"
+                >
+                  ↑ 1rb
+                </button>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  @click="roundDown(10000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke bawah (puluhan ribu)"
+                >
+                  ↓ 10rb
+                </button>
+                <button
+                  type="button"
+                  @click="roundUp(10000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke atas (puluhan ribu)"
+                >
+                  ↑ 10rb
+                </button>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  @click="roundDown(50000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke bawah (50 ribu)"
+                >
+                  ↓ 50rb
+                </button>
+                <button
+                  type="button"
+                  @click="roundUp(50000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke atas (50 ribu)"
+                >
+                  ↑ 50rb
+                </button>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  @click="roundDown(100000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke bawah (ratusan ribu)"
+                >
+                  ↓ 100rb
+                </button>
+                <button
+                  type="button"
+                  @click="roundUp(100000)"
+                  class="btn btn-xs btn-outline"
+                  title="Bulatkan ke atas (ratusan ribu)"
+                >
+                  ↑ 100rb
+                </button>
+              </div>
+            </div>
+
+            <label class="label">
+              <span class="label-text-alt text-base-content/60">
+                Bisa diubah sesuai kesepakatan
+              </span>
+            </label>
+          </div>
+
+          <!-- Description -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Keterangan (opsional)</span>
+            </label>
+            <textarea
+              v-model="paymentDescription"
+              class="textarea textarea-bordered w-full"
+              rows="2"
+              placeholder="Keterangan pembayaran..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="showPaymentModal = false">Batal</button>
+          <button
+            class="btn btn-primary"
+            :disabled="savingPayment || !paymentAmount"
+            @click="saveTechnicianPayment"
+          >
+            <span v-if="savingPayment" class="loading loading-spinner loading-sm"></span>
+            <span v-else>Simpan Pembayaran</span>
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showPaymentModal = false">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
@@ -370,6 +532,15 @@ const filterDateFrom = ref('')
 const filterDateTo = ref('')
 const expandedProjects = ref<string[]>([])
 const savingProject = ref<string | null>(null)
+
+// Payment Modal State
+const showPaymentModal = ref(false)
+const selectedTech = ref<any>(null)
+const selectedProject = ref<any>(null)
+const paymentAmount = ref(0)
+const paymentDescription = ref('')
+const savingPayment = ref(false)
+const calculatedFee = ref(0)
 
 const { data: projects, pending, refresh } = await useFetch('/api/projects/profit-analysis')
 
@@ -529,5 +700,62 @@ const getStatusClass = (status: string) => {
     CLOSED: 'badge-ghost',
   }
   return classes[status] || 'badge-ghost'
+}
+
+// Open payment modal
+const openSavePaymentModal = (tech: any, project: any) => {
+  selectedTech.value = tech
+  selectedProject.value = project
+  const fee = calculateTechFee(tech, project)
+  calculatedFee.value = fee
+  paymentAmount.value = fee
+  paymentDescription.value = `Pembayaran fee proyek ${project.projectNumber}`
+  showPaymentModal.value = true
+}
+
+// Save technician payment
+const saveTechnicianPayment = async () => {
+  if (!selectedTech.value || !paymentAmount.value) return
+
+  savingPayment.value = true
+  try {
+    await $fetch('/api/technician-payments', {
+      method: 'POST',
+      body: {
+        technicianId: selectedTech.value.technician?.id,
+        projectId: selectedProject.value?.id,
+        amount: paymentAmount.value,
+        description: paymentDescription.value,
+        period: new Date().toISOString().slice(0, 7), // YYYY-MM format
+        status: 'PENDING',
+      },
+    })
+
+    showAlert('Pembayaran teknisi berhasil disimpan', 'success')
+    showPaymentModal.value = false
+
+    // Reset form
+    selectedTech.value = null
+    selectedProject.value = null
+    paymentAmount.value = 0
+    paymentDescription.value = ''
+
+    // Refresh data
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyimpan pembayaran', 'error')
+  } finally {
+    savingPayment.value = false
+  }
+}
+
+const roundUp = (nearest: number) => {
+  if (!paymentAmount.value) return
+  paymentAmount.value = Math.ceil(paymentAmount.value / nearest) * nearest
+}
+
+const roundDown = (nearest: number) => {
+  if (!paymentAmount.value) return
+  paymentAmount.value = Math.floor(paymentAmount.value / nearest) * nearest
 }
 </script>

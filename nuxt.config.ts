@@ -12,7 +12,6 @@ export default defineNuxtConfig({
     pages: 'pages',
     layouts: 'layouts',
     middleware: 'middleware',
-    public: '../public',
   },
 
   devServer: {

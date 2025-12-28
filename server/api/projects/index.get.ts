@@ -16,6 +16,7 @@ export default defineEventHandler(async event => {
       { projectNumber: { contains: search, mode: 'insensitive' } },
       { title: { contains: search, mode: 'insensitive' } },
       { customer: { name: { contains: search, mode: 'insensitive' } } },
+      { id: search }, // Allow searching by ID
     ]
   }
 
@@ -28,6 +29,15 @@ export default defineEventHandler(async event => {
           select: {
             id: true,
             totalPrice: true,
+            totalCost: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            type: true,
+            paymentDate: true,
           },
         },
         _count: {
@@ -41,8 +51,31 @@ export default defineEventHandler(async event => {
     prisma.project.count({ where }),
   ])
 
+  // Calculate paid amount and remaining amount for each project
+  const projectsWithPaymentInfo = projects.map(project => {
+    const totalPrice =
+      project.items.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0) ||
+      Number(project.finalPrice) ||
+      Number(project.budget) ||
+      0
+
+    const paidAmount = project.payments.reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0
+    )
+
+    const remainingAmount = totalPrice - paidAmount
+
+    return {
+      ...project,
+      totalAmount: totalPrice,
+      paidAmount,
+      remainingAmount,
+    }
+  })
+
   return {
-    data: projects,
+    data: projectsWithPaymentInfo,
     meta: {
       total,
       page,

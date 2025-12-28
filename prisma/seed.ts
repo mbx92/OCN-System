@@ -9,15 +9,38 @@ async function main() {
   // ==================== CLEANUP ====================
   console.log('🗑️  Cleaning up existing data...')
   // Delete in correct order (respect foreign keys)
+  // First, delete tables that reference User
+  await prisma.expense.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.activity.deleteMany()
+  // Delete warranty-related tables
+  await prisma.warrantyClaim.deleteMany()
+  await prisma.warranty.deleteMany()
+  // Delete payment tables
+  await prisma.technicianPayment.deleteMany()
+  await prisma.payment.deleteMany()
+  // Delete asset table
+  await prisma.asset.deleteMany()
+  // Delete project-related tables
+  await prisma.financialSummary.deleteMany()
+  await prisma.projectTechnician.deleteMany()
+  await prisma.purchaseOrderItem.deleteMany()
+  await prisma.purchaseOrder.deleteMany()
+  await prisma.projectExpense.deleteMany()
   await prisma.quotation.deleteMany()
   await prisma.projectItem.deleteMany()
   await prisma.project.deleteMany()
   await prisma.customer.deleteMany()
+  // Delete product-related tables
+  await prisma.stockMovement.deleteMany()
   await prisma.stock.deleteMany()
+  await prisma.supplierProduct.deleteMany()
   await prisma.product.deleteMany()
   await prisma.supplier.deleteMany()
+  // Delete unit tables
   await prisma.unitConversion.deleteMany()
   await prisma.unit.deleteMany()
+  // Delete remaining tables
   await prisma.company.deleteMany()
   await prisma.technician.deleteMany()
   await prisma.user.deleteMany()
@@ -1076,6 +1099,137 @@ async function main() {
     ],
   })
   console.log('✅ Added expenses to project')
+
+  // ==================== GENERAL EXPENSES ====================
+  // Create sample expense data for P&L report
+  const expenseData = [
+    // Biaya Penjualan (Selling Expenses)
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Komisi Penjualan',
+      description: 'Komisi sales bulan Desember',
+      amount: 500000,
+      date: new Date('2025-12-15'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Marketing',
+      description: 'Iklan Facebook & Instagram',
+      amount: 750000,
+      date: new Date('2025-12-10'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Pemasaran',
+      description: 'Biaya cetak brosur',
+      amount: 300000,
+      date: new Date('2025-12-05'),
+      createdBy: owner.id,
+    },
+    // Biaya Administratif (Administrative Expenses)
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Sewa Kantor',
+      description: 'Sewa kantor bulan Desember',
+      amount: 2500000,
+      date: new Date('2025-12-01'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Listrik',
+      description: 'Tagihan listrik kantor',
+      amount: 450000,
+      date: new Date('2025-12-05'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Internet',
+      description: 'Tagihan internet kantor',
+      amount: 500000,
+      date: new Date('2025-12-05'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'ATK',
+      description: 'Pembelian alat tulis kantor',
+      amount: 150000,
+      date: new Date('2025-12-08'),
+      createdBy: owner.id,
+    },
+    // Salary expenses
+    {
+      type: 'SALARY' as const,
+      category: 'Gaji Staff',
+      description: 'Gaji admin bulan Desember',
+      amount: 4000000,
+      date: new Date('2025-12-25'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'SALARY' as const,
+      category: 'Gaji Staff',
+      description: 'THR karyawan',
+      amount: 2000000,
+      date: new Date('2025-12-20'),
+      createdBy: owner.id,
+    },
+    // Project related expenses
+    {
+      type: 'PROJECT' as const,
+      category: 'Material Project',
+      description: 'Pembelian material tambahan project',
+      amount: 850000,
+      date: new Date('2025-12-12'),
+      createdBy: owner.id,
+      projectId: project1.id,
+    },
+    {
+      type: 'PROJECT' as const,
+      category: 'Transport Project',
+      description: 'Biaya transport ke lokasi project',
+      amount: 200000,
+      date: new Date('2025-12-14'),
+      createdBy: owner.id,
+      projectId: project1.id,
+    },
+    // Expenses for January (for testing different months)
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Sewa Kantor',
+      description: 'Sewa kantor bulan Januari',
+      amount: 2500000,
+      date: new Date('2025-01-01'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'SALARY' as const,
+      category: 'Gaji Staff',
+      description: 'Gaji admin bulan Januari',
+      amount: 4000000,
+      date: new Date('2025-01-25'),
+      createdBy: owner.id,
+    },
+    {
+      type: 'OPERATIONAL' as const,
+      category: 'Listrik',
+      description: 'Tagihan listrik Januari',
+      amount: 400000,
+      date: new Date('2025-01-05'),
+      createdBy: owner.id,
+    },
+  ]
+
+  for (const expense of expenseData) {
+    await prisma.expense.create({
+      data: expense,
+    })
+  }
+  console.log(`✅ Created ${expenseData.length} general expenses`)
 
   console.log('\n🎉 Comprehensive seed completed!')
   console.log('\n📊 Summary:')

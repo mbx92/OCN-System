@@ -43,7 +43,7 @@
           <p class="text-base-content/60">{{ formatDate(payment.paymentDate) }}</p>
         </div>
         <div class="flex gap-2">
-          <button @click="showInvoice = true" class="btn btn-outline">
+          <button @click="showInvoice = true" class="btn btn-outline btn-info">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4 mr-1"
@@ -55,18 +55,12 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            Preview Invoice
+            Invoice Detail
           </button>
-          <button @click="printInvoice" class="btn btn-primary">
+          <button @click="showReceipt = true" class="btn btn-outline btn-success">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4 mr-1"
@@ -78,10 +72,10 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
               />
             </svg>
-            Cetak
+            Kwitansi
           </button>
         </div>
       </div>
@@ -212,11 +206,18 @@
     <dialog class="modal" :class="{ 'modal-open': showInvoice }">
       <div class="modal-box w-11/12 max-w-4xl p-0">
         <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="font-bold text-lg">Preview Invoice</h3>
-          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">
+          <h3 class="font-bold text-lg">Preview Invoice Detail</h3>
+          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
+        </div>
+        <div id="invoice-print" class="p-6 bg-white text-black overflow-auto">
+          <PaymentInvoice v-if="payment" :payment="payment" />
+        </div>
+        <div class="modal-action p-4 border-t">
+          <button class="btn" @click="showInvoice = false">Tutup</button>
+          <button class="btn btn-outline btn-info" @click="printDocument('invoice')">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
+              class="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -225,21 +226,89 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
               />
             </svg>
+            Print
           </button>
-        </div>
-        <div id="invoice-print" class="p-6 bg-white text-black">
-          <PaymentInvoice v-if="payment" :payment="payment" />
-        </div>
-        <div class="modal-action p-4 border-t">
-          <button class="btn" @click="showInvoice = false">Tutup</button>
-          <button class="btn btn-primary" @click="printInvoice">Cetak</button>
+          <button class="btn btn-primary" @click="downloadInvoicePdf" :disabled="generatingPdf">
+            <span v-if="generatingPdf" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Download PDF
+          </button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
         <button @click="showInvoice = false">close</button>
+      </form>
+    </dialog>
+
+    <!-- Receipt/Kwitansi Preview Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showReceipt }">
+      <div class="modal-box w-11/12 max-w-4xl p-0">
+        <div class="flex justify-between items-center p-4 border-b">
+          <h3 class="font-bold text-lg">Preview Kwitansi</h3>
+          <button @click="showReceipt = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
+        </div>
+        <div id="receipt-print" class="p-6 bg-white text-black overflow-auto">
+          <PaymentReceipt v-if="payment" :payment="payment" />
+        </div>
+        <div class="modal-action p-4 border-t">
+          <button class="btn" @click="showReceipt = false">Tutup</button>
+          <button class="btn btn-outline btn-info" @click="printDocument('receipt')">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            Print
+          </button>
+          <button class="btn btn-primary" @click="downloadReceiptPdf" :disabled="generatingPdf">
+            <span v-if="generatingPdf" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Download PDF
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showReceipt = false">close</button>
       </form>
     </dialog>
   </div>
@@ -248,8 +317,11 @@
 <script setup lang="ts">
 const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
+const { showAlert } = useAlert()
+const { generating: generatingPdf, downloadPdf } = usePdfGenerator()
 
 const showInvoice = ref(false)
+const showReceipt = ref(false)
 
 const { data: payment, pending, error } = await useFetch(`/api/payments/${route.params.id}`)
 
@@ -271,28 +343,107 @@ const getTypeLabel = (type: string) => {
   return labels[type] || type
 }
 
-const printInvoice = () => {
-  showInvoice.value = true
+const printDocument = (type: 'invoice' | 'receipt') => {
+  if (type === 'invoice') {
+    showInvoice.value = true
+    showReceipt.value = false
+  } else {
+    showReceipt.value = true
+    showInvoice.value = false
+  }
   setTimeout(() => {
     window.print()
   }, 100)
+}
+
+const downloadInvoicePdf = async () => {
+  try {
+    const today = new Date()
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+    const paymentNum = (payment.value as any)?.paymentNumber?.split('-').pop() || '0001'
+    const filename = `INV-${dateStr}-${paymentNum.slice(-4).padStart(4, '0')}`
+    await downloadPdf('invoice-print', filename)
+    showAlert('Invoice berhasil diunduh!', 'success')
+  } catch (error) {
+    showAlert('Gagal mengunduh invoice', 'error')
+  }
+}
+
+const downloadReceiptPdf = async () => {
+  try {
+    const today = new Date()
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+    const paymentNum = (payment.value as any)?.paymentNumber?.split('-').pop() || '0001'
+    const filename = `KWI-${dateStr}-${paymentNum.slice(-4).padStart(4, '0')}`
+    await downloadPdf('receipt-print', filename)
+    showAlert('Kwitansi berhasil diunduh!', 'success')
+  } catch (error) {
+    showAlert('Gagal mengunduh kwitansi', 'error')
+  }
 }
 </script>
 
 <style>
 @media print {
+  /* Hide everything except print areas */
   body * {
     visibility: hidden;
   }
+
   #invoice-print,
-  #invoice-print * {
+  #invoice-print *,
+  #receipt-print,
+  #receipt-print * {
     visibility: visible;
   }
-  #invoice-print {
+
+  #invoice-print,
+  #receipt-print {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    background: white !important;
+    padding: 20mm !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+  }
+
+  /* A4 page setup */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* Ensure background colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Force table borders to show */
+  table {
+    border-collapse: collapse !important;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+  }
+
+  /* Hide modal backdrop and buttons during print */
+  .modal-backdrop,
+  .modal-action,
+  .btn {
+    display: none !important;
+  }
+
+  /* Ensure proper font sizing */
+  body {
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
   }
 }
 </style>
