@@ -1,5 +1,4 @@
 export default defineEventHandler(async event => {
-  await requireAuth(event)
   const id = getRouterParam(event, 'id')
 
   if (!id) {

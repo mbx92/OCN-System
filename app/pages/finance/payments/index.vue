@@ -55,29 +55,6 @@
     <div class="card bg-base-100 shadow">
       <div class="card-body">
         <div class="flex flex-col lg:flex-row gap-4">
-          <!-- Mode Tabs -->
-          <div class="flex-none">
-            <div class="tabs tabs-boxed">
-              <button class="tab" :class="{ 'tab-active': !modeFilter }" @click="modeFilter = ''">
-                Semua
-              </button>
-              <button
-                class="tab"
-                :class="{ 'tab-active': modeFilter === 'PROJECT' }"
-                @click="modeFilter = 'PROJECT'"
-              >
-                Proyek
-              </button>
-              <button
-                class="tab"
-                :class="{ 'tab-active': modeFilter === 'POS' }"
-                @click="modeFilter = 'POS'"
-              >
-                POS
-              </button>
-            </div>
-          </div>
-
           <!-- View Toggle -->
           <div class="flex-none">
             <AppViewToggle v-model="viewMode" />
@@ -136,7 +113,7 @@
         v-for="pay in payments"
         :key="pay.id"
         @click="navigateTo(`/finance/payments/${pay.id}`)"
-        class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer"
+        class="card bg-base-100 shadow-md hover:shadow-lg border border-base-200 transition-all cursor-pointer"
       >
         <div class="card-body p-4">
           <div class="flex justify-between items-start mb-3">

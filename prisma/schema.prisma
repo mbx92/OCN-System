@@ -58,47 +58,49 @@ model Company {
 }
 
 model Customer {
-  id          String      @id @default(cuid())
-  name        String
-  companyName String?
-  phone       String
-  email       String?
-  address     String
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  projects    Project[]
-  quotations  Quotation[]
+  id                   String                @id @default(cuid())
+  name                 String
+  companyName          String?
+  phone                String
+  email                String?
+  address              String
+  notes                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  projects             Project[]
+  quotations           Quotation[]
+  maintenanceSchedules MaintenanceSchedule[]
 }
 
 model Project {
-  id                     String                @id @default(cuid())
-  projectNumber          String                @unique
-  customerId             String
-  title                  String
-  description            String?
-  status                 ProjectStatus         @default(QUOTATION)
-  budget                 Decimal               @db.Decimal(15, 2)
-  actualCost             Decimal               @default(0) @db.Decimal(15, 2)
-  finalPrice             Decimal?              @db.Decimal(15, 2)
-  paymentTerms           Json?
-  startDate              DateTime?
-  endDate                DateTime?
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  businessCashPercentage Decimal?              @default(30) @db.Decimal(5, 2)
-  generalExpenses        Expense[]
-  financialSummary       FinancialSummary?
-  payments               Payment[]
-  customer               Customer              @relation(fields: [customerId], references: [id])
-  expenses               ProjectExpense[]
-  items                  ProjectItem[]
-  technicians            ProjectTechnician[]
-  purchaseOrders         PurchaseOrder[]
-  quotations             Quotation[]
-  technicianPayments     TechnicianPayment[]
-  warranties             Warranty[]
-  maintenanceSchedules   MaintenanceSchedule[]
+  id                       String                @id @default(cuid())
+  projectNumber            String                @unique
+  customerId               String
+  title                    String
+  description              String?
+  status                   ProjectStatus         @default(QUOTATION)
+  budget                   Decimal               @db.Decimal(15, 2)
+  actualCost               Decimal               @default(0) @db.Decimal(15, 2)
+  finalPrice               Decimal?              @db.Decimal(15, 2)
+  paymentTerms             Json?
+  startDate                DateTime?
+  endDate                  DateTime?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  businessCashPercentage   Decimal?              @default(30) @db.Decimal(5, 2)
+  generalExpenses          Expense[]
+  financialSummary         FinancialSummary?
+  payments                 Payment[]
+  customer                 Customer              @relation(fields: [customerId], references: [id])
+  expenses                 ProjectExpense[]
+  items                    ProjectItem[]
+  technicians              ProjectTechnician[]
+  purchaseOrders           PurchaseOrder[]
+  quotations               Quotation[]
+  technicianPayments       TechnicianPayment[]
+  warranties               Warranty[]
+  maintenanceSchedules     MaintenanceSchedule[] @relation("MaintenanceSourceProject")
+  resultMaintenanceSchedules MaintenanceSchedule[] @relation("MaintenanceResultProject")
 }
 
 model ProjectItem {
@@ -503,19 +505,23 @@ enum PaymentStatus {
 }
 
 model MaintenanceSchedule {
-  id            String                    @id @default(cuid())
-  projectId     String
-  title         String
-  description   String?
-  scheduledDate DateTime
-  completedDate DateTime?
-  status        MaintenanceScheduleStatus @default(SCHEDULED)
-  notes         String?
-  createdBy     String
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  project       Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdByUser User                      @relation("MaintenanceScheduleCreator", fields: [createdBy], references: [id])
+  id              String                    @id @default(cuid())
+  projectId       String?
+  customerId      String?
+  resultProjectId String?
+  title           String
+  description     String?
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  status          MaintenanceScheduleStatus @default(SCHEDULED)
+  notes           String?
+  createdBy       String
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  project         Project?                  @relation("MaintenanceSourceProject", fields: [projectId], references: [id], onDelete: Cascade)
+  customer        Customer?                 @relation(fields: [customerId], references: [id])
+  resultProject   Project?                  @relation("MaintenanceResultProject", fields: [resultProjectId], references: [id])
+  createdByUser   User                      @relation("MaintenanceScheduleCreator", fields: [createdBy], references: [id])
 }
 
 enum MaintenanceScheduleStatus {

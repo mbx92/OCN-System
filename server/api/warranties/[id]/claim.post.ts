@@ -74,5 +74,23 @@ export default defineEventHandler(async event => {
     }),
   ])
 
+  // Send Telegram notification
+  const warrantyWithProject = await prisma.warranty.findUnique({
+    where: { id },
+    include: {
+      project: {
+        include: { customer: true },
+      },
+    },
+  })
+
+  if (warrantyWithProject?.project) {
+    notifyWarrantyClaim({
+      issue: result.data.description,
+      customerName: warrantyWithProject.project.customer.name,
+      projectNumber: warrantyWithProject.project.projectNumber,
+    })
+  }
+
   return claim
 })

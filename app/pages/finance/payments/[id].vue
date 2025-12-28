@@ -318,7 +318,11 @@
 const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
 const { showAlert } = useAlert()
-const { generating: generatingPdf, downloadPdf } = usePdfGenerator()
+const {
+  generating: generatingPdf,
+  downloadInvoicePdf: generateInvoicePdf,
+  downloadReceiptPdf: generateReceiptPdf,
+} = usePdfGenerator()
 
 const showInvoice = ref(false)
 const showReceipt = ref(false)
@@ -362,9 +366,10 @@ const downloadInvoicePdf = async () => {
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
     const paymentNum = (payment.value as any)?.paymentNumber?.split('-').pop() || '0001'
     const filename = `INV-${dateStr}-${paymentNum.slice(-4).padStart(4, '0')}`
-    await downloadPdf('invoice-print', filename)
+    await generateInvoicePdf(payment.value, filename)
     showAlert('Invoice berhasil diunduh!', 'success')
-  } catch (error) {
+  } catch (err) {
+    console.error('Error downloading invoice:', err)
     showAlert('Gagal mengunduh invoice', 'error')
   }
 }
@@ -375,9 +380,10 @@ const downloadReceiptPdf = async () => {
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
     const paymentNum = (payment.value as any)?.paymentNumber?.split('-').pop() || '0001'
     const filename = `KWI-${dateStr}-${paymentNum.slice(-4).padStart(4, '0')}`
-    await downloadPdf('receipt-print', filename)
+    await generateReceiptPdf(payment.value, filename)
     showAlert('Kwitansi berhasil diunduh!', 'success')
-  } catch (error) {
+  } catch (err) {
+    console.error('Error downloading receipt:', err)
     showAlert('Gagal mengunduh kwitansi', 'error')
   }
 }

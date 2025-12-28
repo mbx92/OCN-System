@@ -1,5 +1,4 @@
 export default defineEventHandler(async event => {
-  await requireAuth(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
@@ -21,10 +20,13 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const { title, description, scheduledDate, status, completedDate, notes } = body
+  const { projectId, customerId, title, description, scheduledDate, status, completedDate, notes } =
+    body
 
   const updateData: any = {}
 
+  if (projectId !== undefined) updateData.projectId = projectId || null
+  if (customerId !== undefined) updateData.customerId = customerId || null
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
   if (scheduledDate !== undefined) updateData.scheduledDate = new Date(scheduledDate)
@@ -47,6 +49,7 @@ export default defineEventHandler(async event => {
           customer: true,
         },
       },
+      customer: true,
       createdByUser: {
         select: {
           id: true,

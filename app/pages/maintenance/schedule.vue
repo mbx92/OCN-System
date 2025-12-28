@@ -94,13 +94,16 @@
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-base-content/60">Proyek</span>
-              <NuxtLink :to="`/projects/${schedule.project?.id}`" class="link link-primary">
-                {{ schedule.project?.projectNumber }}
-              </NuxtLink>
+              <template v-if="schedule.project">
+                <NuxtLink :to="`/projects/${schedule.project.id}`" class="link link-primary">
+                  {{ schedule.project.projectNumber }}
+                </NuxtLink>
+              </template>
+              <span v-else class="text-base-content/40">-</span>
             </div>
             <div class="flex justify-between">
               <span class="text-base-content/60">Pelanggan</span>
-              <span>{{ schedule.project?.customer?.name }}</span>
+              <span>{{ schedule.project?.customer?.name || schedule.customer?.name || '-' }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-base-content/60">Tanggal</span>
@@ -129,6 +132,20 @@
             >
               Selesai
             </button>
+            <button
+              v-if="schedule.status === 'COMPLETED' && !schedule.resultProjectId"
+              @click="createProjectFromSchedule(schedule)"
+              class="btn btn-primary btn-xs"
+            >
+              Buat Project
+            </button>
+            <NuxtLink
+              v-if="schedule.resultProjectId"
+              :to="`/projects/${schedule.resultProjectId}`"
+              class="btn btn-outline btn-primary btn-xs"
+            >
+              Lihat Project
+            </NuxtLink>
             <button @click="openEditModal(schedule)" class="btn btn-ghost btn-xs">Edit</button>
             <button @click="confirmDelete(schedule)" class="btn btn-ghost btn-xs text-error">
               Hapus
@@ -160,11 +177,14 @@
                   <p class="text-xs text-base-content/60">{{ schedule.description }}</p>
                 </td>
                 <td>
-                  <NuxtLink :to="`/projects/${schedule.project?.id}`" class="link link-primary">
-                    {{ schedule.project?.projectNumber }}
-                  </NuxtLink>
+                  <template v-if="schedule.project">
+                    <NuxtLink :to="`/projects/${schedule.project.id}`" class="link link-primary">
+                      {{ schedule.project.projectNumber }}
+                    </NuxtLink>
+                  </template>
+                  <span v-else class="text-base-content/40">-</span>
                 </td>
-                <td>{{ schedule.project?.customer?.name }}</td>
+                <td>{{ schedule.project?.customer?.name || schedule.customer?.name || '-' }}</td>
                 <td :class="isOverdue(schedule) ? 'text-error font-medium' : ''">
                   {{ formatDate(schedule.scheduledDate) }}
                 </td>
@@ -189,6 +209,20 @@
                     >
                       Selesai
                     </button>
+                    <button
+                      v-if="schedule.status === 'COMPLETED' && !schedule.resultProjectId"
+                      @click="createProjectFromSchedule(schedule)"
+                      class="btn btn-primary btn-xs"
+                    >
+                      Buat Project
+                    </button>
+                    <NuxtLink
+                      v-if="schedule.resultProjectId"
+                      :to="`/projects/${schedule.resultProjectId}`"
+                      class="btn btn-outline btn-primary btn-xs"
+                    >
+                      Lihat Project
+                    </NuxtLink>
                     <button @click="openEditModal(schedule)" class="btn btn-ghost btn-xs">
                       Edit
                     </button>
@@ -216,11 +250,23 @@
         <form @submit.prevent="saveSchedule">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Proyek *</label>
-              <select v-model="form.projectId" class="select select-bordered w-full" required>
-                <option value="">Pilih Proyek</option>
+              <label class="block text-sm font-medium mb-2">Proyek (opsional)</label>
+              <select v-model="form.projectId" class="select select-bordered w-full">
+                <option value="">Tanpa Proyek</option>
                 <option v-for="p in projects" :key="p.id" :value="p.id">
                   {{ p.projectNumber }} - {{ p.title }}
+                </option>
+              </select>
+              <p class="text-xs text-base-content/60 mt-1">
+                Pilih project jika maintenance terkait project tertentu
+              </p>
+            </div>
+            <div v-if="!form.projectId">
+              <label class="block text-sm font-medium mb-2">Customer *</label>
+              <select v-model="form.customerId" class="select select-bordered w-full" required>
+                <option value="">Pilih Customer</option>
+                <option v-for="c in customers" :key="c.id" :value="c.id">
+                  {{ c.name }} {{ c.companyName ? `(${c.companyName})` : '' }}
                 </option>
               </select>
             </div>
@@ -245,12 +291,46 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Tanggal Jadwal *</label>
-              <input
-                v-model="form.scheduledDate"
-                type="date"
-                class="input input-bordered w-full"
-                required
-              />
+              <button
+                type="button"
+                :popovertarget="`cally-popover-${editingSchedule?.id || 'new'}`"
+                class="input input-bordered w-full text-left"
+                :style="{ anchorName: `--cally-${editingSchedule?.id || 'new'}` }"
+              >
+                {{
+                  form.scheduledDate
+                    ? dayjs(form.scheduledDate).format('DD MMMM YYYY')
+                    : 'Pilih tanggal'
+                }}
+              </button>
+              <div
+                popover
+                :id="`cally-popover-${editingSchedule?.id || 'new'}`"
+                class="dropdown bg-base-100 rounded-box shadow-lg p-2"
+                :style="{ positionAnchor: `--cally-${editingSchedule?.id || 'new'}` }"
+              >
+                <calendar-date class="cally" :value="form.scheduledDate" @change="handleDateChange">
+                  <svg
+                    aria-label="Previous"
+                    class="fill-current size-4"
+                    slot="previous"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
+                  </svg>
+                  <svg
+                    aria-label="Next"
+                    class="fill-current size-4"
+                    slot="next"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+                  </svg>
+                  <calendar-month></calendar-month>
+                </calendar-date>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Catatan</label>
@@ -277,11 +357,67 @@
         <button @click="showModal = false">close</button>
       </form>
     </dialog>
+
+    <!-- Create Project Confirmation Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showCreateProjectModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Buat Project dari Maintenance</h3>
+        <p class="py-2">
+          Buat project untuk maintenance
+          <strong>"{{ selectedScheduleForProject?.title }}"</strong>
+          ?
+        </p>
+        <p class="text-sm text-base-content/70">
+          Project baru akan dibuat dengan nomor MNT-YYMM-XXX untuk tracking biaya dan items
+          maintenance.
+        </p>
+        <div class="modal-action">
+          <button class="btn" @click="showCreateProjectModal = false" :disabled="creatingProject">
+            Batal
+          </button>
+          <button class="btn btn-primary" @click="executeCreateProject" :disabled="creatingProject">
+            <span v-if="creatingProject" class="loading loading-spinner"></span>
+            Buat Project
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showCreateProjectModal = false">close</button>
+      </form>
+    </dialog>
+
+    <!-- Delete Confirmation Modal -->
+    <dialog class="modal" :class="{ 'modal-open': showDeleteModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4 text-error">Hapus Jadwal</h3>
+        <p class="py-2">
+          Yakin ingin menghapus jadwal
+          <strong>"{{ selectedScheduleForDelete?.title }}"</strong>
+          ?
+        </p>
+        <p class="text-sm text-base-content/70">Aksi ini tidak dapat dibatalkan.</p>
+        <div class="modal-action">
+          <button class="btn" @click="showDeleteModal = false" :disabled="deleting">Batal</button>
+          <button class="btn btn-error" @click="executeDelete" :disabled="deleting">
+            <span v-if="deleting" class="loading loading-spinner"></span>
+            Hapus
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showDeleteModal = false">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import dayjs from 'dayjs'
+
+// Import cally only on client-side (it uses document which is not available in SSR)
+onMounted(() => {
+  import('cally')
+})
 
 const { formatDate } = useFormatter()
 const { showAlert } = useAlert()
@@ -294,13 +430,32 @@ const showModal = ref(false)
 const saving = ref(false)
 const editingSchedule = ref<any>(null)
 
+// Create Project Modal
+const showCreateProjectModal = ref(false)
+const selectedScheduleForProject = ref<any>(null)
+const creatingProject = ref(false)
+
+// Delete Modal
+const showDeleteModal = ref(false)
+const selectedScheduleForDelete = ref<any>(null)
+const deleting = ref(false)
+
 const form = reactive({
   projectId: '',
+  customerId: '',
   title: '',
   description: '',
   scheduledDate: '',
   notes: '',
 })
+
+// Handle date change from Cally Calendar
+const handleDateChange = (event: any) => {
+  const date = event.target?.value
+  if (date) {
+    form.scheduledDate = date
+  }
+}
 
 // Fetch schedules
 const {
@@ -319,6 +474,12 @@ const { data: projectsData } = await useFetch('/api/projects', {
   query: { limit: 100 },
 })
 const projects = computed(() => (projectsData.value as any)?.data || [])
+
+// Fetch customers for dropdown
+const { data: customersData } = await useFetch('/api/customers', {
+  query: { limit: 100 },
+})
+const customers = computed(() => (customersData.value as any)?.data || [])
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
@@ -348,6 +509,7 @@ const isOverdue = (schedule: any) => {
 const openCreateModal = () => {
   editingSchedule.value = null
   form.projectId = ''
+  form.customerId = ''
   form.title = ''
   form.description = ''
   form.scheduledDate = dayjs().format('YYYY-MM-DD')
@@ -357,7 +519,8 @@ const openCreateModal = () => {
 
 const openEditModal = (schedule: any) => {
   editingSchedule.value = schedule
-  form.projectId = schedule.projectId
+  form.projectId = schedule.projectId || ''
+  form.customerId = schedule.customerId || ''
   form.title = schedule.title
   form.description = schedule.description || ''
   form.scheduledDate = dayjs(schedule.scheduledDate).format('YYYY-MM-DD')
@@ -416,16 +579,50 @@ const completeSchedule = async (schedule: any) => {
   }
 }
 
-const confirmDelete = async (schedule: any) => {
-  if (!confirm(`Hapus jadwal "${schedule.title}"?`)) return
+const confirmDelete = (schedule: any) => {
+  selectedScheduleForDelete.value = schedule
+  showDeleteModal.value = true
+}
+
+const executeDelete = async () => {
+  if (!selectedScheduleForDelete.value) return
+  deleting.value = true
   try {
-    await $fetch(`/api/maintenance-schedules/${schedule.id}`, {
+    await $fetch(`/api/maintenance-schedules/${selectedScheduleForDelete.value.id}`, {
       method: 'DELETE',
     })
     showAlert('Jadwal dihapus!', 'success')
+    showDeleteModal.value = false
     await refresh()
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal menghapus jadwal', 'error')
+  } finally {
+    deleting.value = false
+  }
+}
+
+const createProjectFromSchedule = (schedule: any) => {
+  selectedScheduleForProject.value = schedule
+  showCreateProjectModal.value = true
+}
+
+const executeCreateProject = async () => {
+  if (!selectedScheduleForProject.value) return
+  creatingProject.value = true
+  try {
+    const project = await $fetch(
+      `/api/maintenance-schedules/${selectedScheduleForProject.value.id}/create-project`,
+      {
+        method: 'POST',
+      }
+    )
+    showAlert('Project berhasil dibuat!', 'success')
+    showCreateProjectModal.value = false
+    navigateTo(`/projects/${(project as any).id}`)
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal membuat project', 'error')
+  } finally {
+    creatingProject.value = false
   }
 }
 </script>
