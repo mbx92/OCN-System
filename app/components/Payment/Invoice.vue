@@ -3,12 +3,16 @@
     <!-- Header -->
     <div class="flex justify-between border-b-2 border-gray-800 pb-4 mb-4">
       <div class="flex items-start gap-4">
-        <img src="/logo.png" alt="OCN" class="w-16 h-16 object-contain" />
+        <img
+          :src="company?.settings?.logo || '/logo.png'"
+          alt="Logo"
+          class="w-16 h-16 object-contain"
+        />
         <div>
           <h1 class="text-2xl font-bold">INVOICE</h1>
-          <p class="font-bold">OCN CCTV & Networking Solutions</p>
-          <p class="text-xs">Jalan Mertasari No. 20 Kerobokan Kelod</p>
-          <p class="text-xs">082146586160</p>
+          <p class="font-bold">{{ company?.name || 'OCN CCTV & Networking Solutions' }}</p>
+          <p class="text-xs">{{ company?.settings?.address || '-' }}</p>
+          <p class="text-xs">{{ company?.settings?.phone || '-' }}</p>
         </div>
       </div>
       <div class="text-right text-xs">
@@ -123,6 +127,24 @@
           <strong>Terbilang</strong>
           : {{ terbilang(subTotal) }} rupiah
         </p>
+
+        <!-- Bank Info -->
+        <div
+          v-if="company?.settings?.bankName || company?.settings?.bankAccount"
+          class="mt-3 p-2 bg-gray-50 rounded"
+        >
+          <p class="font-bold text-xs mb-1">Informasi Pembayaran:</p>
+          <p v-if="company?.settings?.bankName" class="text-xs">
+            Bank: {{ company.settings.bankName }}
+          </p>
+          <p v-if="company?.settings?.bankAccount" class="text-xs">
+            No. Rekening: {{ company.settings.bankAccount }}
+          </p>
+          <p v-if="company?.settings?.bankAccountName" class="text-xs">
+            Atas Nama: {{ company.settings.bankAccountName }}
+          </p>
+        </div>
+
         <p class="text-xs text-gray-500 mt-2">{{ formatDateTime(new Date().toISOString()) }}</p>
       </div>
 
@@ -182,6 +204,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   payment: any
+  company?: any
 }>()
 
 const { formatDate } = useFormatter()

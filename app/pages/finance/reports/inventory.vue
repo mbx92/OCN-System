@@ -4,6 +4,10 @@ definePageMeta({
 })
 
 const { formatCurrency } = useFormatter()
+const { downloadReportPdf, generating: pdfGenerating } = usePdfGenerator()
+
+// Company settings
+const { data: company } = await useFetch('/api/company')
 
 // Filters
 const selectedCategory = ref('')
@@ -177,6 +181,52 @@ function printReport() {
   window.print()
 }
 
+// Export to PDF
+function exportToPdf() {
+  downloadReportPdf({
+    title: 'Laporan Inventory',
+    subtitle: company.value?.name || 'OCN CCTV & Networking Solutions',
+    period: new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    summary: [
+      { label: 'Total Produk', value: summary.value.totalProducts.toString() },
+      { label: 'Nilai Inventory', value: formatCurrency(summary.value.totalValue) },
+      { label: 'Stok Rendah', value: summary.value.lowStockItems.toString() },
+      { label: 'Stok Habis', value: summary.value.outOfStockItems.toString() },
+    ],
+    columns: [
+      { header: 'SKU', key: 'sku', align: 'left' },
+      { header: 'Nama Produk', key: 'name', align: 'left' },
+      { header: 'Kategori', key: 'category', align: 'left' },
+      { header: 'Stok', key: 'stock', align: 'right' },
+      { header: 'Min Stok', key: 'minStock', align: 'right' },
+      {
+        header: 'Harga Beli',
+        key: 'purchasePrice',
+        align: 'right',
+        format: v => formatCurrency(v),
+      },
+      { header: 'Nilai', key: 'value', align: 'right', format: v => formatCurrency(v) },
+    ],
+    data: filteredProducts.value.map(p => {
+      const stock = getStock(p.id)
+      return {
+        sku: p.sku,
+        name: p.name,
+        category: p.category || '-',
+        stock: stock?.available || 0,
+        minStock: p.minStock || 0,
+        purchasePrice: p.purchasePrice || 0,
+        value: (stock?.available || 0) * (p.purchasePrice || 0),
+      }
+    }),
+    filename: `laporan-inventory-${new Date().toISOString().split('T')[0]}`,
+  })
+}
+
 // Reset filters
 function resetFilters() {
   selectedCategory.value = ''
@@ -199,6 +249,18 @@ onMounted(() => {
         <p class="text-base-content/60">Status stok dan nilai inventory</p>
       </div>
       <div class="flex gap-2">
+        <button @click="exportToPdf" class="btn btn-primary btn-sm" :disabled="pdfGenerating">
+          <span v-if="pdfGenerating" class="loading loading-spinner loading-sm"></span>
+          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            />
+          </svg>
+          Download PDF
+        </button>
         <button @click="exportToCSV" class="btn btn-ghost btn-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

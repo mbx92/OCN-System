@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 definePageMeta({
   layout: 'default',
 })
 
 const { formatCurrency } = useFormatter()
+const pdfGenerating = ref(false)
 
 // State
 const selectedYear = ref(new Date().getFullYear())
@@ -73,6 +77,151 @@ function formatNumber(value: number, showParentheses = false): string {
 // Print report
 function printReport() {
   window.print()
+}
+
+// Export to PDF
+async function exportToPdf() {
+  if (!detailData.value) return
+
+  pdfGenerating.value = true
+  try {
+    const d = detailData.value.data
+    const doc = new jsPDF('p', 'mm', 'a4')
+    const pageWidth = doc.internal.pageSize.getWidth()
+    let yPos = 20
+
+    // Header
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 128, 128)
+    doc.text('Laporan Laba Rugi', pageWidth / 2, yPos, { align: 'center' })
+
+    yPos += 7
+    doc.setFontSize(11)
+    doc.setTextColor(0, 0, 0)
+    doc.text(
+      detailData.value.companyName || 'OCN CCTV & Networking Solutions',
+      pageWidth / 2,
+      yPos,
+      { align: 'center' }
+    )
+
+    yPos += 6
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(detailData.value.periodLabel || '', pageWidth / 2, yPos, { align: 'center' })
+
+    yPos += 10
+
+    // Build report data
+    const rows = [
+      ['Pendapatan Kotor', '', formatCurrency(d.pendapatanKotor), 'bold'],
+      ['  Diskon Penjualan', formatCurrency(d.diskonPenjualan), '', 'normal'],
+      [
+        '  Retur Penjualan',
+        formatCurrency(d.returPenjualan),
+        `(${formatCurrency(d.diskonPenjualan + d.returPenjualan)})`,
+        'normal',
+      ],
+      ['Penjualan Bersih', '', formatCurrency(d.penjualanBersih), 'bold'],
+      ['HPP', '', `(${formatCurrency(d.hpp)})`, 'normal'],
+      ['Laba Kotor', '', formatCurrency(d.labaKotor), 'bold-primary'],
+      ['', '', '', 'separator'],
+      ['Biaya/Beban Penjualan:', '', '', 'header'],
+      ...d.biayaPenjualan.items.map((item: any) => [
+        `  ${item.name}`,
+        formatCurrency(item.amount),
+        '',
+        'normal',
+      ]),
+      ['Total Biaya Penjualan', '', formatCurrency(d.biayaPenjualan.total), 'subtotal'],
+      ['', '', '', 'separator'],
+      ['Biaya/Beban Administratif:', '', '', 'header'],
+      ...d.biayaAdministratif.items.map((item: any) => [
+        `  ${item.name}`,
+        formatCurrency(item.amount),
+        '',
+        'normal',
+      ]),
+      ['Total Biaya Administratif', '', formatCurrency(d.biayaAdministratif.total), 'subtotal'],
+      ['', '', '', 'separator'],
+      ['Total Biaya Operasional', '', `(${formatCurrency(d.totalBiayaOperasional)})`, 'bold'],
+      ['Pendapatan Operasional', '', formatCurrency(d.pendapatanOperasional), 'bold-primary'],
+      ['', '', '', 'separator'],
+      ['Pendapatan (Beban) Lain-Lain:', '', '', 'header'],
+      ...d.pendapatanLainLain.items.map((item: any) => [
+        `  ${item.name}`,
+        item.amount < 0
+          ? `(${formatCurrency(Math.abs(item.amount))})`
+          : formatCurrency(item.amount),
+        '',
+        'normal',
+      ]),
+      [
+        'Total Pendapatan Lain-Lain',
+        '',
+        d.pendapatanLainLain.total < 0
+          ? `(${formatCurrency(Math.abs(d.pendapatanLainLain.total))})`
+          : formatCurrency(d.pendapatanLainLain.total),
+        'subtotal',
+      ],
+      ['', '', '', 'separator'],
+      ['LABA BERSIH', '', formatCurrency(d.labaBersih), 'total'],
+    ]
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Keterangan', 'Jumlah', 'Total']],
+      body: rows.filter(r => r[3] !== 'separator').map(r => [r[0], r[1], r[2]]),
+      headStyles: {
+        fillColor: [0, 128, 128],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      bodyStyles: {
+        fontSize: 9,
+      },
+      columnStyles: {
+        0: { cellWidth: 90 },
+        1: { halign: 'right', cellWidth: 40 },
+        2: { halign: 'right', cellWidth: 40, fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
+      didParseCell: function (data) {
+        const row = rows.filter(r => r[3] !== 'separator')[data.row.index]
+        if (row) {
+          const style = row[3]
+          if (style === 'bold' || style === 'bold-primary' || style === 'total') {
+            data.cell.styles.fontStyle = 'bold'
+          }
+          if (style === 'bold-primary') {
+            data.cell.styles.textColor = [0, 128, 128]
+          }
+          if (style === 'total') {
+            data.cell.styles.fillColor = [0, 128, 128]
+            data.cell.styles.textColor = [255, 255, 255]
+          }
+          if (style === 'header') {
+            data.cell.styles.fontStyle = 'bold'
+            data.cell.styles.fillColor = [245, 245, 245]
+          }
+          if (style === 'subtotal') {
+            data.cell.styles.fillColor = [250, 250, 250]
+          }
+        }
+      },
+    })
+
+    // Save
+    doc.save(
+      `laporan-laba-rugi-${selectedYear.value}-${selectedPeriod.value}-${selectedPeriodValue.value || 'full'}.pdf`
+    )
+  } catch (error) {
+    console.error('Error generating PDF:', error)
+  } finally {
+    pdfGenerating.value = false
+  }
 }
 
 // Export to CSV
@@ -438,6 +587,18 @@ const detailPeriodLabel = computed(() => {
         <div class="flex justify-between items-center mb-4 print:hidden">
           <h3 class="font-bold text-xl">Detail Laporan Laba Rugi</h3>
           <div class="flex gap-2">
+            <button class="btn btn-primary btn-sm" :disabled="pdfGenerating" @click="exportToPdf">
+              <span v-if="pdfGenerating" class="loading loading-spinner loading-sm"></span>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+              PDF
+            </button>
             <button class="btn btn-ghost btn-sm" @click="exportToCSV">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

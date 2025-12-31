@@ -85,9 +85,38 @@ export const usePdfGenerator = () => {
     return labels[type] || type
   }
 
-  // Load logo image as base64
-  const loadLogoBase64 = async (): Promise<string | null> => {
+  // Fetch company settings
+  const fetchCompanySettings = async () => {
     try {
+      const response = await fetch('/api/company')
+      if (response.ok) {
+        return await response.json()
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // Load logo image as base64 - can use company logo or default
+  const loadLogoBase64 = async (companyLogo?: string): Promise<string | null> => {
+    try {
+      // If company has a logo (base64 or URL), use it
+      if (companyLogo) {
+        if (companyLogo.startsWith('data:image')) {
+          return companyLogo
+        }
+        // It's a URL, fetch it
+        const response = await fetch(companyLogo)
+        const blob = await response.blob()
+        return new Promise(resolve => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = () => resolve(null)
+          reader.readAsDataURL(blob)
+        })
+      }
+      // Fallback to default logo
       const response = await fetch('/logo.png')
       const blob = await response.blob()
       return new Promise(resolve => {
@@ -106,12 +135,16 @@ export const usePdfGenerator = () => {
     generating.value = true
 
     try {
+      // Fetch company settings
+      const company = await fetchCompanySettings()
+      const settings = company?.settings || {}
+
       const doc = new jsPDF('p', 'mm', 'a4')
       const pageWidth = doc.internal.pageSize.getWidth()
       let yPos = 15
 
       // Load logo
-      const logoBase64 = await loadLogoBase64()
+      const logoBase64 = await loadLogoBase64(settings.logo)
 
       // ===== HEADER SECTION =====
       // Logo on the left
@@ -127,13 +160,13 @@ export const usePdfGenerator = () => {
 
       doc.setFontSize(10)
       doc.setTextColor(0, 128, 128)
-      doc.text('OCN CCTV & Networking Solutions', 32, yPos + 8)
+      doc.text(company?.name || 'OCN CCTV & Networking Solutions', 32, yPos + 8)
 
       doc.setFontSize(8)
       doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'normal')
-      doc.text('Jalan Mertasari No. 20 Kerobokan Kelod', 32, yPos + 13)
-      doc.text('082146586160', 32, yPos + 17)
+      doc.text(settings.address || '-', 32, yPos + 13)
+      doc.text(settings.phone || '-', 32, yPos + 17)
 
       // Middle column - Transaction Info
       const midCol = 95
@@ -247,15 +280,57 @@ export const usePdfGenerator = () => {
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
       doc.text('Keterangan :', 14, yPos)
+      const keteranganY = yPos
       yPos += 8
 
       doc.setFont('helvetica', 'normal')
       doc.text('Hormat Kami', 14, yPos)
-      doc.text('Penerima', 45, yPos)
+      doc.text('Penerima', 50, yPos)
+      const signatureStartY = yPos
+
+      // Debug: log settings
+      console.log('Company settings:', settings)
+      console.log('Signature exists:', !!settings.signature)
+      console.log('Signature length:', settings.signature?.length)
+
+      // Add signature image if available
+      if (settings.signature && settings.signature.startsWith('data:image')) {
+        try {
+          // Reset opacity to full for signature
+          const gState = new (doc as any).GState({ opacity: 1 })
+          doc.setGState(gState)
+          doc.addImage(settings.signature, 'PNG', 8, yPos + 1, 35, 14)
+          console.log('Signature added successfully')
+        } catch (e) {
+          console.error('Error adding signature:', e)
+        }
+      }
+
+      // Add watermark stamp with logo only (30% transparent)
+      if (logoBase64) {
+        try {
+          // Set 30% transparency for stamp
+          const stampGState = new (doc as any).GState({ opacity: 0.3 })
+          doc.setGState(stampGState)
+
+          // Add logo as stamp (larger, centered between signatures)
+          const stampX = 32
+          const stampY = yPos + 2
+          doc.addImage(logoBase64, 'PNG', stampX - 10, stampY, 20, 20)
+
+          // Reset opacity
+          const normalGState = new (doc as any).GState({ opacity: 1 })
+          doc.setGState(normalGState)
+        } catch (e) {
+          console.error('Error adding stamp:', e)
+        }
+      }
+
       yPos += 18
 
+      doc.setTextColor(0, 0, 0)
       doc.text('(....................)', 14, yPos)
-      doc.text('(....................)', 45, yPos)
+      doc.text('(....................)', 50, yPos)
       yPos += 8
 
       // Terbilang
@@ -264,9 +339,31 @@ export const usePdfGenerator = () => {
       doc.setFont('helvetica', 'normal')
       const terbilangText = terbilang(subTotal) + ' rupiah'
       doc.text(terbilangText, 14, yPos + 5, { maxWidth: 70 })
-      yPos += 12
+      yPos += 15
+
+      // Bank Info
+      if (settings.bankName || settings.bankAccount) {
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Informasi Pembayaran:', 14, yPos)
+        yPos += 4
+        doc.setFont('helvetica', 'normal')
+        if (settings.bankName) {
+          doc.text(`Bank: ${settings.bankName}`, 14, yPos)
+          yPos += 4
+        }
+        if (settings.bankAccount) {
+          doc.text(`No. Rekening: ${settings.bankAccount}`, 14, yPos)
+          yPos += 4
+        }
+        if (settings.bankAccountName) {
+          doc.text(`Atas Nama: ${settings.bankAccountName}`, 14, yPos)
+          yPos += 4
+        }
+      }
+
       doc.setFontSize(7)
-      doc.text(formatDateTime(new Date().toISOString()), 14, yPos)
+      doc.text(formatDateTime(new Date().toISOString()), 14, yPos + 2)
 
       // Middle column - Item info
       const footerMidCol = 90
@@ -334,12 +431,16 @@ export const usePdfGenerator = () => {
     generating.value = true
 
     try {
+      // Fetch company settings
+      const company = await fetchCompanySettings()
+      const settings = company?.settings || {}
+
       const doc = new jsPDF('p', 'mm', 'a4')
       const pageWidth = doc.internal.pageSize.getWidth()
       let yPos = 20
 
       // Load logo
-      const logoBase64 = await loadLogoBase64()
+      const logoBase64 = await loadLogoBase64(settings.logo)
 
       // ===== HEADER SECTION =====
       // Logo on the left
@@ -351,14 +452,14 @@ export const usePdfGenerator = () => {
       doc.setFontSize(11)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(0, 128, 128)
-      doc.text('OCN CCTV & Networking', 35, yPos - 2)
+      doc.text(company?.name || 'OCN CCTV & Networking', 35, yPos - 2)
 
       doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(0, 0, 0)
-      doc.text('Tel: 082146586160', 35, yPos + 3)
-      doc.text('Jl. Mertasari No. 20 Kerobokan Kelod', 35, yPos + 7)
-      doc.text('admin@ocn.co.id', 35, yPos + 11)
+      doc.text('Tel: ' + (settings.phone || '-'), 35, yPos + 3)
+      doc.text(settings.address || '-', 35, yPos + 7)
+      doc.text(settings.email || '-', 35, yPos + 11)
 
       // Right side - Kwitansi No with box
       doc.setFontSize(14)
@@ -488,6 +589,28 @@ export const usePdfGenerator = () => {
       doc.text('Sisa Pembayaran', 14, leftY)
       doc.text(': Rp', 45, leftY)
       doc.text(formatNumber(kredit), 80, leftY, { align: 'right' })
+      leftY += 8
+
+      // Bank Info
+      if (settings.bankName || settings.bankAccount) {
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Transfer ke:', 14, leftY)
+        leftY += 3
+        doc.setFont('helvetica', 'normal')
+        if (settings.bankName) {
+          doc.text(`${settings.bankName}`, 14, leftY)
+          leftY += 3
+        }
+        if (settings.bankAccount) {
+          doc.text(`${settings.bankAccount}`, 14, leftY)
+          leftY += 3
+        }
+        if (settings.bankAccountName) {
+          doc.text(`a.n. ${settings.bankAccountName}`, 14, leftY)
+          leftY += 3
+        }
+      }
 
       // Middle column - Payment methods
       const midX = 100
@@ -515,13 +638,47 @@ export const usePdfGenerator = () => {
       doc.text(`Kerobokan, ${formatDateIndo(payment.paymentDate)}`, sigX, sigY, { align: 'center' })
       doc.setTextColor(0, 0, 0)
 
-      sigY += 20
+      // Add signature image if available
+      if (settings.signature && settings.signature.startsWith('data:image')) {
+        try {
+          const gState = new (doc as any).GState({ opacity: 1 })
+          doc.setGState(gState)
+          doc.addImage(settings.signature, 'PNG', sigX - 20, sigY + 2, 40, 15)
+          sigY += 18
+        } catch (e) {
+          console.error('Error adding signature to receipt:', e)
+          sigY += 20
+        }
+      } else {
+        sigY += 20
+      }
+
       doc.setLineWidth(0.3)
       doc.line(sigX - 25, sigY, sigX + 25, sigY)
       sigY += 4
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
       doc.text('Authorized Signature', sigX, sigY, { align: 'center' })
+
+      // Add watermark stamp with logo only (30% transparent)
+      if (logoBase64) {
+        try {
+          // Set 30% transparency for stamp
+          const stampGState = new (doc as any).GState({ opacity: 0.3 })
+          doc.setGState(stampGState)
+
+          // Add logo as stamp
+          const stampX = 130
+          const stampY = yPos + 5
+          doc.addImage(logoBase64, 'PNG', stampX - 12, stampY, 24, 24)
+
+          // Reset opacity
+          const normalGState = new (doc as any).GState({ opacity: 1 })
+          doc.setGState(normalGState)
+        } catch (e) {
+          console.error('Error adding stamp to receipt:', e)
+        }
+      }
 
       // Notes if any
       if (payment.notes) {
@@ -540,6 +697,172 @@ export const usePdfGenerator = () => {
       doc.save(`${filename}.pdf`)
     } catch (error) {
       console.error('Error generating Receipt PDF:', error)
+      throw error
+    } finally {
+      generating.value = false
+    }
+  }
+
+  // Generate Report PDF - Generic report generator
+  const downloadReportPdf = async (options: {
+    title: string
+    subtitle?: string
+    period?: string
+    summary?: { label: string; value: string }[]
+    columns: {
+      header: string
+      key: string
+      align?: 'left' | 'center' | 'right'
+      format?: (val: any) => string
+    }[]
+    data: any[]
+    filename: string
+  }) => {
+    generating.value = true
+
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = doc.internal.pageSize.getWidth()
+      let yPos = 15
+
+      // Load logo
+      const logoBase64 = await loadLogoBase64()
+
+      // ===== HEADER SECTION =====
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', 14, yPos - 5, 15, 15)
+      }
+
+      // Title
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(0, 128, 128)
+      doc.text(options.title, logoBase64 ? 32 : 14, yPos + 2)
+
+      // Subtitle
+      if (options.subtitle) {
+        doc.setFontSize(10)
+        doc.setTextColor(100, 100, 100)
+        doc.text(options.subtitle, logoBase64 ? 32 : 14, yPos + 8)
+      }
+
+      // Period
+      if (options.period) {
+        doc.setFontSize(9)
+        doc.setTextColor(0, 0, 0)
+        doc.setFont('helvetica', 'normal')
+        doc.text(
+          `Periode: ${options.period}`,
+          logoBase64 ? 32 : 14,
+          yPos + (options.subtitle ? 14 : 8)
+        )
+      }
+
+      // Print date on the right
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Dicetak: ${formatDateTime(new Date().toISOString())}`, pageWidth - 14, yPos, {
+        align: 'right',
+      })
+
+      yPos += 25
+
+      // ===== SUMMARY SECTION =====
+      if (options.summary && options.summary.length > 0) {
+        doc.setFillColor(245, 245, 245)
+        doc.roundedRect(
+          14,
+          yPos - 5,
+          pageWidth - 28,
+          8 + Math.ceil(options.summary.length / 4) * 12,
+          2,
+          2,
+          'F'
+        )
+
+        doc.setFontSize(9)
+        doc.setTextColor(0, 0, 0)
+
+        const cols = 4
+        const colWidth = (pageWidth - 28) / cols
+        options.summary.forEach((item, idx) => {
+          const col = idx % cols
+          const row = Math.floor(idx / cols)
+          const x = 18 + col * colWidth
+          const y = yPos + row * 12
+
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 100, 100)
+          doc.text(item.label, x, y)
+
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(0, 0, 0)
+          doc.text(item.value, x, y + 5)
+        })
+
+        yPos += 8 + Math.ceil(options.summary.length / 4) * 12 + 5
+      }
+
+      // ===== DATA TABLE =====
+      const headers = options.columns.map(col => col.header)
+      const body = options.data.map(row =>
+        options.columns.map(col => {
+          const val = row[col.key]
+          return col.format ? col.format(val) : String(val ?? '-')
+        })
+      )
+
+      const columnStyles: Record<number, any> = {}
+      options.columns.forEach((col, idx) => {
+        if (col.align) {
+          columnStyles[idx] = { halign: col.align }
+        }
+      })
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [headers],
+        body: body,
+        headStyles: {
+          fillColor: [0, 128, 128],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        bodyStyles: {
+          fontSize: 8,
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200],
+        },
+        columnStyles,
+        alternateRowStyles: {
+          fillColor: [250, 250, 250],
+        },
+        margin: { left: 14, right: 14 },
+        styles: {
+          overflow: 'linebreak',
+          cellPadding: 2,
+        },
+      })
+
+      // Footer
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setTextColor(150, 150, 150)
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        )
+      }
+
+      // Save PDF
+      doc.save(`${options.filename}.pdf`)
+    } catch (error) {
+      console.error('Error generating Report PDF:', error)
       throw error
     } finally {
       generating.value = false
@@ -606,5 +929,6 @@ export const usePdfGenerator = () => {
     downloadPdf,
     downloadInvoicePdf,
     downloadReceiptPdf,
+    downloadReportPdf,
   }
 }

@@ -4,12 +4,16 @@
     <div class="flex justify-between items-start mb-6">
       <!-- Left: Logo & Company Info -->
       <div class="flex items-start gap-4">
-        <img src="/logo.png" alt="OCN" class="w-16 h-16 object-contain" />
+        <img
+          :src="company?.settings?.logo || '/logo.png'"
+          alt="Logo"
+          class="w-16 h-16 object-contain"
+        />
         <div class="text-xs">
-          <p class="font-bold text-base">OCN CCTV & Networking</p>
-          <p>Tel: 082146586160</p>
-          <p>Jl. Mertasari No. 20 Kerobokan Kelod</p>
-          <p>admin@ocn.co.id</p>
+          <p class="font-bold text-base">{{ company?.name || 'OCN CCTV & Networking' }}</p>
+          <p>Tel: {{ company?.settings?.phone || '-' }}</p>
+          <p>{{ company?.settings?.address || '-' }}</p>
+          <p>{{ company?.settings?.email || '-' }}</p>
         </div>
       </div>
       <!-- Right: Receipt Number -->
@@ -106,6 +110,21 @@
             {{ formatNumber(kredit) }}
           </span>
         </div>
+
+        <!-- Bank Info -->
+        <div
+          v-if="company?.settings?.bankName || company?.settings?.bankAccount"
+          class="mt-3 pt-2 border-t border-gray-300"
+        >
+          <p class="font-semibold text-xs mb-1">Transfer ke:</p>
+          <p v-if="company?.settings?.bankName" class="text-xs">{{ company.settings.bankName }}</p>
+          <p v-if="company?.settings?.bankAccount" class="text-xs font-mono">
+            {{ company.settings.bankAccount }}
+          </p>
+          <p v-if="company?.settings?.bankAccountName" class="text-xs">
+            a.n. {{ company.settings.bankAccountName }}
+          </p>
+        </div>
       </div>
 
       <!-- Right: Payment Method -->
@@ -151,7 +170,14 @@
       <!-- Signature Area -->
       <div class="text-center">
         <p class="text-xs text-gray-500 mb-2">Kerobokan, {{ formatDate(payment.paymentDate) }}</p>
-        <div class="h-20"></div>
+        <div class="h-16 flex items-center justify-center">
+          <img
+            v-if="company?.settings?.signature"
+            :src="company.settings.signature"
+            alt="Signature"
+            class="max-h-14 object-contain"
+          />
+        </div>
         <div class="border-t border-gray-400 pt-1 px-4">
           <p class="font-semibold">Authorized Signature</p>
         </div>
@@ -169,6 +195,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   payment: any
+  company?: any
 }>()
 
 const { formatDate } = useFormatter()

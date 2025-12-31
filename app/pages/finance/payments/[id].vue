@@ -210,7 +210,7 @@
           <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
         </div>
         <div id="invoice-print" class="p-6 bg-white text-black overflow-auto">
-          <PaymentInvoice v-if="payment" :payment="payment" />
+          <PaymentInvoice v-if="payment" :payment="payment" :company="company" />
         </div>
         <div class="modal-action p-4 border-t">
           <button class="btn" @click="showInvoice = false">Tutup</button>
@@ -265,7 +265,7 @@
           <button @click="showReceipt = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
         </div>
         <div id="receipt-print" class="p-6 bg-white text-black overflow-auto">
-          <PaymentReceipt v-if="payment" :payment="payment" />
+          <PaymentReceipt v-if="payment" :payment="payment" :company="company" />
         </div>
         <div class="modal-action p-4 border-t">
           <button class="btn" @click="showReceipt = false">Tutup</button>
@@ -328,6 +328,7 @@ const showInvoice = ref(false)
 const showReceipt = ref(false)
 
 const { data: payment, pending, error } = await useFetch(`/api/payments/${route.params.id}`)
+const { data: company } = await useFetch('/api/company')
 
 const projectTotal = computed(() => {
   if (!payment.value?.project?.items) return 0

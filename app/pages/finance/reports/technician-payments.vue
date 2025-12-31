@@ -4,6 +4,10 @@ definePageMeta({
 })
 
 const { formatCurrency, formatDate } = useFormatter()
+const { downloadReportPdf, generating: pdfGenerating } = usePdfGenerator()
+
+// Company settings
+const { data: company } = await useFetch('/api/company')
 
 // Date filters
 const fromDate = ref('')
@@ -227,6 +231,38 @@ function printReport() {
   window.print()
 }
 
+// Export to PDF
+function exportToPdf() {
+  downloadReportPdf({
+    title: 'Laporan Pembayaran Teknisi',
+    subtitle: company.value?.name || 'OCN CCTV & Networking Solutions',
+    period: `${formatDate(fromDate.value)} - ${formatDate(toDate.value)}`,
+    summary: [
+      { label: 'Total Pembayaran', value: formatCurrency(summary.value.totalPayments) },
+      { label: 'Sudah Dibayar', value: formatCurrency(summary.value.totalPaid) },
+      { label: 'Pending', value: formatCurrency(summary.value.totalPending) },
+      { label: 'Jumlah Teknisi', value: summary.value.uniqueTechnicians.toString() },
+    ],
+    columns: [
+      { header: 'No. Pembayaran', key: 'paymentNumber', align: 'left' },
+      { header: 'Teknisi', key: 'technician', align: 'left' },
+      { header: 'Project', key: 'project', align: 'left' },
+      { header: 'Periode', key: 'period', align: 'left' },
+      { header: 'Jumlah', key: 'amount', align: 'right', format: v => formatCurrency(v) },
+      { header: 'Status', key: 'status', align: 'center' },
+    ],
+    data: payments.value.map(p => ({
+      paymentNumber: p.paymentNumber,
+      technician: p.technician?.name || '-',
+      project: p.project?.projectNumber || '-',
+      period: p.period || '-',
+      amount: p.amount,
+      status: getStatusLabel(p.status),
+    })),
+    filename: `laporan-pembayaran-teknisi-${fromDate.value}-${toDate.value}`,
+  })
+}
+
 // Watch filters
 watch([fromDate, toDate, groupBy, selectedTechnician], () => {
   loadReport()
@@ -252,6 +288,18 @@ onMounted(() => {
         <p class="text-base-content/60">Analisis pembayaran fee/gaji teknisi</p>
       </div>
       <div class="flex gap-2">
+        <button @click="exportToPdf" class="btn btn-primary btn-sm" :disabled="pdfGenerating">
+          <span v-if="pdfGenerating" class="loading loading-spinner loading-sm"></span>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            />
+          </svg>
+          Download PDF
+        </button>
         <button @click="exportToCSV" class="btn btn-outline btn-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

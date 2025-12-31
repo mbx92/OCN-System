@@ -564,6 +564,11 @@
                     <li>
                       <NuxtLink to="/settings/templates" active-class="active">Template</NuxtLink>
                     </li>
+                    <li>
+                      <NuxtLink to="/settings/integrations" active-class="active">
+                        Integrasi
+                      </NuxtLink>
+                    </li>
                   </ul>
                 </details>
               </li>
