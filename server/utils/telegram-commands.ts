@@ -26,15 +26,22 @@ interface TelegramUpdate {
  */
 export async function processUpdate(update: TelegramUpdate) {
   const message = update.message
-  if (!message?.text) return
+  if (!message?.text) {
+    console.log('[Telegram] No text message, ignoring')
+    return
+  }
 
   const chatId = message.chat.id
   const text = message.text.trim()
+  
+  console.log('[Telegram] Processing message from', chatId, ':', text)
 
   // Parse command
   if (text.startsWith('/')) {
     const [command, ...args] = text.split(' ')
     const cmd = command.toLowerCase().replace('@', '').split('@')[0]
+
+    console.log('[Telegram] Command:', cmd)
 
     switch (cmd) {
       case '/start':
@@ -67,17 +74,32 @@ export async function processUpdate(update: TelegramUpdate) {
  */
 async function sendReply(chatId: number, text: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN
-  if (!token) return
+  if (!token) {
+    console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured!')
+    return
+  }
 
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'HTML',
-    }),
-  })
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'HTML',
+      }),
+    })
+
+    const result = await response.json()
+    
+    if (!result.ok) {
+      console.error('[Telegram] Send message failed:', result)
+    } else {
+      console.log('[Telegram] Message sent to', chatId)
+    }
+  } catch (error) {
+    console.error('[Telegram] Error sending message:', error)
+  }
 }
 
 /**
