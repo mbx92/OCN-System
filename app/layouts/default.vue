@@ -339,6 +339,11 @@
                       <NuxtLink to="/inventory/products" active-class="active">Produk</NuxtLink>
                     </li>
                     <li><NuxtLink to="/inventory/stock" active-class="active">Stok</NuxtLink></li>
+                    <li>
+                      <NuxtLink to="/inventory/stock-opname" active-class="active">
+                        Stock Opname
+                      </NuxtLink>
+                    </li>
                   </ul>
                 </details>
               </li>

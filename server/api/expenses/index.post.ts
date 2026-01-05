@@ -83,6 +83,17 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
+    // Send Telegram notification
+    const { notifyExpense } = await import('../../utils/telegram')
+    await notifyExpense({
+      type: expense.type,
+      category: expense.category,
+      description: expense.description,
+      amount: parseFloat(expense.amount.toString()),
+      projectNumber: expense.project?.projectNumber,
+      projectTitle: expense.project?.title,
+    })
+
     return expense
   } catch (error: any) {
     console.error('Error creating expense:', error)

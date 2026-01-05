@@ -155,6 +155,20 @@ export default defineEventHandler(async event => {
       status: 'COMPLETED',
       endDate: new Date(),
     },
+    include: {
+      customer: true,
+    },
+  })
+
+  // Send Telegram notification with PDFs
+  const { notifyProjectCompleted } = await import('../../../utils/telegram')
+  notifyProjectCompleted({
+    projectNumber: updatedProject.projectNumber,
+    title: updatedProject.title,
+    customerName: updatedProject.customer.name,
+    projectId: updatedProject.id,
+  }).catch(err => {
+    console.error('Failed to send Telegram notification:', err)
   })
 
   return updatedProject
