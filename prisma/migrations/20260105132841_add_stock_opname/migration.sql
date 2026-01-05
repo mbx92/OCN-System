@@ -1,5 +1,9 @@
--- CreateEnum
-CREATE TYPE "MaintenanceScheduleStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+-- CreateEnum (skip if already exists)
+DO $$ BEGIN
+    CREATE TYPE "MaintenanceScheduleStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE "StockOpname" (
