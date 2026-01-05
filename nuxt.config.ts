@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     port: 4000,
   },
 
-  modules: ['@pinia/nuxt', '@vueuse/nuxt'],
+  modules: ['@pinia/nuxt', '@vueuse/nuxt', '@vite-pwa/nuxt'],
 
   vite: {
     plugins: [tailwindcss()],
@@ -44,5 +44,68 @@ export default defineNuxtConfig({
     strict: false,
     typeCheck: false,
     shim: false,
+  },
+
+  app: {
+    head: {
+      title: 'OCN System',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        {
+          name: 'description',
+          content: 'OCN CCTV & Networking Solutions - Sistem Manajemen Bisnis',
+        },
+        { name: 'theme-color', content: '#1e40af' },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      ],
+    },
+  },
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'OCN System',
+      short_name: 'OCN',
+      description: 'OCN CCTV & Networking Solutions - Sistem Manajemen Bisnis',
+      theme_color: '#1e40af',
+      background_color: '#ffffff',
+      display: 'standalone',
+      orientation: 'portrait',
+      scope: '/',
+      start_url: '/',
+      icons: [
+        {
+          src: '/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: '/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+        {
+          src: '/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    client: {
+      installPrompt: true,
+    },
+    devOptions: {
+      enabled: true,
+      type: 'module',
+    },
   },
 })

@@ -149,19 +149,6 @@
           {{ loading ? 'Masuk...' : 'Masuk' }}
         </button>
       </form>
-
-      <!-- Demo Info -->
-      <div class="divider text-xs text-base-content/40">DEMO</div>
-      <div class="text-center text-sm text-base-content/60 space-y-1">
-        <p>
-          <span class="font-medium">Owner:</span>
-          owner / password123
-        </p>
-        <p>
-          <span class="font-medium">Teknisi:</span>
-          tech1 / password123
-        </p>
-      </div>
     </div>
   </div>
 </template>

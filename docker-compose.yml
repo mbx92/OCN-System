@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: ocn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ocn_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ocn_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ocn_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    networks:
+      - ocn-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-ocn_user}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nuxt.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ocn-app
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ocn_user}:${POSTGRES_PASSWORD:-ocn_password}@db:5432/${POSTGRES_DB:-ocn_db}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ocn-network
+    command: sh -c "npx prisma migrate deploy && node .output/server/index.mjs"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ocn-network:
+    driver: bridge
