@@ -251,24 +251,30 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium mb-2">Proyek (opsional)</label>
-              <select v-model="form.projectId" class="select select-bordered w-full">
-                <option value="">Tanpa Proyek</option>
-                <option v-for="p in projects" :key="p.id" :value="p.id">
-                  {{ p.projectNumber }} - {{ p.title }}
-                </option>
-              </select>
+              <AppSearchableSelect
+                v-model="form.projectId"
+                :options="projectOptions"
+                placeholder="Cari proyek..."
+                :search-fields="['label', 'projectNumber', 'title']"
+              >
+                <template #option="{ option }">
+                  <div>
+                    <div class="font-medium">{{ option.projectNumber }}</div>
+                    <div class="text-xs opacity-70">{{ option.title }}</div>
+                  </div>
+                </template>
+              </AppSearchableSelect>
               <p class="text-xs text-base-content/60 mt-1">
                 Pilih project jika maintenance terkait project tertentu
               </p>
             </div>
             <div v-if="!form.projectId">
               <label class="block text-sm font-medium mb-2">Customer *</label>
-              <select v-model="form.customerId" class="select select-bordered w-full" required>
-                <option value="">Pilih Customer</option>
-                <option v-for="c in customers" :key="c.id" :value="c.id">
-                  {{ c.name }} {{ c.companyName ? `(${c.companyName})` : '' }}
-                </option>
-              </select>
+              <AppCustomerSelect
+                v-model="form.customerId"
+                placeholder="Cari customer..."
+                required
+              />
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Judul *</label>
@@ -449,6 +455,16 @@ const form = reactive({
   notes: '',
 })
 
+// Clear customerId when projectId is selected
+watch(
+  () => form.projectId,
+  newProjectId => {
+    if (newProjectId) {
+      form.customerId = ''
+    }
+  }
+)
+
 // Handle date change from Cally Calendar
 const handleDateChange = (event: any) => {
   const date = event.target?.value
@@ -471,15 +487,22 @@ const schedules = computed(() => (schedulesData.value as any)?.data || [])
 
 // Fetch projects for dropdown
 const { data: projectsData } = await useFetch('/api/projects', {
-  query: { limit: 100 },
+  query: { limit: 1000 },
 })
 const projects = computed(() => (projectsData.value as any)?.data || [])
 
-// Fetch customers for dropdown
-const { data: customersData } = await useFetch('/api/customers', {
-  query: { limit: 100 },
+// Prepare project options for searchable select
+const projectOptions = computed(() => {
+  return [
+    { value: '', label: 'Tanpa Proyek', projectNumber: '', title: '' },
+    ...projects.value.map((p: any) => ({
+      value: p.id,
+      label: `${p.projectNumber} - ${p.title}`,
+      projectNumber: p.projectNumber,
+      title: p.title,
+    })),
+  ]
 })
-const customers = computed(() => (customersData.value as any)?.data || [])
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
@@ -531,16 +554,26 @@ const openEditModal = (schedule: any) => {
 const saveSchedule = async () => {
   saving.value = true
   try {
+    // Prepare body - filter empty strings
+    const body = {
+      projectId: form.projectId || undefined,
+      customerId: form.customerId || undefined,
+      title: form.title,
+      description: form.description || undefined,
+      scheduledDate: form.scheduledDate,
+      notes: form.notes || undefined,
+    }
+
     if (editingSchedule.value) {
       await $fetch(`/api/maintenance-schedules/${editingSchedule.value.id}`, {
         method: 'PATCH',
-        body: form,
+        body,
       })
       showAlert('Jadwal berhasil diperbarui!', 'success')
     } else {
       await $fetch('/api/maintenance-schedules', {
         method: 'POST',
-        body: form,
+        body,
       })
       showAlert('Jadwal berhasil dibuat!', 'success')
     }

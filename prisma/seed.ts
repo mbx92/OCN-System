@@ -24,33 +24,49 @@ async function main() {
 
   // ==================== CLEANUP ====================
   console.log('🗑️  Cleaning up existing data...')
-  await prisma.expense.deleteMany()
-  await prisma.session.deleteMany()
-  await prisma.activity.deleteMany()
-  await prisma.warrantyClaim.deleteMany()
-  await prisma.warranty.deleteMany()
-  await prisma.technicianPayment.deleteMany()
-  await prisma.payment.deleteMany()
-  await prisma.asset.deleteMany()
-  await prisma.financialSummary.deleteMany()
-  await prisma.projectTechnician.deleteMany()
-  await prisma.purchaseOrderItem.deleteMany()
-  await prisma.purchaseOrder.deleteMany()
-  await prisma.projectExpense.deleteMany()
-  await prisma.quotation.deleteMany()
-  await prisma.projectItem.deleteMany()
-  await prisma.project.deleteMany()
-  await prisma.customer.deleteMany()
-  await prisma.stockMovement.deleteMany()
-  await prisma.stock.deleteMany()
-  await prisma.supplierProduct.deleteMany()
-  await prisma.product.deleteMany()
-  await prisma.supplier.deleteMany()
-  await prisma.unitConversion.deleteMany()
-  await prisma.unit.deleteMany()
-  await prisma.company.deleteMany()
-  await prisma.technician.deleteMany()
-  await prisma.user.deleteMany()
+
+  // Helper function to safely delete
+  async function safeDelete(modelName: string, deleteFn: () => Promise<any>) {
+    try {
+      await deleteFn()
+    } catch (error: any) {
+      if (error.code === 'P2021') {
+        console.log(`⚠️  Table ${modelName} does not exist, skipping...`)
+      } else {
+        throw error
+      }
+    }
+  }
+
+  await safeDelete('expense', () => prisma.expense.deleteMany())
+  await safeDelete('session', () => prisma.session.deleteMany())
+  await safeDelete('activity', () => prisma.activity.deleteMany())
+  await safeDelete('warrantyClaim', () => prisma.warrantyClaim.deleteMany())
+  await safeDelete('warranty', () => prisma.warranty.deleteMany())
+  await safeDelete('technicianPayment', () => prisma.technicianPayment.deleteMany())
+  await safeDelete('payment', () => prisma.payment.deleteMany())
+  await safeDelete('asset', () => prisma.asset.deleteMany())
+  await safeDelete('financialSummary', () => prisma.financialSummary.deleteMany())
+  await safeDelete('projectTechnician', () => prisma.projectTechnician.deleteMany())
+  await safeDelete('purchaseOrderItem', () => prisma.purchaseOrderItem.deleteMany())
+  await safeDelete('purchaseOrder', () => prisma.purchaseOrder.deleteMany())
+  await safeDelete('projectExpense', () => prisma.projectExpense.deleteMany())
+  await safeDelete('quotation', () => prisma.quotation.deleteMany())
+  await safeDelete('projectItem', () => prisma.projectItem.deleteMany())
+  await safeDelete('maintenanceSchedule', () => prisma.maintenanceSchedule.deleteMany())
+  await safeDelete('project', () => prisma.project.deleteMany())
+  await safeDelete('customer', () => prisma.customer.deleteMany())
+  await safeDelete('stockMovement', () => prisma.stockMovement.deleteMany())
+  await safeDelete('stock', () => prisma.stock.deleteMany())
+  await safeDelete('supplierProduct', () => prisma.supplierProduct.deleteMany())
+  await safeDelete('product', () => prisma.product.deleteMany())
+  await safeDelete('supplier', () => prisma.supplier.deleteMany())
+  await safeDelete('unitConversion', () => prisma.unitConversion.deleteMany())
+  await safeDelete('unit', () => prisma.unit.deleteMany())
+  await safeDelete('company', () => prisma.company.deleteMany())
+  await safeDelete('technician', () => prisma.technician.deleteMany())
+  await safeDelete('user', () => prisma.user.deleteMany())
+
   console.log('✅ Cleanup complete')
 
   // ==================== USER ====================

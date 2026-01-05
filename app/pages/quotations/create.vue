@@ -32,16 +32,11 @@
           <div class="card-body p-4 sm:p-6">
             <h2 class="card-title text-base sm:text-lg">Pelanggan</h2>
             <div class="form-control w-full">
-              <select
+              <AppCustomerSelect
                 v-model="form.customerId"
-                class="select select-bordered select-sm sm:select-md w-full"
+                placeholder="Cari customer..."
                 required
-              >
-                <option value="">Pilih pelanggan</option>
-                <option v-for="customer in customers" :key="customer.id" :value="customer.id">
-                  {{ customer.name }} {{ customer.companyName ? `(${customer.companyName})` : '' }}
-                </option>
-              </select>
+              />
             </div>
             <div class="form-control w-full mt-2">
               <input

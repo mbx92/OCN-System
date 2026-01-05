@@ -200,6 +200,18 @@ model StockMovement {
   stock     Stock?   @relation(fields: [stockId], references: [id])
 }
 
+model StockOpname {
+  id          String   @id @default(cuid())
+  productId   String
+  systemStock Int      @default(0)
+  actualStock Int
+  difference  Int
+  notes       String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
 model Supplier {
   id             String            @id @default(cuid())
   name           String

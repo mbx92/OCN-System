@@ -80,8 +80,85 @@
                 </div>
               </div>
 
-              <!-- Notification Settings -->
+              <!-- Webhook Settings -->
               <div v-if="integrations?.telegram?.configured" class="space-y-4">
+                <h4 class="font-medium">Webhook Bot</h4>
+                <div class="bg-base-200 rounded-lg p-4">
+                  <div class="flex items-start gap-3">
+                    <div class="flex-1">
+                      <div class="text-sm mb-2">
+                        <span class="text-base-content/60">Status Webhook:</span>
+                        <span v-if="webhookInfo" class="ml-2">
+                          <span v-if="webhookInfo.url" class="text-success font-medium">
+                            ✓ Aktif
+                          </span>
+                          <span v-else class="text-warning font-medium">⚠ Belum diset</span>
+                        </span>
+                        <span v-else class="ml-2 loading loading-spinner loading-xs"></span>
+                      </div>
+                      <div v-if="webhookInfo?.url" class="text-xs mb-2">
+                        <span class="text-base-content/60">URL:</span>
+                        <code class="ml-2 bg-base-300 px-2 py-0.5 rounded">
+                          {{ webhookInfo.url }}
+                        </code>
+                      </div>
+                      <div v-if="webhookInfo?.pending_update_count !== undefined" class="text-xs">
+                        <span class="text-base-content/60">Pending Updates:</span>
+                        <span class="ml-2 font-mono">{{ webhookInfo.pending_update_count }}</span>
+                      </div>
+                    </div>
+                    <button
+                      @click="refreshWebhookInfo"
+                      class="btn btn-ghost btn-xs"
+                      :disabled="loadingWebhook"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <input
+                    v-model="webhookUrl"
+                    type="text"
+                    placeholder="https://erp.ocnetworks.web.id/api/telegram/webhook"
+                    class="input input-sm input-bordered flex-1"
+                  />
+                  <button
+                    @click="setWebhook"
+                    class="btn btn-primary btn-sm"
+                    :disabled="settingWebhook || !webhookUrl"
+                  >
+                    <span v-if="settingWebhook" class="loading loading-spinner loading-sm"></span>
+                    Set Webhook
+                  </button>
+                  <button
+                    @click="deleteWebhook"
+                    class="btn btn-error btn-sm"
+                    :disabled="deletingWebhook"
+                  >
+                    <span v-if="deletingWebhook" class="loading loading-spinner loading-sm"></span>
+                    Hapus
+                  </button>
+                </div>
+
+                <div class="text-xs text-base-content/50">
+                  <p>💡 Tips: Untuk production, gunakan domain publik Anda. Contoh:</p>
+                  <code class="bg-base-300 px-2 py-1 rounded mt-1 block">
+                    https://erp.ocnetworks.web.id/api/telegram/webhook
+                  </code>
+                </div>
+              </div>
+
+              <!-- Notification Settings -->
+              <div v-if="integrations?.telegram?.configured" class="space-y-4 pt-4 border-t">
                 <h4 class="font-medium">Pengaturan Notifikasi</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <label class="flex items-center gap-3 cursor-pointer">
@@ -317,9 +394,15 @@
 
 <script setup lang="ts">
 const { showAlert } = useAlert()
+const config = useRuntimeConfig()
 
 const testingTelegram = ref(false)
 const savingSettings = ref(false)
+const settingWebhook = ref(false)
+const deletingWebhook = ref(false)
+const loadingWebhook = ref(false)
+const webhookUrl = ref('')
+const webhookInfo = ref<any>(null)
 
 const { data: integrations, pending, refresh } = await useFetch('/api/integrations')
 
@@ -329,6 +412,13 @@ const telegramNotifications = reactive({
   paymentReceived: true,
   maintenanceSchedule: true,
   warrantyClaim: true,
+})
+
+// Set default webhook URL based on base URL
+onMounted(() => {
+  const baseUrl = config.public.baseUrl || window.location.origin
+  webhookUrl.value = `${baseUrl}/api/telegram/webhook`
+  refreshWebhookInfo()
 })
 
 // Populate settings from fetched data
@@ -341,6 +431,54 @@ watch(
   },
   { immediate: true }
 )
+
+const refreshWebhookInfo = async () => {
+  loadingWebhook.value = true
+  try {
+    const info = await $fetch('/api/integrations/telegram-webhook')
+    webhookInfo.value = info
+  } catch (err) {
+    console.error('Failed to get webhook info:', err)
+  } finally {
+    loadingWebhook.value = false
+  }
+}
+
+const setWebhook = async () => {
+  if (!webhookUrl.value) {
+    showAlert('Masukkan URL webhook', 'error')
+    return
+  }
+
+  settingWebhook.value = true
+  try {
+    const result = await $fetch('/api/integrations/telegram-webhook', {
+      method: 'POST',
+      body: { webhookUrl: webhookUrl.value },
+    })
+    showAlert(result.message, 'success')
+    await refreshWebhookInfo()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal set webhook', 'error')
+  } finally {
+    settingWebhook.value = false
+  }
+}
+
+const deleteWebhook = async () => {
+  deletingWebhook.value = true
+  try {
+    const result = await $fetch('/api/integrations/telegram-webhook', {
+      method: 'DELETE',
+    })
+    showAlert(result.message, 'success')
+    await refreshWebhookInfo()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal hapus webhook', 'error')
+  } finally {
+    deletingWebhook.value = false
+  }
+}
 
 const testTelegram = async () => {
   testingTelegram.value = true

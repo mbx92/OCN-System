@@ -44,16 +44,14 @@ export default defineEventHandler(async (event: H3Event) => {
       })
     }
 
-    // Set customerId dari project jika tidak diisi manual
-    if (!finalCustomerId) {
-      finalCustomerId = project.customerId
-    }
+    // Gunakan customerId dari project
+    finalCustomerId = project.customerId
   }
 
-  // Jika ada customerId tanpa projectId, verify customer exists
-  if (customerId && !projectId) {
+  // Jika hanya ada customerId tanpa projectId, verify customer exists
+  if (finalCustomerId && !projectId) {
     const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+      where: { id: finalCustomerId },
     })
 
     if (!customer) {
@@ -64,10 +62,18 @@ export default defineEventHandler(async (event: H3Event) => {
     }
   }
 
+  // Final validation: pastikan ada finalCustomerId
+  if (!finalCustomerId) {
+    throw createError({
+      statusCode: 400,
+      message: 'Customer harus ada (dari project atau dipilih langsung)',
+    })
+  }
+
   const schedule = await prisma.maintenanceSchedule.create({
     data: {
       projectId: projectId || null,
-      customerId: finalCustomerId || null,
+      customerId: finalCustomerId,
       title,
       description: description || null,
       scheduledDate: new Date(scheduledDate),
@@ -75,12 +81,14 @@ export default defineEventHandler(async (event: H3Event) => {
       createdBy: user.id,
     },
     include: {
-      project: {
-        include: {
-          customer: true,
-        },
-      },
-      customer: true,
+      project: projectId
+        ? {
+            include: {
+              customer: true,
+            },
+          }
+        : false,
+      customer: finalCustomerId && !projectId ? true : false,
       createdByUser: {
         select: {
           id: true,

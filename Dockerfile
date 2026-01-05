@@ -45,11 +45,15 @@ COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/docs/export ./docs/export
 COPY --from=builder /app/prisma ./prisma
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 3000
 
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", ".output/server/index.mjs"]
+# Use entrypoint script (runs migrations, NOT seed!)
+ENTRYPOINT ["docker-entrypoint.sh"]
