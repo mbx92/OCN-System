@@ -33,7 +33,7 @@ export async function processUpdate(update: TelegramUpdate) {
 
   const chatId = message.chat.id
   const text = message.text.trim()
-  
+
   console.log('[Telegram] Processing message from', chatId, ':', text)
 
   // Parse command
@@ -91,7 +91,7 @@ async function sendReply(chatId: number, text: string) {
     })
 
     const result = await response.json()
-    
+
     if (!result.ok) {
       console.error('[Telegram] Send message failed:', result)
     } else {
