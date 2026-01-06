@@ -184,7 +184,13 @@ export default defineEventHandler(async (event: H3Event) => {
           in: ['FULL', 'DP', 'INSTALLMENT', 'SETTLEMENT'],
         },
       },
+      include: {
+        project: true,
+      },
     })
+
+    // Filter payments from cancelled projects
+    const validPayments = payments.filter(p => !p.project || p.project.status !== 'CANCELLED')
 
     // Get all expenses in the period
     const expenses = await prisma.expense.findMany({
@@ -194,13 +200,19 @@ export default defineEventHandler(async (event: H3Event) => {
           lte: endDate,
         },
       },
+      include: {
+        project: true,
+      },
     })
+
+    // Filter expenses from cancelled projects
+    const validExpenses = expenses.filter(e => !e.project || e.project.status !== 'CANCELLED')
 
     // Calculate revenue (Pendapatan Kotor)
     // Use payments received or project values
     let pendapatanKotor = 0
-    if (payments.length > 0) {
-      pendapatanKotor = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    if (validPayments.length > 0) {
+      pendapatanKotor = validPayments.reduce((sum, p) => sum + Number(p.amount), 0)
     } else {
       pendapatanKotor = projects.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
     }
@@ -229,7 +241,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Collect project-type expenses for display AND add to HPP
     const biayaProjectItems: Map<string, number> = new Map()
-    expenses
+    validExpenses
       .filter(e => e.type === 'PROJECT')
       .forEach(e => {
         const displayName = getExpenseDisplayName(e.category, e.type)
@@ -246,7 +258,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const biayaAdministratifItems: Map<string, number> = new Map()
     const pendapatanLainLainItems: Map<string, number> = new Map()
 
-    expenses.forEach(expense => {
+    validExpenses.forEach(expense => {
       if (expense.type === 'PROJECT') return // Already counted in HPP
 
       const expenseCategory = categorizeExpense(expense.category, expense.type)
@@ -274,7 +286,7 @@ export default defineEventHandler(async (event: H3Event) => {
     })
 
     // Add salary expenses to administratif
-    const salaryExpenses = expenses.filter(e => e.type === 'SALARY')
+    const salaryExpenses = validExpenses.filter(e => e.type === 'SALARY')
     salaryExpenses.forEach(e => {
       const displayName = 'Biaya Gaji & Fee'
       biayaAdministratifItems.set(

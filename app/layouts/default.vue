@@ -162,21 +162,23 @@
       >
         <!-- Sidebar header -->
         <div
-          class="p-4 border-b border-base-200 h-[73px] min-h-[73px] flex items-center justify-center"
+          class="p-4 border-b border-base-200 h-[73px] min-h-[73px] flex items-center justify-center overflow-hidden"
         >
           <NuxtLink
             to="/dashboard"
-            :class="isCollapsed ? 'flex justify-center' : 'flex items-center gap-3'"
+            :class="isCollapsed ? 'flex justify-center' : 'flex items-center gap-3 w-full'"
           >
             <img
               src="/logo.png"
               alt="OCN System"
               :class="isCollapsed ? 'h-8 w-8' : 'h-10 w-10'"
-              class="object-contain"
+              class="object-contain shrink-0"
             />
-            <div v-show="!isCollapsed">
-              <h1 class="text-lg font-bold text-primary">OCN System</h1>
-              <p class="text-xs text-base-content/60">CCTV & Networking</p>
+            <div v-show="!isCollapsed" class="min-w-0 flex-1">
+              <h1 class="text-lg font-bold text-primary truncate whitespace-nowrap">OCN System</h1>
+              <p class="text-xs text-base-content/60 truncate whitespace-nowrap">
+                CCTV & Networking
+              </p>
             </div>
           </NuxtLink>
         </div>

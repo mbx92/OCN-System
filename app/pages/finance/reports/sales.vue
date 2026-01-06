@@ -60,6 +60,9 @@ async function loadSalesReport() {
         })
       }
 
+      // Filter out cancelled projects
+      allProjects = allProjects.filter((p: any) => p.status !== 'CANCELLED')
+
       projects.value = allProjects
     }
 
@@ -82,6 +85,9 @@ async function loadSalesReport() {
           return true
         })
       }
+
+      // Filter out payments from cancelled projects
+      allPayments = allPayments.filter((p: any) => !p.project || p.project.status !== 'CANCELLED')
 
       payments.value = allPayments
     }

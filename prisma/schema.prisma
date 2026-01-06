@@ -461,6 +461,7 @@ enum ProjectStatus {
   COMPLETED
   PAID
   CLOSED
+  CANCELLED
 }
 
 enum PaymentMode {

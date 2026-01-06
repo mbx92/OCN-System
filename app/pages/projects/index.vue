@@ -182,6 +182,7 @@ const statusTabs = [
   { label: 'Dikerjakan', value: 'ONGOING' },
   { label: 'Selesai', value: 'COMPLETED' },
   { label: 'Lunas', value: 'PAID' },
+  { label: 'Dibatalkan', value: 'CANCELLED' },
 ]
 
 const { data: projects, pending } = await useFetch('/api/projects', {
@@ -199,6 +200,7 @@ const getStatusClass = (s: string) => {
     COMPLETED: 'badge-success',
     PAID: 'badge-success',
     CLOSED: 'badge-neutral',
+    CANCELLED: 'badge-error',
   }
   return classes[s] || 'badge-ghost'
 }
@@ -212,6 +214,7 @@ const getStatusLabel = (s: string) => {
     COMPLETED: 'Selesai',
     PAID: 'Lunas',
     CLOSED: 'Ditutup',
+    CANCELLED: 'Dibatalkan',
   }
   return labels[s] || s
 }

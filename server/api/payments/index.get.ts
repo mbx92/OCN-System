@@ -24,6 +24,7 @@ export default defineEventHandler(async event => {
             id: true,
             projectNumber: true,
             title: true,
+            status: true,
             customer: {
               select: {
                 name: true,

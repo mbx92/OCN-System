@@ -924,11 +924,269 @@ export const usePdfGenerator = () => {
     }
   }
 
+  // Generate Quotation PDF using template settings
+  const downloadQuotationPdf = async (quotation: any, filename: string) => {
+    generating.value = true
+
+    try {
+      // Fetch company settings
+      const company = await fetchCompanySettings()
+      const settings = company?.settings || {}
+      const template = settings.quotationTemplate || {
+        headerText: 'SURAT PENAWARAN',
+        openingText:
+          'Dengan hormat, bersama ini kami mengajukan penawaran harga untuk pekerjaan sebagai berikut:',
+        closingText:
+          'Demikian penawaran ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.',
+        termsText: '1. Harga berlaku 14 hari\n2. Pembayaran DP 50%\n3. Garansi 1 tahun',
+        showLogo: true,
+        showSignature: true,
+        accentColor: '#1e40af',
+      }
+
+      const doc = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = doc.internal.pageSize.getWidth()
+      let yPos = 15
+
+      // Parse accent color to RGB
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+        return result
+          ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+            }
+          : { r: 30, g: 64, b: 175 }
+      }
+      const accentRgb = hexToRgb(template.accentColor || '#1e40af')
+
+      // Load logo
+      const logoBase64 = template.showLogo ? await loadLogoBase64(settings.logo) : null
+
+      // ===== HEADER SECTION =====
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', 14, yPos - 5, 18, 18)
+      }
+
+      // Company info
+      const headerX = logoBase64 ? 35 : 14
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b)
+      doc.text(company?.name || 'OCN CCTV & Networking Solutions', headerX, yPos)
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      doc.text(settings.address || '-', headerX, yPos + 5)
+      doc.text(`Tel: ${settings.phone || '-'} | Email: ${settings.email || '-'}`, headerX, yPos + 9)
+
+      yPos += 18
+
+      // ===== TITLE SECTION =====
+      // Accent line
+      doc.setDrawColor(accentRgb.r, accentRgb.g, accentRgb.b)
+      doc.setLineWidth(1)
+      doc.line(14, yPos, pageWidth - 14, yPos)
+      yPos += 8
+
+      // Title
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b)
+      doc.text(template.headerText || 'SURAT PENAWARAN', pageWidth / 2, yPos, { align: 'center' })
+      yPos += 8
+
+      // Quotation number and date
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      doc.text(`No: ${quotation.quotationNo}`, pageWidth / 2, yPos, { align: 'center' })
+      yPos += 5
+      doc.setFontSize(9)
+      doc.text(`Tanggal: ${formatDateIndo(quotation.createdAt)}`, pageWidth / 2, yPos, {
+        align: 'center',
+      })
+      yPos += 10
+
+      // ===== CUSTOMER INFO =====
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Kepada Yth.', 14, yPos)
+      yPos += 5
+      doc.setFont('helvetica', 'normal')
+      doc.text(quotation.customer?.name || '-', 14, yPos)
+      yPos += 4
+      if (quotation.customer?.companyName) {
+        doc.text(quotation.customer.companyName, 14, yPos)
+        yPos += 4
+      }
+      if (quotation.customer?.address) {
+        doc.text(quotation.customer.address, 14, yPos, { maxWidth: 80 })
+        yPos += 8
+      }
+      yPos += 5
+
+      // ===== OPENING TEXT =====
+      doc.setFontSize(9)
+      const openingLines = doc.splitTextToSize(template.openingText || '', pageWidth - 28)
+      doc.text(openingLines, 14, yPos)
+      yPos += openingLines.length * 4 + 5
+
+      // ===== TITLE IF EXISTS =====
+      if (quotation.title) {
+        doc.setFont('helvetica', 'bold')
+        doc.text(`Perihal: ${quotation.title}`, 14, yPos)
+        yPos += 8
+      }
+
+      // ===== ITEMS TABLE =====
+      const items = quotation.items || []
+      const tableBody = items.map((item: any, idx: number) => [
+        (idx + 1).toString(),
+        item.name || '-',
+        `${item.quantity || 0} ${item.unit || 'pcs'}`,
+        formatNumber(item.price || 0),
+        formatNumber(item.total || item.totalPrice || item.quantity * item.price || 0),
+      ])
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['No.', 'Uraian / Item', 'Qty', 'Harga Satuan (Rp)', 'Jumlah (Rp)']],
+        body: tableBody,
+        foot: [
+          [
+            { content: '', colSpan: 3 },
+            { content: 'TOTAL', styles: { fontStyle: 'bold', halign: 'right' } },
+            {
+              content: formatNumber(quotation.totalAmount || 0),
+              styles: { fontStyle: 'bold', halign: 'right' },
+            },
+          ],
+        ],
+        headStyles: {
+          fillColor: [accentRgb.r, accentRgb.g, accentRgb.b],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9,
+        },
+        bodyStyles: {
+          fontSize: 9,
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200],
+        },
+        footStyles: {
+          fillColor: [245, 245, 245],
+          textColor: [0, 0, 0],
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          1: { cellWidth: 70 },
+          2: { halign: 'center', cellWidth: 25 },
+          3: { halign: 'right', font: 'courier', cellWidth: 35 },
+          4: { halign: 'right', font: 'courier', cellWidth: 35 },
+        },
+        margin: { left: 14, right: 14 },
+        styles: {
+          overflow: 'linebreak',
+          cellPadding: 3,
+        },
+      })
+
+      yPos = (doc as any).lastAutoTable.finalY + 10
+
+      // ===== TERMS & CONDITIONS =====
+      if (template.termsText) {
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Syarat & Ketentuan:', 14, yPos)
+        yPos += 5
+        doc.setFont('helvetica', 'normal')
+        const termsLines = doc.splitTextToSize(
+          template.termsText.replace(/\\n/g, '\n'),
+          pageWidth - 28
+        )
+        doc.text(termsLines, 14, yPos)
+        yPos += termsLines.length * 4 + 5
+      }
+
+      // ===== VALIDITY =====
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'italic')
+      doc.text(`Penawaran berlaku sampai: ${formatDateIndo(quotation.validUntil)}`, 14, yPos)
+      yPos += 10
+
+      // ===== CLOSING TEXT =====
+      doc.setFont('helvetica', 'normal')
+      const closingLines = doc.splitTextToSize(template.closingText || '', pageWidth - 28)
+      doc.text(closingLines, 14, yPos)
+      yPos += closingLines.length * 4 + 10
+
+      // ===== SIGNATURE SECTION =====
+      const sigX = pageWidth - 60
+      doc.setFontSize(9)
+      doc.text(
+        `${settings.city || 'Kerobokan'}, ${formatDateIndo(new Date().toISOString())}`,
+        sigX,
+        yPos
+      )
+      yPos += 5
+      doc.text('Hormat Kami,', sigX, yPos)
+
+      // Add signature image if available
+      if (
+        template.showSignature &&
+        settings.signature &&
+        settings.signature.startsWith('data:image')
+      ) {
+        try {
+          const gState = new (doc as any).GState({ opacity: 1 })
+          doc.setGState(gState)
+          doc.addImage(settings.signature, 'PNG', sigX - 5, yPos + 2, 40, 15)
+          yPos += 20
+        } catch (e) {
+          console.error('Error adding signature to quotation:', e)
+          yPos += 20
+        }
+      } else {
+        yPos += 20
+      }
+
+      doc.setFont('helvetica', 'bold')
+      doc.text(company?.name || 'OCN System', sigX, yPos)
+
+      // ===== FOOTER =====
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setTextColor(150, 150, 150)
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        )
+      }
+
+      // Save PDF
+      doc.save(`${filename}.pdf`)
+    } catch (error) {
+      console.error('Error generating Quotation PDF:', error)
+      throw error
+    } finally {
+      generating.value = false
+    }
+  }
+
   return {
     generating,
     downloadPdf,
     downloadInvoicePdf,
     downloadReceiptPdf,
     downloadReportPdf,
+    downloadQuotationPdf,
   }
 }

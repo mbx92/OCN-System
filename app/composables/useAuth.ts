@@ -12,11 +12,18 @@ interface User {
   technicianId?: string
 }
 
-const user = ref<User | null>(null)
-const loading = ref(false)
-const initialized = ref(false)
+// Use useState for proper SSR hydration - state will persist between server and client
+const useAuthState = () => {
+  const user = useState<User | null>('auth-user', () => null)
+  const loading = useState<boolean>('auth-loading', () => false)
+  const initialized = useState<boolean>('auth-initialized', () => false)
+  return { user, loading, initialized }
+}
 
 export const useAuth = () => {
+  // Get shared state from useState (SSR-compatible)
+  const { user, loading, initialized } = useAuthState()
+
   const hasRole = (roles: UserRole[]): boolean => {
     if (!user.value) return false
     return roles.includes(user.value.role)

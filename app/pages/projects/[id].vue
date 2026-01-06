@@ -72,6 +72,15 @@
             <span v-if="processing === 'completing'" class="loading loading-spinner"></span>
             Selesai Proyek
           </button>
+          <!-- Cancel Project Button -->
+          <button
+            v-if="['QUOTATION', 'APPROVED', 'ONGOING'].includes(project.status)"
+            @click="showCancelModal = true"
+            class="btn btn-error btn-outline"
+            :disabled="!!processing"
+          >
+            Batalkan
+          </button>
         </div>
       </div>
 
@@ -126,14 +135,49 @@
             </div>
             <div>
               <p class="text-sm text-base-content/60">Tanggal Mulai</p>
-              <p class="font-medium">{{ formatDate(project.startDate) || '-' }}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-medium">{{ formatDate(project.startDate) || '-' }}</p>
+                <button @click="openEditDates" class="btn btn-ghost btn-xs" title="Edit Tanggal">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div>
               <p class="text-sm text-base-content/60">Tanggal Selesai</p>
               <p class="font-medium">{{ formatDate(project.endDate) || '-' }}</p>
             </div>
             <div>
-              <p class="text-sm text-base-content/60">Dibuat</p>
+              <div class="flex items-center gap-2">
+                <p class="text-sm text-base-content/60">Dibuat</p>
+                <button
+                  v-if="isOwner()"
+                  @click="openEditTimestamps"
+                  class="btn btn-ghost btn-xs"
+                  title="Edit tanggal (OWNER only)"
+                >
+                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+              </div>
               <p class="font-medium text-sm">{{ formatDate(project.createdAt) }}</p>
             </div>
             <div>
@@ -986,6 +1030,290 @@
           <button @click="showAssignTechnician = false">close</button>
         </form>
       </dialog>
+      <!-- Edit Dates Modal -->
+      <dialog class="modal" :class="{ 'modal-open': showEditDates }">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg mb-4">Edit Tanggal Proyek</h3>
+          <p class="text-sm text-base-content/60 mb-4">
+            Gunakan fitur ini untuk input tanggal proyek yang sudah ada sebelum sistem ini.
+          </p>
+          <form @submit.prevent="saveDates" class="space-y-4">
+            <div class="form-control">
+              <label class="label"><span class="label-text">Tanggal Mulai</span></label>
+              <input
+                v-model="editDates.startDate"
+                type="date"
+                class="input input-bordered w-full"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label"><span class="label-text">Tanggal Selesai</span></label>
+              <input v-model="editDates.endDate" type="date" class="input input-bordered w-full" />
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="showEditDates = false"
+                :disabled="!!processing"
+              >
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!!processing">
+                <span v-if="processing === 'saving_dates'" class="loading loading-spinner"></span>
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="showEditDates = false">close</button>
+        </form>
+      </dialog>
+
+      <!-- Cancel Project Modal -->
+      <dialog class="modal" :class="{ 'modal-open': showCancelModal }">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg text-error mb-4">Batalkan Proyek</h3>
+          <div class="alert alert-warning mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <span>
+              Proyek yang dibatalkan tidak dapat dikembalikan. Stock yang sudah direservasi akan
+              dilepaskan.
+            </span>
+          </div>
+          <form @submit.prevent="cancelProject" class="space-y-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">
+                  Alasan Pembatalan
+                  <span class="text-error">*</span>
+                </span>
+              </label>
+              <textarea
+                v-model="cancelReason"
+                class="textarea textarea-bordered w-full"
+                placeholder="Jelaskan alasan pembatalan proyek ini..."
+                rows="3"
+                required
+              ></textarea>
+            </div>
+
+            <div class="modal-action">
+              <button type="button" class="btn" @click="closeCancelModal" :disabled="!!processing">
+                Tidak Jadi
+              </button>
+              <button
+                type="submit"
+                class="btn btn-error"
+                :disabled="!!processing || !cancelReason.trim()"
+              >
+                <span v-if="processing === 'cancelling'" class="loading loading-spinner"></span>
+                Ya, Batalkan Proyek
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="closeCancelModal">close</button>
+        </form>
+      </dialog>
+
+      <!-- Edit Timestamps Modal (OWNER only) -->
+      <dialog class="modal" :class="{ 'modal-open': showEditTimestamps }">
+        <div class="modal-box overflow-visible">
+          <h3 class="font-bold text-lg">Edit Tanggal Sistem</h3>
+          <p class="text-sm text-base-content/60 mb-4">
+            Hanya OWNER yang dapat mengubah tanggal ini
+          </p>
+          <form @submit.prevent="saveTimestamps">
+            <div class="space-y-6">
+              <!-- Created At -->
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text font-medium">Tanggal Dibuat</span>
+                </label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <div class="dropdown w-full">
+                    <div
+                      tabindex="0"
+                      role="button"
+                      class="input input-bordered w-full flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 opacity-70"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span class="flex-1">
+                        {{
+                          editTimestamps.createdAtDate
+                            ? dayjs(editTimestamps.createdAtDate).format('DD MMMM YYYY')
+                            : 'Pilih Tanggal'
+                        }}
+                      </span>
+                    </div>
+                    <div
+                      tabindex="0"
+                      class="dropdown-content z-[1] p-0 shadow-lg bg-base-100 rounded-box border border-base-200 mt-1"
+                    >
+                      <calendar-date
+                        :value="editTimestamps.createdAtDate"
+                        @change="(e: any) => (editTimestamps.createdAtDate = e.target.value)"
+                        class="shadow-none border-none"
+                      >
+                        <svg
+                          aria-label="Previous"
+                          class="fill-current size-4"
+                          slot="previous"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
+                        </svg>
+                        <svg
+                          aria-label="Next"
+                          class="fill-current size-4"
+                          slot="next"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+                        </svg>
+                        <calendar-month></calendar-month>
+                      </calendar-date>
+                    </div>
+                  </div>
+                  <input
+                    v-model="editTimestamps.createdAtTime"
+                    type="time"
+                    class="input input-bordered w-full sm:w-32"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Updated At -->
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text font-medium">Tanggal Diupdate</span>
+                </label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <div class="dropdown w-full">
+                    <div
+                      tabindex="0"
+                      role="button"
+                      class="input input-bordered w-full flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 opacity-70"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span class="flex-1">
+                        {{
+                          editTimestamps.updatedAtDate
+                            ? dayjs(editTimestamps.updatedAtDate).format('DD MMMM YYYY')
+                            : 'Pilih Tanggal'
+                        }}
+                      </span>
+                    </div>
+                    <div
+                      tabindex="0"
+                      class="dropdown-content z-[1] p-0 shadow-lg bg-base-100 rounded-box border border-base-200 mt-1"
+                    >
+                      <calendar-date
+                        :value="editTimestamps.updatedAtDate"
+                        @change="(e: any) => (editTimestamps.updatedAtDate = e.target.value)"
+                        class="shadow-none border-none"
+                      >
+                        <svg
+                          aria-label="Previous"
+                          class="fill-current size-4"
+                          slot="previous"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
+                        </svg>
+                        <svg
+                          aria-label="Next"
+                          class="fill-current size-4"
+                          slot="next"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
+                        </svg>
+                        <calendar-month></calendar-month>
+                      </calendar-date>
+                    </div>
+                  </div>
+                  <input
+                    v-model="editTimestamps.updatedAtTime"
+                    type="time"
+                    class="input input-bordered w-full sm:w-32"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="showEditTimestamps = false"
+                :disabled="!!processing"
+              >
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!!processing">
+                <span
+                  v-if="processing === 'saving-timestamps'"
+                  class="loading loading-spinner"
+                ></span>
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="showEditTimestamps = false">close</button>
+        </form>
+      </dialog>
     </template>
   </div>
 </template>
@@ -993,10 +1321,15 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 
+onMounted(() => {
+  import('cally')
+})
+
 const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
 const { showAlert } = useAlert()
 const { confirm } = useConfirm()
+const { isOwner } = useAuth()
 
 const {
   data: project,
@@ -1012,9 +1345,27 @@ const showAddItem = ref(false)
 const showAddExpense = ref(false)
 const showAssignTechnician = ref(false)
 const showReturnModal = ref(false)
+const showEditDates = ref(false)
+const showCancelModal = ref(false)
 const returnItem = ref<any>(null)
 const returnQty = ref(1)
 const returnNotes = ref('')
+const cancelReason = ref('')
+
+// Edit dates state
+const editDates = reactive({
+  startDate: '',
+  endDate: '',
+})
+
+// Edit timestamps state (createdAt/updatedAt - OWNER only)
+const showEditTimestamps = ref(false)
+const editTimestamps = reactive({
+  createdAtDate: '',
+  createdAtTime: '',
+  updatedAtDate: '',
+  updatedAtTime: '',
+})
 
 // View modes for tabs - Default to GRID on mobile, LIST on desktop
 const itemsViewMode = ref<'LIST' | 'GRID'>(
@@ -1031,7 +1382,7 @@ const { data: availableTechnicians } = await useFetch('/api/technicians')
 
 // Fetch units from master data
 const { data: unitsData } = await useFetch('/api/units')
-const units = computed(() => (unitsData.value as any)?.data || [])
+const units = computed(() => (unitsData.value as any) || [])
 
 const newItem = reactive({
   name: '',
@@ -1115,7 +1466,12 @@ const budgetVariance = computed(() => {
 })
 
 const onProductSelect = (product: any) => {
-  newItem.unit = product.unit || 'pcs'
+  // Get unit from product master data and match with available units list
+  const productUnit = product.unit?.toLowerCase() || ''
+  const matchedUnit = units.value.find(
+    (u: any) => u.name.toLowerCase() === productUnit || u.symbol?.toLowerCase() === productUnit
+  )
+  newItem.unit = matchedUnit?.name || product.unit || 'pcs'
   newItem.price = Number(product.sellingPrice) || 0
   newItem.cost = Number(product.purchasePrice) || 0 // Auto-fill cost from product
   newItem.productId = product.id
@@ -1130,6 +1486,116 @@ const onTechnicianChange = () => {
   }
 }
 
+// Open edit dates modal
+const openEditDates = () => {
+  editDates.startDate = project.value?.startDate
+    ? dayjs(project.value.startDate).format('YYYY-MM-DD')
+    : ''
+  editDates.endDate = project.value?.endDate
+    ? dayjs(project.value.endDate).format('YYYY-MM-DD')
+    : ''
+  showEditDates.value = true
+}
+
+// Save project dates
+const saveDates = async () => {
+  processing.value = 'saving_dates'
+  try {
+    await $fetch(`/api/projects/${route.params.id}/dates`, {
+      method: 'PUT',
+      body: {
+        startDate: editDates.startDate || null,
+        endDate: editDates.endDate || null,
+      },
+    })
+    showAlert('Tanggal berhasil disimpan', 'success')
+    showEditDates.value = false
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyimpan tanggal', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Cancel project
+const cancelProject = async () => {
+  if (!cancelReason.value.trim()) {
+    showAlert('Alasan pembatalan wajib diisi', 'error')
+    return
+  }
+
+  processing.value = 'cancelling'
+  try {
+    await $fetch(`/api/projects/${route.params.id}/cancel`, {
+      method: 'POST',
+      body: {
+        reason: cancelReason.value,
+      },
+    })
+    showAlert('Proyek berhasil dibatalkan', 'success')
+    showCancelModal.value = false
+    cancelReason.value = ''
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal membatalkan proyek', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Close cancel modal
+const closeCancelModal = () => {
+  showCancelModal.value = false
+  cancelReason.value = ''
+}
+
+// Open edit timestamps modal (OWNER only)
+const openEditTimestamps = () => {
+  if (!project.value || !isOwner()) return
+
+  const created = dayjs((project.value as any).createdAt)
+  editTimestamps.createdAtDate = created.format('YYYY-MM-DD')
+  editTimestamps.createdAtTime = created.format('HH:mm')
+
+  const updated = dayjs((project.value as any).updatedAt)
+  editTimestamps.updatedAtDate = updated.format('YYYY-MM-DD')
+  editTimestamps.updatedAtTime = updated.format('HH:mm')
+
+  showEditTimestamps.value = true
+}
+
+// Save timestamps (OWNER only)
+const saveTimestamps = async () => {
+  if (!isOwner()) {
+    showAlert('Hanya OWNER yang dapat mengubah tanggal ini', 'error')
+    return
+  }
+
+  processing.value = 'saving-timestamps'
+  try {
+    const createdAtParams = `${editTimestamps.createdAtDate}T${editTimestamps.createdAtTime}`
+    const updatedAtParams = `${editTimestamps.updatedAtDate}T${editTimestamps.updatedAtTime}`
+
+    await $fetch(`/api/projects/${route.params.id}/dates`, {
+      method: 'PUT',
+      body: {
+        createdAt: new Date(createdAtParams).toISOString(),
+        updatedAt: new Date(updatedAtParams).toISOString(),
+      },
+    })
+
+    // ... rest of function remains same but let's include it to be safe or just use the chunk correctly
+    showAlert('Tanggal berhasil diperbarui', 'success')
+    showEditTimestamps.value = false
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyimpan tanggal', 'error') // ...
+  } finally {
+    processing.value = null
+  }
+}
+
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
     QUOTATION: 'Penawaran',
@@ -1137,6 +1603,7 @@ const getStatusLabel = (status: string) => {
     ONGOING: 'Dikerjakan',
     COMPLETED: 'Selesai',
     PAID: 'Lunas',
+    CANCELLED: 'Dibatalkan',
   }
   return labels[status] || status
 }
@@ -1148,6 +1615,7 @@ const getStatusClass = (status: string) => {
     ONGOING: 'badge-warning',
     COMPLETED: 'badge-primary',
     PAID: 'badge-accent',
+    CANCELLED: 'badge-error',
   }
   return classes[status] || 'badge-ghost'
 }
