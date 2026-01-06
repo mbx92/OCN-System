@@ -155,24 +155,69 @@ export async function notifyProjectCompleted(project: {
   // Send PDF documents if projectId provided
   if (project.projectId) {
     try {
-      // Generate and send Invoice PDF
-      const invoicePdf = await $fetch(`/api/projects/${project.projectId}/invoice-pdf`)
-      if (invoicePdf) {
-        await sendTelegramDocument(
-          Buffer.from(invoicePdf as any),
-          `Invoice_${project.projectNumber}.pdf`,
-          `📄 <b>Invoice</b>\nProject: ${project.projectNumber}`
-        )
+      // Import PDF generators
+      const { generateInvoicePdfBuffer, generateReceiptPdfBuffer } = await import('./pdf-generator')
+      const { prisma } = await import('./prisma')
+
+      // Get project data with related info
+      const projectData = await prisma.project.findUnique({
+        where: { id: project.projectId },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          payments: {
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      })
+
+      if (!projectData) {
+        console.error('[Telegram] Project not found:', project.projectId)
+        return true
       }
 
-      // Generate and send Receipt PDF
-      const receiptPdf = await $fetch(`/api/projects/${project.projectId}/receipt-pdf`)
-      if (receiptPdf) {
-        await sendTelegramDocument(
-          Buffer.from(receiptPdf as any),
-          `Kwitansi_${project.projectNumber}.pdf`,
-          `🧾 <b>Kwitansi</b>\nProject: ${project.projectNumber}`
-        )
+      const company = await prisma.company.findFirst()
+      const latestPayment = projectData.payments[projectData.payments.length - 1]
+
+      if (latestPayment) {
+        const paymentWithProject = {
+          ...latestPayment,
+          project: projectData,
+        }
+
+        // Generate and send Invoice PDF
+        try {
+          const invoicePdf = await generateInvoicePdfBuffer(paymentWithProject, company)
+          if (invoicePdf) {
+            await sendTelegramDocument(
+              invoicePdf,
+              `Invoice_${project.projectNumber}.pdf`,
+              `📄 <b>Invoice</b>\nProject: ${project.projectNumber}`
+            )
+          }
+        } catch (err) {
+          console.error('[Telegram] Error generating invoice PDF:', err)
+        }
+
+        // Generate and send Receipt PDF
+        try {
+          const receiptPdf = await generateReceiptPdfBuffer(paymentWithProject, company)
+          if (receiptPdf) {
+            await sendTelegramDocument(
+              receiptPdf,
+              `Kwitansi_${project.projectNumber}.pdf`,
+              `🧾 <b>Kwitansi</b>\nProject: ${project.projectNumber}`
+            )
+          }
+        } catch (err) {
+          console.error('[Telegram] Error generating receipt PDF:', err)
+        }
+      } else {
+        console.log('[Telegram] No payment found for project, skipping PDF generation')
       }
     } catch (error) {
       console.error('[Telegram] Error sending PDFs:', error)

@@ -2,6 +2,7 @@
  * Telegram Bot Command Handlers
  */
 import dayjs from 'dayjs'
+import { prisma } from './prisma'
 
 interface TelegramUpdate {
   update_id: number

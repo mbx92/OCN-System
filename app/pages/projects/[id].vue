@@ -1141,79 +1141,18 @@
             Hanya OWNER yang dapat mengubah tanggal ini
           </p>
           <form @submit.prevent="saveTimestamps">
-            <div class="space-y-6">
+            <div class="space-y-4">
               <!-- Created At -->
               <div class="form-control w-full">
                 <label class="label">
                   <span class="label-text font-medium">Tanggal Dibuat</span>
                 </label>
-                <div class="flex flex-col sm:flex-row gap-2">
-                  <div class="dropdown w-full">
-                    <div
-                      tabindex="0"
-                      role="button"
-                      class="input input-bordered w-full flex items-center gap-2"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5 opacity-70"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span class="flex-1">
-                        {{
-                          editTimestamps.createdAtDate
-                            ? dayjs(editTimestamps.createdAtDate).format('DD MMMM YYYY')
-                            : 'Pilih Tanggal'
-                        }}
-                      </span>
-                    </div>
-                    <div
-                      tabindex="0"
-                      class="dropdown-content z-[1] p-0 shadow-lg bg-base-100 rounded-box border border-base-200 mt-1"
-                    >
-                      <calendar-date
-                        :value="editTimestamps.createdAtDate"
-                        @change="(e: any) => (editTimestamps.createdAtDate = e.target.value)"
-                        class="shadow-none border-none"
-                      >
-                        <svg
-                          aria-label="Previous"
-                          class="fill-current size-4"
-                          slot="previous"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
-                        </svg>
-                        <svg
-                          aria-label="Next"
-                          class="fill-current size-4"
-                          slot="next"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
-                        </svg>
-                        <calendar-month></calendar-month>
-                      </calendar-date>
-                    </div>
-                  </div>
-                  <input
-                    v-model="editTimestamps.createdAtTime"
-                    type="time"
-                    class="input input-bordered w-full sm:w-32"
-                    required
-                  />
-                </div>
+                <input
+                  v-model="editTimestamps.createdAt"
+                  type="datetime-local"
+                  class="input input-bordered w-full"
+                  required
+                />
               </div>
 
               <!-- Updated At -->
@@ -1221,73 +1160,12 @@
                 <label class="label">
                   <span class="label-text font-medium">Tanggal Diupdate</span>
                 </label>
-                <div class="flex flex-col sm:flex-row gap-2">
-                  <div class="dropdown w-full">
-                    <div
-                      tabindex="0"
-                      role="button"
-                      class="input input-bordered w-full flex items-center gap-2"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5 opacity-70"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span class="flex-1">
-                        {{
-                          editTimestamps.updatedAtDate
-                            ? dayjs(editTimestamps.updatedAtDate).format('DD MMMM YYYY')
-                            : 'Pilih Tanggal'
-                        }}
-                      </span>
-                    </div>
-                    <div
-                      tabindex="0"
-                      class="dropdown-content z-[1] p-0 shadow-lg bg-base-100 rounded-box border border-base-200 mt-1"
-                    >
-                      <calendar-date
-                        :value="editTimestamps.updatedAtDate"
-                        @change="(e: any) => (editTimestamps.updatedAtDate = e.target.value)"
-                        class="shadow-none border-none"
-                      >
-                        <svg
-                          aria-label="Previous"
-                          class="fill-current size-4"
-                          slot="previous"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M15.75 19.5 8.25 12l7.5-7.5"></path>
-                        </svg>
-                        <svg
-                          aria-label="Next"
-                          class="fill-current size-4"
-                          slot="next"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
-                        </svg>
-                        <calendar-month></calendar-month>
-                      </calendar-date>
-                    </div>
-                  </div>
-                  <input
-                    v-model="editTimestamps.updatedAtTime"
-                    type="time"
-                    class="input input-bordered w-full sm:w-32"
-                    required
-                  />
-                </div>
+                <input
+                  v-model="editTimestamps.updatedAt"
+                  type="datetime-local"
+                  class="input input-bordered w-full"
+                  required
+                />
               </div>
             </div>
 
@@ -1320,10 +1198,6 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs'
-
-onMounted(() => {
-  import('cally')
-})
 
 const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
@@ -1361,11 +1235,48 @@ const editDates = reactive({
 // Edit timestamps state (createdAt/updatedAt - OWNER only)
 const showEditTimestamps = ref(false)
 const editTimestamps = reactive({
-  createdAtDate: '',
-  createdAtTime: '',
-  updatedAtDate: '',
-  updatedAtTime: '',
+  createdAt: '',
+  updatedAt: '',
 })
+
+// Open edit timestamps modal (OWNER only)
+const openEditTimestamps = () => {
+  if (!project.value || !isOwner()) return
+
+  editTimestamps.createdAt = dayjs(project.value.createdAt).format('YYYY-MM-DDTHH:mm')
+  editTimestamps.updatedAt = dayjs(project.value.updatedAt).format('YYYY-MM-DDTHH:mm')
+
+  showEditTimestamps.value = true
+}
+
+// Save timestamps
+const saveTimestamps = async () => {
+  processing.value = 'saving-timestamps'
+  try {
+    const payload: any = {}
+
+    if (editTimestamps.createdAt) {
+      payload.createdAt = new Date(editTimestamps.createdAt).toISOString()
+    }
+
+    if (editTimestamps.updatedAt) {
+      payload.updatedAt = new Date(editTimestamps.updatedAt).toISOString()
+    }
+
+    await $fetch(`/api/projects/${route.params.id}/dates`, {
+      method: 'PUT',
+      body: payload,
+    })
+
+    showAlert('Tanggal sistem berhasil diupdate', 'success')
+    showEditTimestamps.value = false
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal update tanggal sistem', 'error')
+  } finally {
+    processing.value = null
+  }
+}
 
 // View modes for tabs - Default to GRID on mobile, LIST on desktop
 const itemsViewMode = ref<'LIST' | 'GRID'>(
@@ -1548,52 +1459,6 @@ const cancelProject = async () => {
 const closeCancelModal = () => {
   showCancelModal.value = false
   cancelReason.value = ''
-}
-
-// Open edit timestamps modal (OWNER only)
-const openEditTimestamps = () => {
-  if (!project.value || !isOwner()) return
-
-  const created = dayjs((project.value as any).createdAt)
-  editTimestamps.createdAtDate = created.format('YYYY-MM-DD')
-  editTimestamps.createdAtTime = created.format('HH:mm')
-
-  const updated = dayjs((project.value as any).updatedAt)
-  editTimestamps.updatedAtDate = updated.format('YYYY-MM-DD')
-  editTimestamps.updatedAtTime = updated.format('HH:mm')
-
-  showEditTimestamps.value = true
-}
-
-// Save timestamps (OWNER only)
-const saveTimestamps = async () => {
-  if (!isOwner()) {
-    showAlert('Hanya OWNER yang dapat mengubah tanggal ini', 'error')
-    return
-  }
-
-  processing.value = 'saving-timestamps'
-  try {
-    const createdAtParams = `${editTimestamps.createdAtDate}T${editTimestamps.createdAtTime}`
-    const updatedAtParams = `${editTimestamps.updatedAtDate}T${editTimestamps.updatedAtTime}`
-
-    await $fetch(`/api/projects/${route.params.id}/dates`, {
-      method: 'PUT',
-      body: {
-        createdAt: new Date(createdAtParams).toISOString(),
-        updatedAt: new Date(updatedAtParams).toISOString(),
-      },
-    })
-
-    // ... rest of function remains same but let's include it to be safe or just use the chunk correctly
-    showAlert('Tanggal berhasil diperbarui', 'success')
-    showEditTimestamps.value = false
-    await refresh()
-  } catch (err: any) {
-    showAlert(err.data?.message || 'Gagal menyimpan tanggal', 'error') // ...
-  } finally {
-    processing.value = null
-  }
 }
 
 const getStatusLabel = (status: string) => {
