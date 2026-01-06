@@ -22,6 +22,14 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    vue: {
+      template: {
+        compilerOptions: {
+          // Treat cally calendar elements as custom elements
+          isCustomElement: (tag: string) => tag.startsWith('calendar-'),
+        },
+      },
+    },
   },
 
   css: ['./app/tailwind.css'],
@@ -61,6 +69,7 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
     },
   },
@@ -87,12 +96,6 @@ export default defineNuxtConfig({
           src: '/icon-512x512.png',
           sizes: '512x512',
           type: 'image/png',
-        },
-        {
-          src: '/icon-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any maskable',
         },
       ],
     },

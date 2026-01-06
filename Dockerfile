@@ -45,9 +45,10 @@ COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/docs/export ./docs/export
 COPY --from=builder /app/prisma ./prisma
 
-# Copy entrypoint script
+# Copy entrypoint script and fix line endings (Windows CRLF -> Unix LF)
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port
 EXPOSE 3000

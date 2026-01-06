@@ -645,6 +645,9 @@
         </div>
       </TransitionGroup>
     </div>
+
+    <!-- PWA Install Prompt -->
+    <PwaInstallPrompt />
   </div>
 </template>
 
