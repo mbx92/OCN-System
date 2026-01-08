@@ -259,7 +259,14 @@
                           {{ tech.isPaid ? 'Lunas' : 'Belum Bayar' }}
                         </div>
                         <button
-                          v-if="!tech.isPaid"
+                          v-if="!tech.isPaid && !editingTechFee[tech.id]"
+                          @click="startEditTechFee(tech, project)"
+                          class="btn btn-xs btn-ghost"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          v-if="!tech.isPaid && !hasPaymentRecord(tech, project)"
                           @click="openSavePaymentModal(tech, project)"
                           class="btn btn-xs btn-primary"
                         >
@@ -269,6 +276,58 @@
                     </div>
 
                     <div class="text-sm">
+                      <!-- Edit Mode -->
+                      <div v-if="editingTechFee[tech.id]" class="space-y-2 mb-2">
+                        <div class="form-control">
+                          <label class="label py-1">
+                            <span class="label-text text-xs">Jumlah Fee:</span>
+                          </label>
+                          <div class="flex gap-2">
+                            <input
+                              v-model.number="techFeeEdits[tech.id]"
+                              type="number"
+                              min="0"
+                              :max="calculateRemainingTechWage(tech, project)"
+                              class="input input-bordered input-sm flex-1"
+                              placeholder="Masukkan fee"
+                            />
+                            <button
+                              @click="saveTechFee(tech, project)"
+                              class="btn btn-sm btn-primary"
+                              :disabled="savingTechFee === tech.id"
+                            >
+                              <span
+                                v-if="savingTechFee === tech.id"
+                                class="loading loading-spinner loading-xs"
+                              ></span>
+                              <span v-else>Simpan</span>
+                            </button>
+                            <button
+                              @click="cancelEditTechFee(tech.id)"
+                              class="btn btn-sm btn-ghost"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                          <label class="label py-1">
+                            <span
+                              class="label-text-alt text-error"
+                              v-if="
+                                techFeeEdits[tech.id] > calculateRemainingTechWage(tech, project)
+                              "
+                            >
+                              Melebihi sisa upah teknisi!
+                            </span>
+                            <span class="label-text-alt text-base-content/60" v-else>
+                              Max:
+                              {{ formatCurrency(calculateRemainingTechWage(tech, project)) }} (sisa
+                              yang belum dibagi)
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Display Mode -->
                       <div class="flex justify-between mb-1">
                         <span class="text-base-content/60">Fee yang didapat:</span>
                         <span class="font-mono font-bold text-success">
@@ -355,6 +414,55 @@
                       }}
                       dapat dialokasikan sesuai kesepakatan
                     </span>
+                  </div>
+
+                  <!-- Action buttons for remaining wage -->
+                  <div
+                    v-if="calculateTechnicianWage(project) - calculateTotalTechFee(project) > 0"
+                    class="flex flex-col gap-2 mt-3"
+                  >
+                    <button
+                      @click="saveRemainingToCash(project)"
+                      class="btn btn-sm btn-success"
+                      :disabled="!!processing"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Simpan ke Kas Usaha
+                    </button>
+                    <button
+                      @click="openAllocateBonusModal(project)"
+                      class="btn btn-sm btn-primary btn-outline"
+                      :disabled="!!processing"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      Alokasikan ke Teknisi
+                    </button>
                   </div>
                 </div>
               </div>
@@ -520,18 +628,100 @@
         <button @click="showPaymentModal = false">close</button>
       </form>
     </dialog>
+
+    <!-- Allocate Bonus Modal -->
+    <dialog :class="{ 'modal modal-open': showBonusModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Alokasikan Sisa Upah ke Teknisi</h3>
+        <form @submit.prevent="saveBonusAllocation">
+          <div class="space-y-4">
+            <!-- Sisa upah info -->
+            <div class="bg-info/10 p-3 rounded">
+              <p class="text-sm font-semibold">Sisa Upah Tersedia:</p>
+              <p class="text-xl font-bold text-primary">
+                {{ formatCurrency(bonusAvailable) }}
+              </p>
+            </div>
+
+            <!-- Select Technician -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Pilih Teknisi</span>
+              </label>
+              <select v-model="bonusTechId" class="select select-bordered w-full" required>
+                <option value="">-- Pilih Teknisi --</option>
+                <option v-for="tech in bonusProject?.technicians" :key="tech.id" :value="tech.id">
+                  {{ tech.technician?.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Bonus Amount -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Jumlah Bonus</span>
+              </label>
+              <input
+                v-model.number="bonusAmount"
+                type="number"
+                class="input input-bordered w-full"
+                :max="bonusAvailable"
+                min="0"
+                placeholder="Masukkan jumlah bonus"
+                required
+              />
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                  Max: {{ formatCurrency(bonusAvailable) }}
+                </span>
+              </label>
+            </div>
+
+            <!-- Description -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Keterangan</span>
+              </label>
+              <textarea
+                v-model="bonusDescription"
+                class="textarea textarea-bordered w-full"
+                rows="2"
+                placeholder="Keterangan bonus..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-action">
+            <button type="button" class="btn btn-ghost" @click="closeBonusModal">Batal</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="!!processing || bonusAmount > bonusAvailable"
+            >
+              <span v-if="processing === 'bonus'" class="loading loading-spinner loading-sm"></span>
+              <span v-else>Simpan Bonus</span>
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="closeBonusModal">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 const { formatCurrency } = useFormatter()
 const { showAlert } = useAlert()
+const { confirm } = useConfirm()
 
 const filterStatus = ref('')
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
 const expandedProjects = ref<string[]>([])
 const savingProject = ref<string | null>(null)
+const processing = ref<string | null>(null)
 
 // Payment Modal State
 const showPaymentModal = ref(false)
@@ -541,6 +731,20 @@ const paymentAmount = ref(0)
 const paymentDescription = ref('')
 const savingPayment = ref(false)
 const calculatedFee = ref(0)
+
+// Bonus Allocation State
+const showBonusModal = ref(false)
+const bonusProject = ref<any>(null)
+const bonusTechId = ref('')
+const bonusAmount = ref(0)
+const bonusDescription = ref('')
+const bonusAvailable = ref(0)
+
+// Edit Tech Fee State
+const editingTechFee = ref<Record<string, boolean>>({})
+const techFeeEdits = ref<Record<string, number>>({})
+const savingTechFee = ref<string | null>(null)
+const modifiedFees = ref<Record<string, boolean>>({}) // Track techs with modified fees
 
 const { data: projects, pending, refresh } = await useFetch('/api/projects/profit-analysis')
 
@@ -632,6 +836,15 @@ const calculateItemCost = (project: any) => {
   return project.items.reduce((sum: number, item: any) => sum + Number(item.totalCost || 0), 0)
 }
 
+// Check if payment record already exists for this tech + project
+const hasPaymentRecord = (tech: any, project: any) => {
+  // If fee was modified, show Simpan button even if payment exists
+  if (modifiedFees.value[tech.id]) return false
+
+  if (!tech.technician?.payments || !project?.id) return false
+  return tech.technician.payments.some((payment: any) => payment.projectId === project.id)
+}
+
 const calculateExpenseCost = (project: any) => {
   if (!project.expenses) return 0
   return project.expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0)
@@ -642,6 +855,18 @@ const calculateTotalTechFee = (project: any) => {
   return project.technicians.reduce((sum: number, tech: any) => {
     return sum + calculateTechFee(tech, project)
   }, 0)
+}
+
+const calculateRemainingTechWage = (currentTech: any, project: any) => {
+  const totalTechWage = calculateTechnicianWage(project)
+
+  // Hitung total fee teknisi lain (selain teknisi yang sedang diedit)
+  const otherTechsFee = project.technicians
+    .filter((t: any) => t.id !== currentTech.id)
+    .reduce((sum: number, tech: any) => sum + calculateTechFee(tech, project), 0)
+
+  // Sisa = Total upah teknisi - fee teknisi lain
+  return Math.max(0, totalTechWage - otherTechsFee)
 }
 
 const calculateTechFee = (tech: any, project: any) => {
@@ -736,20 +961,44 @@ const saveTechnicianPayment = async () => {
 
   savingPayment.value = true
   try {
-    await $fetch('/api/technician-payments', {
-      method: 'POST',
-      body: {
-        technicianId: selectedTech.value.technician?.id,
-        projectId: selectedProject.value?.id,
-        amount: paymentAmount.value,
-        description: paymentDescription.value,
-        period: new Date().toISOString().slice(0, 7), // YYYY-MM format
-        status: 'PENDING',
-      },
-    })
+    // Check if payment already exists for this tech + project
+    const existingPayment = selectedTech.value.technician?.payments?.find(
+      (p: any) => p.projectId === selectedProject.value?.id
+    )
 
-    showAlert('Pembayaran teknisi berhasil disimpan', 'success')
+    if (existingPayment) {
+      // Update existing payment
+      await $fetch(`/api/technician-payments/${existingPayment.id}`, {
+        method: 'PUT',
+        body: {
+          amount: paymentAmount.value,
+          description: paymentDescription.value,
+        },
+      })
+      showAlert('Pembayaran teknisi berhasil diupdate', 'success')
+    } else {
+      // Create new payment
+      await $fetch('/api/technician-payments', {
+        method: 'POST',
+        body: {
+          technicianId: selectedTech.value.technician?.id,
+          projectId: selectedProject.value?.id,
+          amount: paymentAmount.value,
+          description: paymentDescription.value,
+          period: new Date().toISOString().slice(0, 7), // YYYY-MM format
+          status: 'PENDING',
+        },
+      })
+      showAlert('Pembayaran teknisi berhasil disimpan', 'success')
+    }
+
     showPaymentModal.value = false
+
+    // Clear modified flag after payment saved
+    if (selectedTech.value?.id) {
+      const { [selectedTech.value.id]: _, ...rest } = modifiedFees.value
+      modifiedFees.value = rest
+    }
 
     // Reset form
     selectedTech.value = null
@@ -774,5 +1023,152 @@ const roundUp = (nearest: number) => {
 const roundDown = (nearest: number) => {
   if (!paymentAmount.value) return
   paymentAmount.value = Math.floor(paymentAmount.value / nearest) * nearest
+}
+
+// Tech Fee Edit Functions
+const startEditTechFee = (tech: any, project: any) => {
+  editingTechFee.value[tech.id] = true
+  techFeeEdits.value[tech.id] = calculateTechFee(tech, project)
+}
+
+const cancelEditTechFee = (techId: string) => {
+  const { [techId]: _editing, ...restEditing } = editingTechFee.value
+  editingTechFee.value = restEditing
+
+  const { [techId]: _edits, ...restEdits } = techFeeEdits.value
+  techFeeEdits.value = restEdits
+}
+
+const saveTechFee = async (tech: any, project: any) => {
+  const newFee = techFeeEdits.value[tech.id]
+  const remainingWage = calculateRemainingTechWage(tech, project)
+
+  // Validasi: fee tidak boleh melebihi sisa upah teknisi yang tersedia
+  if (newFee > remainingWage) {
+    showAlert(
+      `Fee tidak boleh melebihi sisa upah teknisi yang tersedia (${formatCurrency(remainingWage)})!`,
+      'error'
+    )
+    return
+  }
+
+  savingTechFee.value = tech.id
+  try {
+    await $fetch(`/api/projects/${project.id}/technicians/${tech.id}/fee`, {
+      method: 'PUT',
+      body: {
+        fee: newFee,
+        feeType: 'FIXED',
+      },
+    })
+    showAlert('Fee teknisi berhasil diupdate', 'success')
+
+    // Mark this tech as having modified fee (show Simpan button)
+    modifiedFees.value[tech.id] = true
+
+    cancelEditTechFee(tech.id)
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mengupdate fee teknisi', 'error')
+  } finally {
+    savingTechFee.value = null
+  }
+}
+
+// Save remaining wage to cash (Opsi 1)
+const saveRemainingToCash = async (project: any) => {
+  const remainingWage = calculateTechnicianWage(project) - calculateTotalTechFee(project)
+
+  if (remainingWage <= 0) {
+    showAlert('Tidak ada sisa upah untuk disimpan', 'warning')
+    return
+  }
+
+  const isConfirmed = await confirm({
+    title: 'Simpan Sisa Upah ke Kas Usaha',
+    message: `Simpan sisa upah sebesar ${formatCurrency(remainingWage)} ke kas usaha?`,
+    confirmText: 'Ya, Simpan',
+    type: 'success',
+  })
+
+  if (!isConfirmed) return
+
+  processing.value = 'saving-cash'
+  try {
+    await $fetch('/api/cashflow/transactions', {
+      method: 'POST',
+      body: {
+        type: 'INCOME',
+        category: 'OTHER',
+        amount: remainingWage,
+        description: `Sisa upah teknisi dari proyek ${project.projectNumber}`,
+        reference: project.projectNumber,
+        referenceType: 'Project',
+        referenceId: project.id,
+      },
+    })
+    showAlert('Sisa upah berhasil disimpan ke kas usaha', 'success')
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyimpan ke kas usaha', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Open bonus allocation modal (Opsi 2)
+const openAllocateBonusModal = (project: any) => {
+  bonusProject.value = project
+  bonusAvailable.value = calculateTechnicianWage(project) - calculateTotalTechFee(project)
+  bonusTechId.value = ''
+  bonusAmount.value = bonusAvailable.value
+  bonusDescription.value = `Bonus dari sisa upah proyek ${project.projectNumber}`
+  showBonusModal.value = true
+}
+
+const closeBonusModal = () => {
+  showBonusModal.value = false
+  bonusProject.value = null
+  bonusTechId.value = ''
+  bonusAmount.value = 0
+  bonusDescription.value = ''
+  bonusAvailable.value = 0
+}
+
+// Save bonus allocation
+const saveBonusAllocation = async () => {
+  if (!bonusTechId.value || bonusAmount.value <= 0) {
+    showAlert('Pilih teknisi dan masukkan jumlah bonus', 'warning')
+    return
+  }
+
+  if (bonusAmount.value > bonusAvailable.value) {
+    showAlert('Jumlah bonus melebihi sisa upah yang tersedia', 'error')
+    return
+  }
+
+  processing.value = 'bonus'
+  try {
+    const tech = bonusProject.value.technicians.find((t: any) => t.id === bonusTechId.value)
+    const currentFee = calculateTechFee(tech, bonusProject.value)
+    const newFee = currentFee + bonusAmount.value
+
+    // Update fee teknisi
+    await $fetch(`/api/projects/${bonusProject.value.id}/technicians/${bonusTechId.value}/fee`, {
+      method: 'PUT',
+      body: {
+        fee: newFee,
+        feeType: 'FIXED',
+      },
+    })
+
+    showAlert('Bonus berhasil dialokasikan ke teknisi', 'success')
+    closeBonusModal()
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mengalokasikan bonus', 'error')
+  } finally {
+    processing.value = null
+  }
 }
 </script>

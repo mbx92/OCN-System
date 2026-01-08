@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import { logActivity, ActivityAction, ActivityEntity } from '../../utils/logger'
 
 export default defineEventHandler(async event => {
   const body = await readBody(event)
@@ -66,11 +67,15 @@ export default defineEventHandler(async event => {
   })
 
   // Log activity
-  await prisma.activity.create({
-    data: {
-      userId: user.id,
-      action: 'LOGIN',
-      ipAddress: getRequestIP(event) || null,
+  await logActivity({
+    userId: user.id,
+    action: ActivityAction.LOGIN,
+    entity: ActivityEntity.User,
+    entityId: user.id,
+    metadata: {
+      username: user.username,
+      userAgent: headers['user-agent'],
+      ipAddress: getRequestIP(event),
     },
   })
 

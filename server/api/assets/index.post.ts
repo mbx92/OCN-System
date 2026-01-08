@@ -85,24 +85,43 @@ export default defineEventHandler(async (event: H3Event) => {
     // Generate asset number
     const assetNumber = await generateAssetNumber()
 
-    // Create asset
-    const asset = await prisma.asset.create({
-      data: {
-        assetNumber,
-        name,
-        category,
-        description: description || null,
-        purchaseDate: new Date(purchaseDate),
-        purchasePrice: parseFloat(purchasePrice),
-        currentValue: currentValue ? parseFloat(currentValue) : parseFloat(purchasePrice),
-        serialNumber: serialNumber || null,
-        location: location || null,
-        condition: condition || 'GOOD',
-        status: status || 'ACTIVE',
-        depreciationRate: depreciationRate ? parseFloat(depreciationRate) : null,
-        notes: notes || null,
-        photo: photo || null,
-      },
+    // Create asset and cash transaction in a transaction
+    const result = await prisma.$transaction(async tx => {
+      // Create asset
+      const asset = await tx.asset.create({
+        data: {
+          assetNumber,
+          name,
+          category,
+          description: description || null,
+          purchaseDate: new Date(purchaseDate),
+          purchasePrice: parseFloat(purchasePrice),
+          currentValue: currentValue ? parseFloat(currentValue) : parseFloat(purchasePrice),
+          serialNumber: serialNumber || null,
+          location: location || null,
+          condition: condition || 'GOOD',
+          status: status || 'ACTIVE',
+          depreciationRate: depreciationRate ? parseFloat(depreciationRate) : null,
+          notes: notes || null,
+          photo: photo || null,
+        },
+      })
+
+      // Create cash transaction (EXPENSE) for asset purchase
+      await tx.cashTransaction.create({
+        data: {
+          type: 'EXPENSE',
+          category: 'ASSET',
+          amount: parseFloat(purchasePrice),
+          description: `Pembelian Asset: ${name}`,
+          reference: assetNumber,
+          referenceType: 'Asset',
+          referenceId: asset.id,
+          date: new Date(purchaseDate),
+        },
+      })
+
+      return asset
     })
 
     // Log activity
@@ -111,7 +130,7 @@ export default defineEventHandler(async (event: H3Event) => {
         userId: user.id,
         action: 'CREATE_ASSET',
         entity: 'Asset',
-        entityId: asset.id,
+        entityId: result.id,
         metadata: {
           assetNumber,
           name,
@@ -121,7 +140,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
-    return asset
+    return result
   } catch (error: any) {
     console.error('Error creating asset:', error)
     throw createError({

@@ -62,6 +62,33 @@ export default defineEventHandler(async event => {
     select: { projectNumber: true },
   })
 
+  // Check if item needs PO (for products that are not services)
+  let needsPo = false
+  let poStatus = 'NONE'
+
+  if (productId) {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        isService: true,
+        stock: {
+          select: {
+            available: true,
+          },
+        },
+      },
+    })
+
+    // If product is not a service and stock is insufficient, mark as needs PO
+    if (product && !product.isService) {
+      const availableStock = product.stock?.available || 0
+      if (availableStock < quantity) {
+        needsPo = true
+        poStatus = 'PENDING'
+      }
+    }
+  }
+
   const item = await prisma.projectItem.create({
     data: {
       projectId: id,
@@ -74,6 +101,8 @@ export default defineEventHandler(async event => {
       totalCost: cost * quantity,
       type,
       productId: productId || null,
+      needsPo,
+      poStatus,
     },
   })
 

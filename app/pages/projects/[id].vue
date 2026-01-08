@@ -284,7 +284,34 @@
                   <!-- HPP -->
                   <div class="flex justify-between items-center">
                     <span class="text-base-content/60">HPP</span>
-                    <span class="font-mono text-xs">{{ formatCurrency(item.cost || 0) }}</span>
+                    <div class="flex items-center gap-1">
+                      <span class="font-mono text-xs">{{ formatCurrency(item.cost || 0) }}</span>
+                      <button
+                        v-if="
+                          user &&
+                          ['ADMIN', 'OWNER'].includes(user.role) &&
+                          project.status !== 'COMPLETED'
+                        "
+                        @click="openEditCostModal(item)"
+                        class="btn btn-xs btn-ghost text-info"
+                        title="Edit HPP"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-3 w-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Total HPP -->
@@ -334,6 +361,9 @@
                   <th class="text-right">Total HPP</th>
                   <th class="text-right">Harga Jual</th>
                   <th class="text-right">Total Jual</th>
+                  <th v-if="user && ['ADMIN', 'OWNER'].includes(user.role)" class="text-center">
+                    Edit HPP
+                  </th>
                   <th></th>
                 </tr>
               </thead>
@@ -366,6 +396,29 @@
                   </td>
                   <td class="text-right font-mono font-semibold text-success">
                     {{ formatCurrency(item.totalPrice) }}
+                  </td>
+                  <td v-if="user && ['ADMIN', 'OWNER'].includes(user.role)" class="text-center">
+                    <button
+                      v-if="project.status !== 'COMPLETED'"
+                      @click="openEditCostModal(item)"
+                      class="btn btn-xs btn-ghost text-info"
+                      title="Edit Harga Pokok"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
                   </td>
                   <td>
                     <button
@@ -1192,6 +1245,97 @@
           <button @click="showEditTimestamps = false">close</button>
         </form>
       </dialog>
+
+      <!-- Edit Item Cost Modal -->
+      <dialog :class="{ 'modal modal-open': showEditCost }">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg mb-4">Edit Harga Pokok (HPP)</h3>
+          <form @submit.prevent="saveItemCost">
+            <div v-if="editCostItem" class="space-y-4">
+              <!-- Item Info -->
+              <div class="bg-base-200 p-3 rounded">
+                <p class="font-semibold">{{ editCostItem.name }}</p>
+                <div class="text-sm text-base-content/60 mt-1">
+                  <p>Quantity: {{ editCostItem.quantity }} {{ editCostItem.unit }}</p>
+                  <p>HPP Saat Ini: {{ formatCurrency(editCostItem.cost || 0) }}</p>
+                  <p>Total HPP Saat Ini: {{ formatCurrency(editCostItem.totalCost || 0) }}</p>
+                </div>
+              </div>
+
+              <!-- New Cost Input -->
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text font-medium">HPP Baru</span>
+                </label>
+                <input
+                  v-model.number="editCostValue"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="input input-bordered w-full"
+                  placeholder="Masukkan HPP baru"
+                  required
+                />
+              </div>
+
+              <!-- Preview Total -->
+              <div v-if="editCostValue > 0" class="bg-info/10 p-3 rounded">
+                <p class="text-sm font-semibold text-info">Preview:</p>
+                <p class="text-sm">
+                  Total HPP Baru: {{ formatCurrency(editCostValue * editCostItem.quantity) }}
+                </p>
+                <p class="text-sm">
+                  Selisih:
+                  {{
+                    formatCurrency(
+                      (editCostValue - (editCostItem.cost || 0)) * editCostItem.quantity
+                    )
+                  }}
+                </p>
+              </div>
+
+              <!-- Warning -->
+              <div class="alert alert-warning text-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="stroke-current shrink-0 h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <span>
+                  Perubahan ini akan mempengaruhi perhitungan margin proyek dan tercatat dalam
+                  activity log.
+                </span>
+              </div>
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="closeEditCostModal"
+                :disabled="!!processing"
+              >
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!!processing">
+                <span v-if="processing === 'saving-cost'" class="loading loading-spinner"></span>
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="closeEditCostModal">close</button>
+        </form>
+      </dialog>
     </template>
   </div>
 </template>
@@ -1203,7 +1347,7 @@ const route = useRoute()
 const { formatCurrency, formatDate } = useFormatter()
 const { showAlert } = useAlert()
 const { confirm } = useConfirm()
-const { isOwner } = useAuth()
+const { isOwner, user } = useAuth()
 
 const {
   data: project,
@@ -1221,6 +1365,9 @@ const showAssignTechnician = ref(false)
 const showReturnModal = ref(false)
 const showEditDates = ref(false)
 const showCancelModal = ref(false)
+const showEditCost = ref(false)
+const editCostItem = ref<any>(null)
+const editCostValue = ref(0)
 const returnItem = ref<any>(null)
 const returnQty = ref(1)
 const returnNotes = ref('')
@@ -1723,6 +1870,49 @@ const submitReturn = async () => {
     await refresh()
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal mengembalikan item', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Edit cost modal handlers
+const openEditCostModal = (item: any) => {
+  editCostItem.value = item
+  editCostValue.value = Number(item.cost || 0)
+  showEditCost.value = true
+}
+
+const closeEditCostModal = () => {
+  showEditCost.value = false
+  editCostItem.value = null
+  editCostValue.value = 0
+}
+
+const saveItemCost = async () => {
+  if (!editCostItem.value || editCostValue.value < 0) return
+
+  const isConfirmed = await confirm({
+    title: 'Konfirmasi Perubahan HPP',
+    message: `Ubah HPP "${editCostItem.value.name}" dari ${formatCurrency(editCostItem.value.cost || 0)} menjadi ${formatCurrency(editCostValue.value)}?`,
+    confirmText: 'Ya, Ubah',
+    type: 'warning',
+  })
+
+  if (!isConfirmed) return
+
+  processing.value = 'saving-cost'
+  try {
+    await $fetch(`/api/projects/${route.params.id}/items/${editCostItem.value.id}/cost`, {
+      method: 'PATCH',
+      body: {
+        cost: editCostValue.value,
+      },
+    })
+    showAlert('Harga pokok berhasil diupdate', 'success')
+    closeEditCostModal()
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mengubah harga pokok', 'error')
   } finally {
     processing.value = null
   }

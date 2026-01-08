@@ -279,6 +279,38 @@
                 </NuxtLink>
               </li>
 
+              <!-- Packages -->
+              <li v-if="canAccess('quotations.view')">
+                <NuxtLink
+                  to="/packages"
+                  class="flex items-center gap-3"
+                  active-class="active"
+                  :title="isCollapsed ? 'Paket' : ''"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
+                    <path d="M12 12l8 -4.5" />
+                    <path d="M12 12l0 9" />
+                    <path d="M12 12l-8 -4.5" />
+                    <path d="M8.2 9.8l7.6 -4.6" />
+                    <path d="M15.8 9.8l-7.6 -4.6" />
+                  </svg>
+                  <span v-show="!isCollapsed">Paket</span>
+                </NuxtLink>
+              </li>
+
               <!-- Projects -->
               <li v-if="canAccess('projects.view.all') || canAccess('projects.view.assigned')">
                 <NuxtLink
@@ -440,7 +472,9 @@
                   </summary>
                   <ul v-show="!isCollapsed">
                     <li>
-                      <NuxtLink to="/finance/payments" active-class="active">Pembayaran</NuxtLink>
+                      <NuxtLink to="/finance/payments" active-class="active">
+                        Pembayaran & Invoice
+                      </NuxtLink>
                     </li>
                     <li>
                       <NuxtLink to="/finance/expenses" active-class="active">Pengeluaran</NuxtLink>
@@ -460,6 +494,14 @@
                     </li>
                     <li>
                       <NuxtLink to="/finance/cashflow" active-class="active">Cashflow</NuxtLink>
+                    </li>
+                    <li>
+                      <NuxtLink to="/finance/cash-advances" active-class="active">
+                        Kas Bon Teknisi
+                      </NuxtLink>
+                    </li>
+                    <li>
+                      <NuxtLink to="/finance/bonuses" active-class="active">Bonus Teknisi</NuxtLink>
                     </li>
                     <li>
                       <details>
@@ -532,6 +574,39 @@
                 </details>
               </li>
 
+              <!-- Rekap Pembayaran (for TECHNICIAN role) -->
+              <li v-if="user?.role === 'TECHNICIAN'">
+                <NuxtLink
+                  to="/technician/payments"
+                  class="flex items-center gap-3"
+                  active-class="active"
+                  :title="isCollapsed ? 'Rekap Pembayaran' : ''"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path
+                      d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"
+                    />
+                    <path d="M9 7l1 0" />
+                    <path d="M9 13l6 0" />
+                    <path d="M9 17l3 0" />
+                  </svg>
+                  <span v-show="!isCollapsed">Rekap Pembayaran</span>
+                </NuxtLink>
+              </li>
+
               <div v-show="!isCollapsed" class="divider my-2"></div>
 
               <!-- Settings -->
@@ -577,6 +652,11 @@
                     <li>
                       <NuxtLink to="/settings/integrations" active-class="active">
                         Integrasi
+                      </NuxtLink>
+                    </li>
+                    <li>
+                      <NuxtLink to="/settings/activity-logs" active-class="active">
+                        Activity Logs
                       </NuxtLink>
                     </li>
                   </ul>

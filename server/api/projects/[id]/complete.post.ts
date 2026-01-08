@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { logActivity, ActivityAction, ActivityEntity } from '../../../utils/logger'
 
 export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
@@ -170,6 +171,21 @@ export default defineEventHandler(async event => {
   }).catch(err => {
     console.error('Failed to send Telegram notification:', err)
   })
+
+  // Log activity
+  if (user) {
+    await logActivity({
+      userId: user.id,
+      action: ActivityAction.COMPLETE_PROJECT,
+      entity: ActivityEntity.Project,
+      entityId: updatedProject.id,
+      metadata: {
+        projectNumber: updatedProject.projectNumber,
+        title: updatedProject.title,
+        customerId: updatedProject.customerId,
+      },
+    })
+  }
 
   return updatedProject
 })

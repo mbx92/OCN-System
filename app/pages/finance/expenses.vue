@@ -95,11 +95,11 @@ async function loadExpenses() {
 
 async function loadProjects() {
   try {
-    const { data } = await useFetch('/api/projects', {
+    const data = await $fetch('/api/projects', {
       query: { limit: 1000 },
     })
-    if (data.value) {
-      projects.value = (data.value as any).projects || (data.value as any).data || []
+    if (data) {
+      projects.value = (data as any).projects || (data as any).data || []
     }
   } catch (error) {
     console.error('Error loading projects:', error)

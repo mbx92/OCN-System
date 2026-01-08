@@ -254,43 +254,52 @@
 
           <!-- List View -->
           <div v-else class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table class="table w-full">
               <thead>
-                <tr>
-                  <th>Item / Produk</th>
-                  <th>Project</th>
-                  <th>Qty Butuh</th>
-                  <th>Stok Saat Ini</th>
-                  <th>Perlu PO</th>
-                  <th>Supplier</th>
+                <tr class="border-b-2">
+                  <th class="bg-base-200">Item / Produk</th>
+                  <th class="bg-base-200">Project</th>
+                  <th class="bg-base-200 text-center">Qty Butuh</th>
+                  <th class="bg-base-200 text-center">Stok Saat Ini</th>
+                  <th class="bg-base-200 text-center">Perlu PO</th>
+                  <th class="bg-base-200">Supplier</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in filteredPendingItems" :key="item.id">
+                <tr v-for="item in filteredPendingItems" :key="item.id" class="hover">
                   <td>
-                    <div class="font-bold">{{ item.name }}</div>
-                    <span v-if="item.product" class="text-xs text-base-content/60">
+                    <div class="font-semibold">{{ item.name }}</div>
+                    <span v-if="item.product" class="text-xs text-base-content/60 font-mono">
                       {{ item.product.sku }}
                     </span>
                   </td>
                   <td>
                     <div class="font-medium">{{ item.project?.projectNumber }}</div>
-                    <div class="text-xs text-base-content/60">{{ item.project?.title }}</div>
+                    <div class="text-xs text-base-content/60 line-clamp-1">
+                      {{ item.project?.title }}
+                    </div>
                   </td>
-                  <td class="text-right font-mono">{{ item.quantity }}</td>
-                  <td class="text-right font-mono">
-                    <span :class="(item.product?.stock?.available || 0) < 0 ? 'text-error' : ''">
+                  <td class="text-center">
+                    <span class="font-mono font-medium">{{ item.quantity }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span
+                      class="font-mono font-medium"
+                      :class="(item.product?.stock?.available || 0) < 0 ? 'text-error' : ''"
+                    >
                       {{ item.product?.stock?.available || 0 }}
                     </span>
                   </td>
-                  <td class="text-right font-mono text-warning font-bold">
-                    {{ item.quantity }}
+                  <td class="text-center">
+                    <span class="badge badge-warning font-mono font-bold">
+                      {{ item.quantity }}
+                    </span>
                   </td>
                   <td>
-                    <span v-if="item.product?.suppliers?.[0]?.supplier?.name">
+                    <span v-if="item.product?.suppliers?.[0]?.supplier?.name" class="text-sm">
                       {{ item.product.suppliers[0].supplier.name }}
                     </span>
-                    <span v-else class="text-base-content/40">-</span>
+                    <span v-else class="text-base-content/40 text-sm">-</span>
                   </td>
                 </tr>
               </tbody>

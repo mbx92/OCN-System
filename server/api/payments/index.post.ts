@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { logActivity, ActivityAction, ActivityEntity } from '../../utils/logger'
 
 const createPaymentSchema = z.object({
   projectId: z.string().optional().nullable(),
@@ -11,9 +12,16 @@ const createPaymentSchema = z.object({
   reference: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   receivedBy: z.string().optional().nullable(),
+  status: z
+    .enum(['PENDING', 'UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED'])
+    .optional()
+    .default('PAID'),
+  dueDate: z.string().datetime().optional().nullable(),
+  paidDate: z.string().datetime().optional().nullable(),
 })
 
 export default defineEventHandler(async event => {
+  const user = event.context.user
   const body = await readBody(event)
 
   const result = createPaymentSchema.safeParse(body)
@@ -57,31 +65,68 @@ export default defineEventHandler(async event => {
       reference: data.reference || null,
       notes: data.notes || null,
       receivedBy: data.receivedBy || null,
+      status: data.status || 'PAID',
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      paidDate: data.paidDate
+        ? new Date(data.paidDate)
+        : data.status === 'PAID'
+          ? new Date()
+          : null,
     },
     include: {
       project: {
-        select: {
-          id: true,
-          projectNumber: true,
-          title: true,
+        include: {
+          customer: true,
         },
       },
     },
   })
 
-  // Record cash transaction (INCOME)
-  await prisma.cashTransaction.create({
-    data: {
-      type: 'INCOME',
-      category: 'PAYMENT',
-      amount: data.amount,
-      description: `Pembayaran ${paymentNumber}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
-      reference: paymentNumber,
-      referenceType: 'Payment',
-      referenceId: payment.id,
-      date: new Date(),
-    },
-  })
+  // Record cash transaction (INCOME) only if status is PAID
+  if (payment.status === 'PAID') {
+    await prisma.cashTransaction.create({
+      data: {
+        type: 'INCOME',
+        category: 'PAYMENT',
+        amount: data.amount,
+        description: `Pembayaran ${paymentNumber}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
+        reference: paymentNumber,
+        referenceType: 'Payment',
+        referenceId: payment.id,
+        date: new Date(),
+      },
+    })
+
+    // Send Telegram notification for paid payment
+    if (payment.project) {
+      const { notifyPaymentReceived } = await import('../../utils/telegram')
+      notifyPaymentReceived({
+        amount: payment.amount,
+        projectNumber: payment.project.projectNumber,
+        customerName: payment.project.customer.name,
+        paymentType: payment.type,
+        paymentId: payment.id,
+      }).catch(err => {
+        console.error('Failed to send Telegram notification:', err)
+      })
+    }
+  }
+
+  // Log activity
+  if (user) {
+    await logActivity({
+      userId: user.id,
+      action: ActivityAction.CREATE_PAYMENT,
+      entity: ActivityEntity.Payment,
+      entityId: payment.id,
+      metadata: {
+        paymentNumber: payment.paymentNumber,
+        projectId: payment.projectId,
+        type: payment.type,
+        amount: payment.amount,
+      },
+    })
+  }
 
   return payment
 })

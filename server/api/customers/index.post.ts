@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { logActivity, ActivityAction, ActivityEntity } from '../../utils/logger'
 
 const customerSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi'),
@@ -12,6 +13,7 @@ const customerSchema = z.object({
 })
 
 export default defineEventHandler(async event => {
+  const user = event.context.user
   const body = await readBody(event)
 
   const result = customerSchema.safeParse(body)
@@ -34,6 +36,20 @@ export default defineEventHandler(async event => {
       notes: result.data.notes || null,
     },
   })
+
+  // Log activity
+  if (user) {
+    await logActivity({
+      userId: user.id,
+      action: ActivityAction.CREATE_CUSTOMER,
+      entity: ActivityEntity.Customer,
+      entityId: customer.id,
+      metadata: {
+        name: customer.name,
+        phone: customer.phone,
+      },
+    })
+  }
 
   return customer
 })

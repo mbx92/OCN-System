@@ -11,7 +11,17 @@ export default defineEventHandler(async () => {
       expenses: true,
       technicians: {
         include: {
-          technician: true,
+          technician: {
+            include: {
+              payments: {
+                where: {
+                  projectId: {
+                    not: null,
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },

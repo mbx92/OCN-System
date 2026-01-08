@@ -107,19 +107,29 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // Record cash transaction (EXPENSE) for PO
-    await tx.cashTransaction.create({
-      data: {
-        type: 'EXPENSE',
-        category: 'PO',
-        amount: purchaseOrder.totalAmount,
-        description: `Pembelian ${purchaseOrder.poNumber}`,
-        reference: purchaseOrder.poNumber,
-        referenceType: 'PurchaseOrder',
+    // Check if cash transaction already exists (avoid duplicate)
+    const existingCashTx = await tx.cashTransaction.findFirst({
+      where: {
         referenceId: purchaseOrder.id,
-        date: new Date(),
+        referenceType: 'PurchaseOrder',
       },
     })
+
+    // Record cash transaction (EXPENSE) for PO only if not exists
+    if (!existingCashTx) {
+      await tx.cashTransaction.create({
+        data: {
+          type: 'EXPENSE',
+          category: 'PO',
+          amount: purchaseOrder.totalAmount,
+          description: `Pembelian ${purchaseOrder.poNumber}`,
+          reference: purchaseOrder.poNumber,
+          referenceType: 'PurchaseOrder',
+          referenceId: purchaseOrder.id,
+          date: new Date(),
+        },
+      })
+    }
 
     return updatedPO
   })

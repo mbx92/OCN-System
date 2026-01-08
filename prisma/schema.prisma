@@ -78,19 +78,18 @@ model Customer {
 model CustomerCredential {
   id         String   @id @default(cuid())
   customerId String
-  deviceName String   // "Router Utama", "DVR", "Camera 1"
-  deviceType String?  // "ROUTER", "DVR", "IP_CAMERA", "NVR", "SWITCH"
-  ipAddress  String?  // 192.168.1.1
+  deviceName String // "Router Utama", "DVR", "Camera 1"
+  deviceType String? // "ROUTER", "DVR", "IP_CAMERA", "NVR", "SWITCH"
+  ipAddress  String? // 192.168.1.1
   username   String
   password   String
-  port       String?  // 80, 8080, 554
-  image      String?  // QR code or device image path
+  port       String? // 80, 8080, 554
+  image      String? // QR code or device image path
   notes      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
-
 
 model Project {
   id                         String                @id @default(cuid())
@@ -173,6 +172,31 @@ model Quotation {
   project     Project? @relation(fields: [projectId], references: [id])
 }
 
+model Package {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  category    String? // CCTV, NETWORK, COMBO
+  totalPrice  Decimal       @db.Decimal(15, 2)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       PackageItem[]
+}
+
+model PackageItem {
+  id        String   @id @default(cuid())
+  packageId String
+  productId String?
+  name      String
+  quantity  Int
+  unit      String
+  price     Decimal  @db.Decimal(15, 2)
+  total     Decimal  @db.Decimal(15, 2)
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id])
+}
+
 model Product {
   id                 String              @id @default(cuid())
   sku                String              @unique
@@ -195,6 +219,7 @@ model Product {
   stockMovements     StockMovement[]
   suppliers          SupplierProduct[]
   stockOpnames       StockOpname[]
+  packageItems       PackageItem[]
 }
 
 model Stock {
@@ -259,19 +284,22 @@ model SupplierProduct {
 }
 
 model PurchaseOrder {
-  id           String              @id @default(cuid())
-  poNumber     String              @unique
-  projectId    String?
-  supplierId   String
-  totalAmount  Decimal             @db.Decimal(15, 2)
-  status       String              @default("DRAFT")
-  receivedDate DateTime?
-  notes        String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  project      Project?            @relation(fields: [projectId], references: [id])
-  supplier     Supplier            @relation(fields: [supplierId], references: [id])
-  items        PurchaseOrderItem[]
+  id            String              @id @default(cuid())
+  poNumber      String              @unique
+  projectId     String?
+  supplierId    String
+  subtotal      Decimal             @default(0) @db.Decimal(15, 2)
+  shippingCost  Decimal             @default(0) @db.Decimal(15, 2)
+  otherCosts    Decimal             @default(0) @db.Decimal(15, 2)
+  totalAmount   Decimal             @db.Decimal(15, 2)
+  status        String              @default("DRAFT")
+  receivedDate  DateTime?
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  project       Project?            @relation(fields: [projectId], references: [id])
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  items         PurchaseOrderItem[]
 }
 
 model PurchaseOrderItem {
@@ -290,22 +318,24 @@ model PurchaseOrderItem {
 }
 
 model Technician {
-  id              String              @id @default(cuid())
-  userId          String?             @unique
+  id              String                  @id @default(cuid())
+  userId          String?                 @unique
   name            String
   phone           String
-  type            String              @default("FREELANCE")
-  feeType         String              @default("PERCENTAGE")
-  feePercentage   Decimal?            @db.Decimal(5, 2)
-  minFee          Decimal             @default(150000) @db.Decimal(15, 2)
-  canViewProjects Boolean             @default(true)
-  canViewEarnings Boolean             @default(true)
-  canUpdateStatus Boolean             @default(false)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  type            String                  @default("FREELANCE")
+  feeType         String                  @default("PERCENTAGE")
+  feePercentage   Decimal?                @db.Decimal(5, 2)
+  minFee          Decimal                 @default(150000) @db.Decimal(15, 2)
+  canViewProjects Boolean                 @default(true)
+  canViewEarnings Boolean                 @default(true)
+  canUpdateStatus Boolean                 @default(false)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
   assignments     ProjectTechnician[]
-  user            User?               @relation("UserTechnician", fields: [userId], references: [id])
+  user            User?                   @relation("UserTechnician", fields: [userId], references: [id])
   payments        TechnicianPayment[]
+  cashAdvances    TechnicianCashAdvance[]
+  bonuses         TechnicianBonus[]
 }
 
 model ProjectTechnician {
@@ -337,22 +367,26 @@ model FinancialSummary {
 }
 
 model Payment {
-  id            String      @id @default(cuid())
+  id            String        @id @default(cuid())
   projectId     String?
-  amount        Decimal     @db.Decimal(15, 2)
-  discount      Decimal     @default(0) @db.Decimal(15, 2)
+  amount        Decimal       @db.Decimal(15, 2)
+  discount      Decimal       @default(0) @db.Decimal(15, 2)
   discountNote  String?
   method        String
   notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  mode          PaymentMode @default(PROJECT)
-  paymentDate   DateTime    @default(now())
-  paymentNumber String      @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  mode          PaymentMode   @default(PROJECT)
+  paymentDate   DateTime      @default(now())
+  paymentNumber String        @unique
   receivedBy    String?
   reference     String?
   type          PaymentType
-  project       Project?    @relation(fields: [projectId], references: [id])
+  status        PaymentStatus @default(UNPAID)
+  dueDate       DateTime?
+  paidDate      DateTime?
+  invoiceUrl    String?
+  project       Project?      @relation(fields: [projectId], references: [id])
 }
 
 model Warranty {
@@ -536,7 +570,10 @@ enum AssetStatus {
 
 enum PaymentStatus {
   PENDING
+  UNPAID
+  PARTIAL
   PAID
+  OVERDUE
   CANCELLED
 }
 
@@ -579,12 +616,12 @@ model IntegrationSetting {
 model CashTransaction {
   id            String              @id @default(cuid())
   type          CashTransactionType
-  category      String              // PAYMENT, PO, ASSET, SALARY, EXPENSE, MANUAL
+  category      String // PAYMENT, PO, ASSET, SALARY, EXPENSE, MANUAL
   amount        Decimal             @db.Decimal(15, 2)
   description   String
-  reference     String?             // e.g., Payment Number, PO Number
-  referenceType String?             // e.g., "Payment", "PurchaseOrder", "Asset"
-  referenceId   String?             // Linked entity ID
+  reference     String? // e.g., Payment Number, PO Number
+  referenceType String? // e.g., "Payment", "PurchaseOrder", "Asset"
+  referenceId   String? // Linked entity ID
   date          DateTime            @default(now())
   createdAt     DateTime            @default(now())
   createdBy     String?
@@ -593,4 +630,33 @@ model CashTransaction {
 enum CashTransactionType {
   INCOME
   EXPENSE
+}
+
+model TechnicianCashAdvance {
+  id              String     @id @default(cuid())
+  technicianId    String
+  amount          Decimal    @db.Decimal(15, 2)
+  reason          String
+  status          String     @default("UNPAID") // UNPAID, PAID, PARTIALLY_PAID
+  paidAmount      Decimal    @default(0) @db.Decimal(15, 2)
+  remainingAmount Decimal    @db.Decimal(15, 2)
+  date            DateTime   @default(now())
+  paidDate        DateTime?
+  notes           String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  technician      Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+}
+
+model TechnicianBonus {
+  id           String     @id @default(cuid())
+  technicianId String
+  amount       Decimal    @db.Decimal(15, 2)
+  bonusType    String // HOLIDAY, PERFORMANCE, PROJECT, OTHER
+  description  String
+  period       String? // YYYY-MM format for monthly bonus
+  date         DateTime   @default(now())
+  notes        String?
+  createdAt    DateTime   @default(now())
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
 }

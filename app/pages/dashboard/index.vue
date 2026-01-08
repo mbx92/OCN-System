@@ -123,7 +123,10 @@
         </div>
         <div class="stat-title">Total Pelanggan</div>
         <div class="stat-value text-info">{{ stats?.totalCustomers || 0 }}</div>
-        <div class="stat-desc">{{ stats?.newCustomers || 0 }} pelanggan baru</div>
+        <div class="stat-desc" v-if="stats?.newCustomers">
+          <span class="text-success">+{{ stats.newCustomers }}</span> pelanggan baru (2 hari terakhir)
+        </div>
+        <div class="stat-desc" v-else>Tidak ada pelanggan baru</div>
       </div>
     </div>
 
@@ -324,8 +327,12 @@
 const { user } = useAuth()
 const { formatCurrency, formatDate } = useFormatter()
 
-// Fetch dashboard data
-const { data: stats } = await useFetch('/api/dashboard/summary')
+// Fetch dashboard data - disable cache untuk selalu dapat data terbaru
+const { data: stats, refresh: refreshStats } = await useFetch('/api/dashboard/summary', {
+  server: false,
+  lazy: false,
+})
+
 const { data: recentProjects } = await useFetch('/api/projects', {
   query: { limit: 5, sort: 'createdAt', order: 'desc' },
   transform: (res: any) => res.data,

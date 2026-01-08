@@ -3,10 +3,33 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold">Pembayaran</h1>
-        <p class="text-base-content/60">Kelola pembayaran proyek dan POS</p>
+        <h1 class="text-2xl font-bold">Pembayaran & Invoice</h1>
+        <p class="text-base-content/60">
+          Kelola pembayaran yang sudah diterima dan invoice penagihan customer
+        </p>
       </div>
       <div class="flex gap-2 w-full sm:w-auto">
+        <button
+          @click="openModal('INVOICE')"
+          class="btn btn-sm sm:btn-md btn-warning flex-1 sm:flex-initial"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <span class="hidden sm:inline">Buat Invoice</span>
+          <span class="sm:hidden">Invoice</span>
+        </button>
         <button
           @click="openModal('PROJECT')"
           class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
@@ -49,6 +72,49 @@
           POS
         </button>
       </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="tabs tabs-boxed bg-base-100 shadow p-2 mb-4">
+      <a
+        class="tab"
+        :class="{ 'tab-active': statusFilter === '' }"
+        @click="statusFilter = ''; fetchPayments()"
+      >
+        Semua
+      </a>
+      <a
+        class="tab gap-2"
+        :class="{ 'tab-active': statusFilter === 'UNPAID' }"
+        @click="statusFilter = 'UNPAID'; fetchPayments()"
+      >
+        <Icon name="mdi:clock-alert-outline" class="w-4 h-4 text-warning" />
+        Belum Dibayar
+      </a>
+      <a
+        class="tab gap-2"
+        :class="{ 'tab-active': statusFilter === 'PARTIAL' }"
+        @click="statusFilter = 'PARTIAL'; fetchPayments()"
+      >
+        <Icon name="mdi:chart-pie" class="w-4 h-4 text-info" />
+        Sebagian
+      </a>
+      <a
+        class="tab gap-2"
+        :class="{ 'tab-active': statusFilter === 'PAID' }"
+        @click="statusFilter = 'PAID'; fetchPayments()"
+      >
+        <Icon name="mdi:check-circle" class="w-4 h-4 text-success" />
+        Lunas
+      </a>
+      <a
+        class="tab gap-2"
+        :class="{ 'tab-active': statusFilter === 'OVERDUE' }"
+        @click="statusFilter = 'OVERDUE'; fetchPayments()"
+      >
+        <Icon name="mdi:alert-circle" class="w-4 h-4 text-error" />
+        Jatuh Tempo
+      </a>
     </div>
 
     <!-- Search & Filters Card -->
@@ -119,12 +185,17 @@
           <div class="flex justify-between items-start mb-3">
             <div class="flex-1">
               <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
-              <span
-                class="badge badge-xs sm:badge-sm mt-1"
-                :class="pay.mode === 'PROJECT' ? 'badge-primary' : 'badge-success'"
-              >
-                {{ pay.mode }}
-              </span>
+              <div class="flex gap-1 mt-1">
+                <span
+                  class="badge badge-xs sm:badge-sm"
+                  :class="pay.mode === 'PROJECT' ? 'badge-primary' : 'badge-success'"
+                >
+                  {{ pay.mode }}
+                </span>
+                <span class="badge badge-xs sm:badge-sm" :class="getStatusBadgeClass(pay.status)">
+                  {{ getStatusLabel(pay.status) }}
+                </span>
+              </div>
             </div>
             <span class="badge badge-ghost badge-xs sm:badge-sm">
               {{ getTypeLabel(pay.type) }}
@@ -150,6 +221,13 @@
               <span class="text-xs">{{ formatDate(pay.paymentDate) }}</span>
             </div>
 
+            <div v-if="pay.dueDate && pay.status !== 'PAID'" class="flex justify-between items-center">
+              <span class="text-base-content/60">Jatuh Tempo</span>
+              <span class="text-xs" :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''">
+                {{ formatDate(pay.dueDate) }}
+              </span>
+            </div>
+
             <div class="flex justify-between items-center pt-2 border-t border-base-300">
               <span class="text-base-content/60 font-semibold">Jumlah</span>
               <span class="font-mono font-bold text-success">
@@ -169,22 +247,24 @@
             <thead>
               <tr>
                 <th>No. Pembayaran</th>
+                <th>Status</th>
                 <th>Mode</th>
                 <th>Proyek</th>
                 <th>Tipe</th>
                 <th class="text-right">Jumlah</th>
                 <th>Metode</th>
                 <th>Tanggal</th>
+                <th>Jatuh Tempo</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="pending" class="text-center">
-                <td colspan="7" class="py-8">
+                <td colspan="9" class="py-8">
                   <span class="loading loading-spinner loading-lg"></span>
                 </td>
               </tr>
               <tr v-else-if="!payments?.length" class="text-center">
-                <td colspan="7" class="py-8 text-base-content/60">
+                <td colspan="9" class="py-8 text-base-content/60">
                   <p class="text-lg">Belum ada pembayaran</p>
                 </td>
               </tr>
@@ -198,6 +278,11 @@
                   <NuxtLink :to="`/finance/payments/${pay.id}`" class="link link-primary">
                     {{ pay.paymentNumber }}
                   </NuxtLink>
+                </td>
+                <td>
+                  <span class="badge badge-sm" :class="getStatusBadgeClass(pay.status)">
+                    {{ getStatusLabel(pay.status) }}
+                  </span>
                 </td>
                 <td>
                   <span
@@ -224,6 +309,9 @@
                 </td>
                 <td>{{ pay.method }}</td>
                 <td class="text-sm">{{ formatDate(pay.paymentDate) }}</td>
+                <td class="text-sm" :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''">
+                  {{ pay.dueDate ? formatDate(pay.dueDate) : '-' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -250,12 +338,22 @@
     <dialog class="modal" :class="{ 'modal-open': showModal }">
       <div class="modal-box">
         <h3 class="font-bold text-lg mb-4">
-          {{ modalMode === 'PROJECT' ? 'Pembayaran Proyek' : 'Pembayaran POS' }}
+          <span v-if="modalMode === 'INVOICE'">Buat Invoice / Tagihan</span>
+          <span v-else>{{ modalMode === 'PROJECT' ? 'Pembayaran Proyek' : 'Pembayaran POS' }}</span>
         </h3>
+        
+        <!-- Info Alert for Invoice -->
+        <div v-if="modalMode === 'INVOICE'" class="alert alert-info mb-4 text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Invoice untuk tagihan yang belum dibayar oleh customer</span>
+        </div>
+        
         <form @submit.prevent="savePayment">
           <div class="space-y-4">
-            <!-- Project Selection (PROJECT mode only) -->
-            <div v-if="modalMode === 'PROJECT'" class="form-control">
+            <!-- Project Selection (PROJECT/INVOICE mode only) -->
+            <div v-if="modalMode === 'PROJECT' || modalMode === 'INVOICE'" class="form-control">
               <label class="label"><span class="label-text">Proyek *</span></label>
               <AppProjectSelect
                 v-model="form.projectId"
@@ -318,6 +416,18 @@
                 required
               />
             </div>
+            
+            <!-- Due Date (Invoice mode only) -->
+            <div v-if="modalMode === 'INVOICE'" class="form-control">
+              <label class="label"><span class="label-text">Jatuh Tempo</span></label>
+              <input
+                v-model="form.dueDate"
+                type="date"
+                class="input input-bordered w-full"
+                :min="new Date().toISOString().split('T')[0]"
+              />
+              <label class="label"><span class="label-text-alt text-base-content/60">Kosongkan jika tidak ada batas waktu</span></label>
+            </div>
 
             <!-- Method -->
             <div>
@@ -355,9 +465,14 @@
             <button type="button" class="btn" @click="showModal = false" :disabled="saving">
               Batal
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">
+            <button 
+              type="submit" 
+              class="btn" 
+              :class="modalMode === 'INVOICE' ? 'btn-warning' : 'btn-primary'" 
+              :disabled="saving"
+            >
               <span v-if="saving" class="loading loading-spinner"></span>
-              Simpan
+              <span v-else>{{ modalMode === 'INVOICE' ? 'Buat Invoice' : 'Simpan' }}</span>
             </button>
           </div>
         </form>
@@ -374,6 +489,7 @@ const { formatCurrency, formatDate } = useFormatter()
 const { showAlert } = useAlert()
 
 const modeFilter = ref('')
+const statusFilter = ref('')
 const page = ref(1)
 // Filter states
 const searchQuery = ref('')
@@ -386,7 +502,7 @@ const viewMode = ref<'LIST' | 'GRID'>(
   typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
 )
 const showModal = ref(false)
-const modalMode = ref<'PROJECT' | 'POS'>('PROJECT')
+const modalMode = ref<'PROJECT' | 'POS' | 'INVOICE'>('PROJECT')
 const saving = ref(false)
 
 const form = reactive({
@@ -396,6 +512,8 @@ const form = reactive({
   method: 'CASH',
   reference: '',
   notes: '',
+  status: 'PAID' as 'PENDING' | 'UNPAID' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+  dueDate: '',
 })
 
 const {
@@ -405,6 +523,7 @@ const {
 } = await useFetch('/api/payments', {
   query: {
     mode: modeFilter,
+    status: statusFilter,
     page,
     limit: 20,
     search: searchQuery,
@@ -412,7 +531,7 @@ const {
     fromDate,
     toDate,
   },
-  watch: [modeFilter, page, searchQuery, projectFilter, fromDate, toDate],
+  watch: [modeFilter, statusFilter, page, searchQuery, projectFilter, fromDate, toDate],
 })
 
 const payments = computed(() => (paymentsData.value as any)?.data || [])
@@ -420,6 +539,49 @@ const payments = computed(() => (paymentsData.value as any)?.data || [])
 // Fetch projects for dropdown
 const { data: projectsData } = await useFetch('/api/projects', { query: { limit: 100 } })
 const projects = computed(() => (projectsData.value as any)?.data || [])
+
+const fetchPayments = () => {
+  page.value = 1
+  refresh()
+}
+
+const resetFilters = () => {
+  searchQuery.value = ''
+  projectFilter.value = ''
+  fromDate.value = ''
+  toDate.value = ''
+  statusFilter.value = ''
+  page.value = 1
+}
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    UNPAID: 'Belum Dibayar',
+    PARTIAL: 'Sebagian',
+    PAID: 'Lunas',
+    OVERDUE: 'Jatuh Tempo',
+    CANCELLED: 'Dibatalkan',
+  }
+  return labels[status] || status
+}
+
+const getStatusBadgeClass = (status: string) => {
+  const classes: Record<string, string> = {
+    PENDING: 'badge-ghost',
+    UNPAID: 'badge-warning',
+    PARTIAL: 'badge-info',
+    PAID: 'badge-success',
+    OVERDUE: 'badge-error',
+    CANCELLED: 'badge-ghost',
+  }
+  return classes[status] || 'badge-ghost'
+}
+
+const isOverdue = (dueDate: string | null, status: string) => {
+  if (!dueDate || status === 'PAID' || status === 'CANCELLED') return false
+  return new Date(dueDate) < new Date()
+}
 
 // Selected project for showing value
 const selectedProject = computed(() => {
@@ -470,49 +632,51 @@ const getTypeLabel = (type: string) => {
   return labels[type] || type
 }
 
-const openModal = (mode: 'PROJECT' | 'POS') => {
+const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
   modalMode.value = mode
   form.projectId = ''
   form.type = 'FULL'
   form.amount = 0
-  form.method = 'CASH'
+  form.method = 'TRANSFER'
   form.reference = ''
   form.notes = ''
+  form.status = mode === 'INVOICE' ? 'UNPAID' : 'PAID'
+  form.dueDate = ''
   showModal.value = true
 }
 
 const savePayment = async () => {
   saving.value = true
   try {
+    const body: any = {
+      mode: modalMode.value === 'INVOICE' ? 'PROJECT' : modalMode.value,
+      projectId: (modalMode.value === 'PROJECT' || modalMode.value === 'INVOICE') ? form.projectId : null,
+      type: form.type,
+      amount: form.amount,
+      method: form.method,
+      reference: form.reference || null,
+      notes: form.notes || null,
+      status: form.status,
+    }
+    
+    // Add due date for invoice
+    if (modalMode.value === 'INVOICE' && form.dueDate) {
+      body.dueDate = new Date(form.dueDate).toISOString()
+    }
+    
     await $fetch('/api/payments', {
       method: 'POST',
-      body: {
-        mode: modalMode.value,
-        projectId: modalMode.value === 'PROJECT' ? form.projectId : null,
-        type: form.type,
-        amount: form.amount,
-        method: form.method,
-        reference: form.reference || null,
-        notes: form.notes || null,
-      },
+      body,
     })
-    showAlert('Pembayaran berhasil disimpan!', 'success')
+    
+    const message = modalMode.value === 'INVOICE' ? 'Invoice berhasil dibuat!' : 'Pembayaran berhasil disimpan!'
+    showAlert(message, 'success')
     showModal.value = false
     await refresh()
   } catch (err: any) {
-    showAlert(err.data?.message || 'Gagal menyimpan pembayaran', 'error')
+    showAlert(err.data?.message || 'Gagal menyimpan', 'error')
   } finally {
     saving.value = false
   }
-}
-
-// Reset all filters
-const resetFilters = () => {
-  searchQuery.value = ''
-  projectFilter.value = ''
-  fromDate.value = ''
-  toDate.value = ''
-  modeFilter.value = ''
-  page.value = 1
 }
 </script>

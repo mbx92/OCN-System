@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "PurchaseOrder" ADD COLUMN     "otherCosts" DECIMAL(15,2) NOT NULL DEFAULT 0,
+ADD COLUMN     "shippingCost" DECIMAL(15,2) NOT NULL DEFAULT 0,
+ADD COLUMN     "subtotal" DECIMAL(15,2) NOT NULL DEFAULT 0;
