@@ -5,6 +5,8 @@ const createPaymentSchema = z.object({
   mode: z.enum(['PROJECT', 'POS']),
   type: z.enum(['FULL', 'DP', 'INSTALLMENT', 'SETTLEMENT']),
   amount: z.number().min(0),
+  discount: z.number().min(0).optional().default(0),
+  discountNote: z.string().optional().nullable(),
   method: z.string().min(1, 'Metode pembayaran wajib diisi'),
   reference: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -49,6 +51,8 @@ export default defineEventHandler(async event => {
       mode: data.mode,
       type: data.type,
       amount: data.amount,
+      discount: data.discount || 0,
+      discountNote: data.discountNote || null,
       method: data.method,
       reference: data.reference || null,
       notes: data.notes || null,
@@ -62,6 +66,20 @@ export default defineEventHandler(async event => {
           title: true,
         },
       },
+    },
+  })
+
+  // Record cash transaction (INCOME)
+  await prisma.cashTransaction.create({
+    data: {
+      type: 'INCOME',
+      category: 'PAYMENT',
+      amount: data.amount,
+      description: `Pembayaran ${paymentNumber}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
+      reference: paymentNumber,
+      referenceType: 'Payment',
+      referenceId: payment.id,
+      date: new Date(),
     },
   })
 

@@ -107,6 +107,20 @@ export default defineEventHandler(async event => {
       }
     }
 
+    // Record cash transaction (EXPENSE) for PO
+    await tx.cashTransaction.create({
+      data: {
+        type: 'EXPENSE',
+        category: 'PO',
+        amount: purchaseOrder.totalAmount,
+        description: `Pembelian ${purchaseOrder.poNumber}`,
+        reference: purchaseOrder.poNumber,
+        referenceType: 'PurchaseOrder',
+        referenceId: purchaseOrder.id,
+        date: new Date(),
+      },
+    })
+
     return updatedPO
   })
 

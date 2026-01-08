@@ -80,8 +80,8 @@
               <span class="font-medium">{{ project.customer?.name }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-base-content/60">Budget</span>
-              <span class="font-medium">{{ formatCurrency(project.budget) }}</span>
+              <span class="text-base-content/60">Total Nilai</span>
+              <span class="font-medium font-mono">{{ formatCurrency(project.totalAmount) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-base-content/60">Dibuat</span>
@@ -134,7 +134,7 @@
                     {{ getStatusLabel(project.status) }}
                   </span>
                 </td>
-                <td class="text-right font-mono">{{ formatCurrency(project.budget) }}</td>
+                <td class="text-right font-mono">{{ formatCurrency(project.totalAmount) }}</td>
                 <td class="text-right text-sm text-base-content/60">
                   {{ formatDate(project.createdAt) }}
                 </td>

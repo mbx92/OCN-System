@@ -221,9 +221,9 @@
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                       />
                     </svg>
-                    <span class="flex-1">Kekurangan</span>
-                    <span class="font-mono font-bold text-error">
-                      {{ Math.max(0, item.quantity - (item.product?.stock?.available || 0)) }}
+                    <span class="flex-1">Perlu PO</span>
+                    <span class="font-mono font-bold text-warning">
+                      {{ item.quantity }}
                     </span>
                   </div>
 
@@ -261,7 +261,7 @@
                   <th>Project</th>
                   <th>Qty Butuh</th>
                   <th>Stok Saat Ini</th>
-                  <th>Kekurangan</th>
+                  <th>Perlu PO</th>
                   <th>Supplier</th>
                 </tr>
               </thead>
@@ -283,8 +283,8 @@
                       {{ item.product?.stock?.available || 0 }}
                     </span>
                   </td>
-                  <td class="text-right font-mono text-error">
-                    {{ Math.max(0, item.quantity - (item.product?.stock?.available || 0)) }}
+                  <td class="text-right font-mono text-warning font-bold">
+                    {{ item.quantity }}
                   </td>
                   <td>
                     <span v-if="item.product?.suppliers?.[0]?.supplier?.name">

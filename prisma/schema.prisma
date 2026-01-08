@@ -64,13 +64,33 @@ model Customer {
   phone                String
   email                String?
   address              String
+  latitude             Float?
+  longitude            Float?
   notes                String?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   projects             Project[]
   quotations           Quotation[]
   maintenanceSchedules MaintenanceSchedule[]
+  credentials          CustomerCredential[]
 }
+
+model CustomerCredential {
+  id         String   @id @default(cuid())
+  customerId String
+  deviceName String   // "Router Utama", "DVR", "Camera 1"
+  deviceType String?  // "ROUTER", "DVR", "IP_CAMERA", "NVR", "SWITCH"
+  ipAddress  String?  // 192.168.1.1
+  username   String
+  password   String
+  port       String?  // 80, 8080, 554
+  image      String?  // QR code or device image path
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
 
 model Project {
   id                         String                @id @default(cuid())
@@ -320,6 +340,8 @@ model Payment {
   id            String      @id @default(cuid())
   projectId     String?
   amount        Decimal     @db.Decimal(15, 2)
+  discount      Decimal     @default(0) @db.Decimal(15, 2)
+  discountNote  String?
   method        String
   notes         String?
   createdAt     DateTime    @default(now())
@@ -552,4 +574,23 @@ model IntegrationSetting {
   config    Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CashTransaction {
+  id            String              @id @default(cuid())
+  type          CashTransactionType
+  category      String              // PAYMENT, PO, ASSET, SALARY, EXPENSE, MANUAL
+  amount        Decimal             @db.Decimal(15, 2)
+  description   String
+  reference     String?             // e.g., Payment Number, PO Number
+  referenceType String?             // e.g., "Payment", "PurchaseOrder", "Asset"
+  referenceId   String?             // Linked entity ID
+  date          DateTime            @default(now())
+  createdAt     DateTime            @default(now())
+  createdBy     String?
+}
+
+enum CashTransactionType {
+  INCOME
+  EXPENSE
 }

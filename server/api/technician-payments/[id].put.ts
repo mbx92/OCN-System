@@ -74,6 +74,23 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
+    // Record cash transaction when status changes to PAID
+    if (status === 'PAID' && existingPayment.status !== 'PAID') {
+      await prisma.cashTransaction.create({
+        data: {
+          type: 'EXPENSE',
+          category: 'SALARY',
+          amount: payment.amount,
+          description: `Gaji Teknisi: ${payment.technician?.name}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
+          reference: payment.paymentNumber,
+          referenceType: 'TechnicianPayment',
+          referenceId: payment.id,
+          date: payment.paidDate || new Date(),
+          createdBy: user.id,
+        },
+      })
+    }
+
     // Log activity
     await prisma.activity.create({
       data: {

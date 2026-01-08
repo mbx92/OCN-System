@@ -6,6 +6,8 @@ const customerSchema = z.object({
   phone: z.string().min(1, 'Nomor telepon harus diisi'),
   email: z.string().email('Email tidak valid').optional().nullable().or(z.literal('')),
   address: z.string().min(1, 'Alamat harus diisi'),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
 
@@ -27,6 +29,8 @@ export default defineEventHandler(async event => {
       phone: result.data.phone,
       email: result.data.email || null,
       address: result.data.address,
+      latitude: result.data.latitude || null,
+      longitude: result.data.longitude || null,
       notes: result.data.notes || null,
     },
   })

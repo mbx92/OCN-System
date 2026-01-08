@@ -8,6 +8,10 @@ export default defineEventHandler(async event => {
     })
   }
 
+  // Read body for budget
+  const body = await readBody(event).catch(() => ({}))
+  const budget = Number(body?.budget) || 0
+
   // Get maintenance schedule
   const schedule = await prisma.maintenanceSchedule.findUnique({
     where: { id },
@@ -70,7 +74,7 @@ export default defineEventHandler(async event => {
 
   const projectNumber = `${prefix}-${String(sequence).padStart(3, '0')}`
 
-  // Create project
+  // Create project with budget from request
   const project = await prisma.project.create({
     data: {
       projectNumber,
@@ -78,7 +82,7 @@ export default defineEventHandler(async event => {
       title: `Maintenance: ${schedule.title}`,
       description: schedule.description || `Project dari maintenance jadwal ${schedule.id}`,
       status: 'ONGOING',
-      budget: 0,
+      budget: budget,
       startDate: now,
     },
     include: {

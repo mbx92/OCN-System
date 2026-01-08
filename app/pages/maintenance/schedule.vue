@@ -371,9 +371,29 @@
         <p class="py-2">
           Buat project untuk maintenance
           <strong>"{{ selectedScheduleForProject?.title }}"</strong>
-          ?
         </p>
-        <p class="text-sm text-base-content/70">
+
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text font-medium">Estimasi Nilai Project *</span>
+          </label>
+          <input
+            v-model.number="projectBudget"
+            type="number"
+            min="0"
+            step="1000"
+            class="input input-bordered w-full"
+            placeholder="Masukkan estimasi nilai/budget..."
+            required
+          />
+          <label class="label">
+            <span class="label-text-alt text-base-content/60">
+              Nilai ini digunakan untuk analisis margin. Bisa diupdate nanti di halaman project.
+            </span>
+          </label>
+        </div>
+
+        <p class="text-sm text-base-content/70 mt-2">
           Project baru akan dibuat dengan nomor MNT-YYMM-XXX untuk tracking biaya dan items
           maintenance.
         </p>
@@ -381,7 +401,11 @@
           <button class="btn" @click="showCreateProjectModal = false" :disabled="creatingProject">
             Batal
           </button>
-          <button class="btn btn-primary" @click="executeCreateProject" :disabled="creatingProject">
+          <button
+            class="btn btn-primary"
+            @click="executeCreateProject"
+            :disabled="creatingProject || !projectBudget || projectBudget <= 0"
+          >
             <span v-if="creatingProject" class="loading loading-spinner"></span>
             Buat Project
           </button>
@@ -440,6 +464,7 @@ const editingSchedule = ref<any>(null)
 const showCreateProjectModal = ref(false)
 const selectedScheduleForProject = ref<any>(null)
 const creatingProject = ref(false)
+const projectBudget = ref<number>(0)
 
 // Delete Modal
 const showDeleteModal = ref(false)
@@ -636,6 +661,7 @@ const executeDelete = async () => {
 
 const createProjectFromSchedule = (schedule: any) => {
   selectedScheduleForProject.value = schedule
+  projectBudget.value = 0 // Reset budget input
   showCreateProjectModal.value = true
 }
 
@@ -647,6 +673,7 @@ const executeCreateProject = async () => {
       `/api/maintenance-schedules/${selectedScheduleForProject.value.id}/create-project`,
       {
         method: 'POST',
+        body: { budget: projectBudget.value },
       }
     )
     showAlert('Project berhasil dibuat!', 'success')

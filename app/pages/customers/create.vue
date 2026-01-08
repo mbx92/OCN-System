@@ -126,6 +126,64 @@
             </label>
           </div>
 
+          <!-- Coordinates -->
+          <div class="form-control w-full">
+            <label class="label pb-1">
+              <span class="label-text font-semibold">Koordinat Lokasi</span>
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input
+                v-model.number="form.latitude"
+                type="number"
+                step="any"
+                placeholder="Latitude (contoh: -6.2088)"
+                class="input input-bordered w-full"
+              />
+              <input
+                v-model.number="form.longitude"
+                type="number"
+                step="any"
+                placeholder="Longitude (contoh: 106.8456)"
+                class="input input-bordered w-full"
+              />
+              <button
+                type="button"
+                @click="getMyLocation"
+                class="btn btn-outline btn-primary"
+                :disabled="gettingLocation"
+              >
+                <span v-if="gettingLocation" class="loading loading-spinner loading-sm"></span>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                Lokasi Saya
+              </button>
+            </div>
+            <label class="label py-1">
+              <span class="label-text-alt text-base-content/60">
+                Klik "Lokasi Saya" untuk mengisi koordinat otomatis dari GPS
+              </span>
+            </label>
+          </div>
+
           <!-- Notes -->
           <div class="form-control w-full">
             <label class="label pb-1">
@@ -179,6 +237,8 @@ const form = reactive({
   phone: '',
   email: '',
   address: '',
+  latitude: null as number | null,
+  longitude: null as number | null,
   notes: '',
 })
 
@@ -190,6 +250,29 @@ const errors = reactive({
 })
 
 const loading = ref(false)
+const gettingLocation = ref(false)
+
+const getMyLocation = () => {
+  if (!navigator.geolocation) {
+    showError('Browser tidak mendukung geolokasi')
+    return
+  }
+
+  gettingLocation.value = true
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      form.latitude = position.coords.latitude
+      form.longitude = position.coords.longitude
+      gettingLocation.value = false
+      success('Lokasi berhasil didapatkan')
+    },
+    err => {
+      gettingLocation.value = false
+      showError('Gagal mendapatkan lokasi: ' + err.message)
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
+}
 
 const validate = (): boolean => {
   errors.name = ''

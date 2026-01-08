@@ -158,7 +158,7 @@
                   <p class="text-sm text-base-content/60">{{ project.customer?.name }}</p>
                 </div>
                 <div class="text-right">
-                  <p class="font-semibold">{{ formatCurrency(project.budget) }}</p>
+                  <p class="font-semibold">{{ formatCurrency(project.totalAmount) }}</p>
                   <p class="text-xs text-base-content/60">{{ formatDate(project.createdAt) }}</p>
                 </div>
               </div>
@@ -328,6 +328,7 @@ const { formatCurrency, formatDate } = useFormatter()
 const { data: stats } = await useFetch('/api/dashboard/summary')
 const { data: recentProjects } = await useFetch('/api/projects', {
   query: { limit: 5, sort: 'createdAt', order: 'desc' },
+  transform: (res: any) => res.data,
 })
 const { data: alerts } = await useFetch('/api/dashboard/alerts')
 

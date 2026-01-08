@@ -459,6 +459,9 @@
                       </NuxtLink>
                     </li>
                     <li>
+                      <NuxtLink to="/finance/cashflow" active-class="active">Cashflow</NuxtLink>
+                    </li>
+                    <li>
                       <details>
                         <summary>Laporan</summary>
                         <ul>

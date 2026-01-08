@@ -83,6 +83,21 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
+    // Record cash transaction (EXPENSE)
+    await prisma.cashTransaction.create({
+      data: {
+        type: 'EXPENSE',
+        category: 'EXPENSE',
+        amount: parseFloat(amount),
+        description: `${type}: ${category} - ${description}`,
+        reference: expense.id,
+        referenceType: 'Expense',
+        referenceId: expense.id,
+        date: new Date(date),
+        createdBy: user.id,
+      },
+    })
+
     // Send Telegram notification
     const { notifyExpense } = await import('../../utils/telegram')
     await notifyExpense({

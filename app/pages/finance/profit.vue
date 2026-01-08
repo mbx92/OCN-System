@@ -104,7 +104,7 @@
             <div>
               <p class="text-xs text-base-content/60">Nilai Project</p>
               <p class="font-bold text-primary">
-                {{ formatCurrency(project.finalPrice || project.budget) }}
+                {{ formatCurrency(getProjectRevenue(project)) }}
               </p>
             </div>
             <div>
@@ -169,7 +169,7 @@
                   <div class="flex justify-between mb-1">
                     <span class="text-sm">Total Nilai Project</span>
                     <span class="font-mono font-bold text-primary">
-                      {{ formatCurrency(project.finalPrice || project.budget) }}
+                      {{ formatCurrency(getProjectRevenue(project)) }}
                     </span>
                   </div>
                 </div>
@@ -565,10 +565,7 @@ const filteredProjects = computed(() => {
 })
 
 const summary = computed(() => {
-  const totalRevenue = filteredProjects.value.reduce(
-    (sum, p) => sum + Number(p.finalPrice || p.budget),
-    0
-  )
+  const totalRevenue = filteredProjects.value.reduce((sum, p) => sum + getProjectRevenue(p), 0)
   const totalCost = filteredProjects.value.reduce((sum, p) => sum + calculateTotalHPP(p), 0)
   const totalMargin = totalRevenue - totalCost
   const marginPercentage =
@@ -586,14 +583,34 @@ const calculateTotalHPP = (project: any) => {
   return calculateItemCost(project) + calculateExpenseCost(project)
 }
 
+// Fungsi untuk menghitung total revenue/nilai project
+// Prioritas: finalPrice -> budget -> sum of items.totalPrice
+const getProjectRevenue = (project: any) => {
+  const finalPrice = Number(project.finalPrice || 0)
+  const budget = Number(project.budget || 0)
+
+  // Jika ada finalPrice, gunakan itu
+  if (finalPrice > 0) return finalPrice
+
+  // Jika budget ada, gunakan itu
+  if (budget > 0) return budget
+
+  // Fallback: hitung dari total items (untuk project maintenance yang diinput setelah dibuat)
+  if (project.items && project.items.length > 0) {
+    return project.items.reduce((sum: number, item: any) => sum + Number(item.totalPrice || 0), 0)
+  }
+
+  return 0
+}
+
 const calculateMargin = (project: any) => {
-  const revenue = Number(project.finalPrice || project.budget)
+  const revenue = getProjectRevenue(project)
   const cost = calculateTotalHPP(project)
   return revenue - cost
 }
 
 const calculateMarginPercentage = (project: any) => {
-  const revenue = Number(project.finalPrice || project.budget)
+  const revenue = getProjectRevenue(project)
   const margin = calculateMargin(project)
   return revenue > 0 ? ((margin / revenue) * 100).toFixed(2) : '0.00'
 }

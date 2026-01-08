@@ -217,8 +217,11 @@ export default defineEventHandler(async (event: H3Event) => {
       pendapatanKotor = projects.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
     }
 
-    // Diskon and Retur (placeholder - these would come from actual discount/return records)
-    const diskonPenjualan = 0
+    // Diskon Penjualan - sum of discounts from payments
+    const diskonPenjualan = validPayments.reduce(
+      (sum, p) => sum + Number((p as any).discount || 0),
+      0
+    )
     const returPenjualan = 0
     const penjualanBersih = pendapatanKotor - diskonPenjualan - returPenjualan
 
