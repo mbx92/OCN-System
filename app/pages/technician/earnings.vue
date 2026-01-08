@@ -9,7 +9,9 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Total Earnings This Month -->
-      <div class="card bg-gradient-to-br from-primary to-primary-focus text-primary-content shadow-lg">
+      <div
+        class="card bg-gradient-to-br from-primary to-primary-focus text-primary-content shadow-lg"
+      >
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div>
@@ -37,7 +39,9 @@
       </div>
 
       <!-- Pending Payment -->
-      <div class="card bg-gradient-to-br from-warning to-warning-focus text-warning-content shadow-lg">
+      <div
+        class="card bg-gradient-to-br from-warning to-warning-focus text-warning-content shadow-lg"
+      >
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div>
@@ -65,7 +69,9 @@
       </div>
 
       <!-- Completed Projects This Month -->
-      <div class="card bg-gradient-to-br from-success to-success-focus text-success-content shadow-lg">
+      <div
+        class="card bg-gradient-to-br from-success to-success-focus text-success-content shadow-lg"
+      >
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div>

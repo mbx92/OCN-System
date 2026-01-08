@@ -187,7 +187,11 @@
         <nav class="flex-1 overflow-y-auto p-2">
           <ClientOnly>
             <!-- Technician Menu -->
-            <ul v-if="user?.role === 'TECHNICIAN'" class="menu gap-1" :class="isCollapsed ? 'p-0' : ''">
+            <ul
+              v-if="user?.role === 'TECHNICIAN'"
+              class="menu gap-1"
+              :class="isCollapsed ? 'p-0' : ''"
+            >
               <li>
                 <NuxtLink
                   to="/technician"

@@ -252,7 +252,9 @@
               </div>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Total Proyek</span>
-                <span class="font-semibold">{{ (stats?.activeProjects || 0) + (stats?.completedProjects || 0) }}</span>
+                <span class="font-semibold">
+                  {{ (stats?.activeProjects || 0) + (stats?.completedProjects || 0) }}
+                </span>
               </div>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Min Fee</span>

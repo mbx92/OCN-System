@@ -36,7 +36,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const isTechnicianPage = to.path.startsWith('/technician')
     const isLoginPage = to.path === '/login'
     const isProfilePage = to.path === '/profile'
-    
+
     if (!isTechnicianPage && !isLoginPage && !isProfilePage) {
       return navigateTo('/technician')
     }

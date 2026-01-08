@@ -114,7 +114,9 @@
                       </td>
                       <td class="text-right">{{ item.quantity }} {{ item.product?.unit || '' }}</td>
                       <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
-                      <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice) }}</td>
+                      <td class="text-right font-semibold">
+                        {{ formatCurrency(item.totalPrice) }}
+                      </td>
                     </tr>
                   </tbody>
                   <tfoot>
@@ -138,7 +140,9 @@
               <div class="space-y-3">
                 <div>
                   <label class="text-sm text-base-content/60">Fee</label>
-                  <p class="text-2xl font-bold text-primary">{{ formatCurrency(assignment?.fee || 0) }}</p>
+                  <p class="text-2xl font-bold text-primary">
+                    {{ formatCurrency(assignment?.fee || 0) }}
+                  </p>
                 </div>
                 <div>
                   <label class="text-sm text-base-content/60">Status Pembayaran</label>
@@ -182,7 +186,10 @@
           </div>
 
           <!-- Other Technicians -->
-          <div v-if="project.technicians && project.technicians.length > 1" class="card bg-base-100 shadow">
+          <div
+            v-if="project.technicians && project.technicians.length > 1"
+            class="card bg-base-100 shadow"
+          >
             <div class="card-body">
               <h2 class="card-title text-lg">Tim Teknisi</h2>
               <div class="space-y-2">
