@@ -81,7 +81,7 @@ export const useAuth = () => {
   const isAdmin = (): boolean => user.value?.role === 'ADMIN'
   const isViewer = (): boolean => user.value?.role === 'VIEWER'
 
-  const login = async (username: string, password: string): Promise<void> => {
+  const login = async (username: string, password: string): Promise<User | null> => {
     loading.value = true
     try {
       const response = await $fetch<{ user: User; token: string }>('/api/auth/login', {
@@ -103,6 +103,8 @@ export const useAuth = () => {
       if (import.meta.client) {
         localStorage.setItem('ocn-user', JSON.stringify(response.user))
       }
+
+      return response.user
     } finally {
       loading.value = false
     }

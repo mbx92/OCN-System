@@ -196,8 +196,13 @@ const handleLogin = async () => {
   error.value = ''
 
   try {
-    await login(credentials.username, credentials.password)
-    await navigateTo('/dashboard')
+    const result = await login(credentials.username, credentials.password)
+    // Redirect based on role
+    if (result?.role === 'TECHNICIAN') {
+      await navigateTo('/technician')
+    } else {
+      await navigateTo('/dashboard')
+    }
   } catch (err: any) {
     error.value = err.data?.message || err.statusMessage || 'Login gagal. Silakan coba lagi.'
   } finally {

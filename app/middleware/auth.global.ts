@@ -30,8 +30,20 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return navigateTo('/login')
   }
 
-  // Redirect technicians to their dashboard
-  if (user.value.role === 'TECHNICIAN' && to.path === '/dashboard') {
-    return navigateTo('/technician/dashboard')
+  // Redirect technicians to their dashboard if accessing admin pages
+  if (user.value.role === 'TECHNICIAN') {
+    const technicianPages = ['/technician', '/technician/']
+    const isTechnicianPage = to.path.startsWith('/technician')
+    const isLoginPage = to.path === '/login'
+    const isProfilePage = to.path === '/profile'
+    
+    if (!isTechnicianPage && !isLoginPage && !isProfilePage) {
+      return navigateTo('/technician')
+    }
+  }
+
+  // Redirect non-technicians from technician pages
+  if (user.value.role !== 'TECHNICIAN' && to.path.startsWith('/technician')) {
+    return navigateTo('/dashboard')
   }
 })
