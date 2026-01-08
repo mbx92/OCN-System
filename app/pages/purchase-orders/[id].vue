@@ -221,13 +221,13 @@
                                   :key="projectItem.id"
                                   class="flex items-center gap-2"
                                 >
-                                  <span class="badge badge-xs badge-ghost">{{
-                                    projectItem.quantity
-                                  }}</span>
-                                  <span class="text-base-content/60"
-                                    >{{ projectItem.project?.projectNumber }} -
-                                    {{ projectItem.project?.title }}</span
-                                  >
+                                  <span class="badge badge-xs badge-ghost">
+                                    {{ projectItem.quantity }}
+                                  </span>
+                                  <span class="text-base-content/60">
+                                    {{ projectItem.project?.projectNumber }} -
+                                    {{ projectItem.project?.title }}
+                                  </span>
                                 </li>
                               </ul>
                             </div>
@@ -445,15 +445,15 @@
                     {{ getStatusLabel(po.status) }}
                   </span>
                 </div>
-                
+
                 <div class="divider my-1"></div>
-                
+
                 <!-- Subtotal Items -->
                 <div class="flex justify-between">
                   <span class="text-base-content/60">Subtotal</span>
                   <span>{{ formatCurrency(po.subtotal || 0) }}</span>
                 </div>
-                
+
                 <!-- Shipping Cost - Editable for DRAFT & PROGRESS -->
                 <div class="flex justify-between items-center gap-2">
                   <span class="text-base-content/60">Ongkos Kirim</span>
@@ -494,7 +494,7 @@
                     </button>
                   </div>
                 </div>
-                
+
                 <!-- Other Costs - Editable for DRAFT & PROGRESS -->
                 <div class="flex justify-between items-center gap-2">
                   <span class="text-base-content/60">Biaya Lain</span>
@@ -514,9 +514,12 @@
                     </span>
                   </div>
                 </div>
-                
+
                 <!-- Save/Cancel buttons when editing costs -->
-                <div v-if="(po.status === 'DRAFT' || po.status === 'PROGRESS') && editingCosts" class="flex gap-2 justify-end">
+                <div
+                  v-if="(po.status === 'DRAFT' || po.status === 'PROGRESS') && editingCosts"
+                  class="flex gap-2 justify-end"
+                >
                   <button
                     @click="saveCosts"
                     class="btn btn-success btn-xs"
@@ -532,9 +535,9 @@
                     Batal
                   </button>
                 </div>
-                
+
                 <div class="divider my-1"></div>
-                
+
                 <div class="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span class="text-primary">{{ formatCurrency(po.totalAmount) }}</span>
@@ -685,7 +688,7 @@ const saveItem = async (item: PurchaseOrderItem) => {
   try {
     await $fetch(`/api/purchase-orders/${route.params.id}/items/${item.id}`, {
       method: 'PATCH',
-      body: { 
+      body: {
         quantity: editQty.value,
         price: editPrice.value,
       },

@@ -71,20 +71,23 @@ export default defineEventHandler(async event => {
 
   // Group items by productId ONLY (tidak peduli price beda di project berbeda)
   // Untuk 1 PO ke supplier yang sama, produk sama harus jadi 1 baris
-  const groupedItems = new Map<string, {
-    projectItemIds: string[]
-    productId: string
-    name: string
-    quantity: number
-    prices: number[] // Track all prices untuk ambil yang tertinggi
-    price: number
-    total: number
-  }>()
+  const groupedItems = new Map<
+    string,
+    {
+      projectItemIds: string[]
+      productId: string
+      name: string
+      quantity: number
+      prices: number[] // Track all prices untuk ambil yang tertinggi
+      price: number
+      total: number
+    }
+  >()
 
   projectItems.forEach(item => {
     const price = Number(item.cost || 0)
     const key = item.productId // Group by product only
-    
+
     if (groupedItems.has(key)) {
       const existing = groupedItems.get(key)!
       existing.projectItemIds.push(item.id)

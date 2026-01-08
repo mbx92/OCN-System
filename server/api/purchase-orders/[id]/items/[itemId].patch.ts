@@ -57,11 +57,11 @@ export default defineEventHandler(async event => {
   // Get current item data
   const item = await prisma.purchaseOrderItem.findUnique({
     where: { id: itemId },
-    select: { 
-      price: true, 
+    select: {
+      price: true,
       quantity: true,
       total: true,
-      purchaseOrderId: true 
+      purchaseOrderId: true,
     },
   })
 

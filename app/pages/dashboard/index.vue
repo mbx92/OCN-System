@@ -124,7 +124,8 @@
         <div class="stat-title">Total Pelanggan</div>
         <div class="stat-value text-info">{{ stats?.totalCustomers || 0 }}</div>
         <div class="stat-desc" v-if="stats?.newCustomers">
-          <span class="text-success">+{{ stats.newCustomers }}</span> pelanggan baru (2 hari terakhir)
+          <span class="text-success">+{{ stats.newCustomers }}</span>
+          pelanggan baru (2 hari terakhir)
         </div>
         <div class="stat-desc" v-else>Tidak ada pelanggan baru</div>
       </div>

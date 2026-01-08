@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
   // Get PO to check status
   const po = await prisma.purchaseOrder.findUnique({
     where: { id: poId },
-    select: { 
+    select: {
       status: true,
       subtotal: true,
       shippingCost: true,

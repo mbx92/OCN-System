@@ -1,9 +1,9 @@
 import dayjs from 'dayjs'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async event => {
   // Set no-cache header untuk memastikan data selalu fresh
   setResponseHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate')
-  
+
   const startOfMonth = dayjs().startOf('month').toDate()
   const endOfMonth = dayjs().endOf('month').toDate()
   const now = new Date()
@@ -81,10 +81,10 @@ export default defineEventHandler(async (event) => {
       status: 'OVERDUE',
     },
   })
-  
+
   // Jika tidak ada overdue dari payment, cek dari dueDate
   let overdueInvoices = overdueCount
-  
+
   if (overdueCount === 0) {
     overdueInvoices = await prisma.payment.count({
       where: {

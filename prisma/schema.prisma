@@ -284,22 +284,22 @@ model SupplierProduct {
 }
 
 model PurchaseOrder {
-  id            String              @id @default(cuid())
-  poNumber      String              @unique
-  projectId     String?
-  supplierId    String
-  subtotal      Decimal             @default(0) @db.Decimal(15, 2)
-  shippingCost  Decimal             @default(0) @db.Decimal(15, 2)
-  otherCosts    Decimal             @default(0) @db.Decimal(15, 2)
-  totalAmount   Decimal             @db.Decimal(15, 2)
-  status        String              @default("DRAFT")
-  receivedDate  DateTime?
-  notes         String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  project       Project?            @relation(fields: [projectId], references: [id])
-  supplier      Supplier            @relation(fields: [supplierId], references: [id])
-  items         PurchaseOrderItem[]
+  id           String              @id @default(cuid())
+  poNumber     String              @unique
+  projectId    String?
+  supplierId   String
+  subtotal     Decimal             @default(0) @db.Decimal(15, 2)
+  shippingCost Decimal             @default(0) @db.Decimal(15, 2)
+  otherCosts   Decimal             @default(0) @db.Decimal(15, 2)
+  totalAmount  Decimal             @db.Decimal(15, 2)
+  status       String              @default("DRAFT")
+  receivedDate DateTime?
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  project      Project?            @relation(fields: [projectId], references: [id])
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  items        PurchaseOrderItem[]
 }
 
 model PurchaseOrderItem {

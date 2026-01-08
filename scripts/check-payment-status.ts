@@ -22,7 +22,7 @@ async function main() {
   })
 
   console.log('Last 20 payments:')
-  payments.forEach((p) => {
+  payments.forEach(p => {
     console.log(
       `ID: ${p.id}, Status: ${p.status}, Amount: ${p.amount}, DueDate: ${p.dueDate}, PaidDate: ${p.paidDate}`
     )
@@ -39,7 +39,7 @@ async function main() {
     },
   })
 
-  statusCounts.forEach((s) => {
+  statusCounts.forEach(s => {
     console.log(`${s.status}: ${s._count.id} payments, Total: Rp ${s._sum.amount}`)
   })
 
@@ -61,7 +61,7 @@ async function main() {
   })
 
   console.log(`Found ${unpaid.length} unpaid payments:`)
-  unpaid.forEach((p) => {
+  unpaid.forEach(p => {
     console.log(`ID: ${p.id}, Status: ${p.status}, Amount: ${p.amount}, DueDate: ${p.dueDate}`)
   })
 
@@ -70,7 +70,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error(e)
     process.exit(1)
   })

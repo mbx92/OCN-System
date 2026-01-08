@@ -79,14 +79,20 @@
       <a
         class="tab"
         :class="{ 'tab-active': statusFilter === '' }"
-        @click="statusFilter = ''; fetchPayments()"
+        @click="
+          statusFilter = ''
+          fetchPayments()
+        "
       >
         Semua
       </a>
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'UNPAID' }"
-        @click="statusFilter = 'UNPAID'; fetchPayments()"
+        @click="
+          statusFilter = 'UNPAID'
+          fetchPayments()
+        "
       >
         <Icon name="mdi:clock-alert-outline" class="w-4 h-4 text-warning" />
         Belum Dibayar
@@ -94,7 +100,10 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'PARTIAL' }"
-        @click="statusFilter = 'PARTIAL'; fetchPayments()"
+        @click="
+          statusFilter = 'PARTIAL'
+          fetchPayments()
+        "
       >
         <Icon name="mdi:chart-pie" class="w-4 h-4 text-info" />
         Sebagian
@@ -102,7 +111,10 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'PAID' }"
-        @click="statusFilter = 'PAID'; fetchPayments()"
+        @click="
+          statusFilter = 'PAID'
+          fetchPayments()
+        "
       >
         <Icon name="mdi:check-circle" class="w-4 h-4 text-success" />
         Lunas
@@ -110,7 +122,10 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'OVERDUE' }"
-        @click="statusFilter = 'OVERDUE'; fetchPayments()"
+        @click="
+          statusFilter = 'OVERDUE'
+          fetchPayments()
+        "
       >
         <Icon name="mdi:alert-circle" class="w-4 h-4 text-error" />
         Jatuh Tempo
@@ -221,9 +236,15 @@
               <span class="text-xs">{{ formatDate(pay.paymentDate) }}</span>
             </div>
 
-            <div v-if="pay.dueDate && pay.status !== 'PAID'" class="flex justify-between items-center">
+            <div
+              v-if="pay.dueDate && pay.status !== 'PAID'"
+              class="flex justify-between items-center"
+            >
               <span class="text-base-content/60">Jatuh Tempo</span>
-              <span class="text-xs" :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''">
+              <span
+                class="text-xs"
+                :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''"
+              >
                 {{ formatDate(pay.dueDate) }}
               </span>
             </div>
@@ -309,7 +330,10 @@
                 </td>
                 <td>{{ pay.method }}</td>
                 <td class="text-sm">{{ formatDate(pay.paymentDate) }}</td>
-                <td class="text-sm" :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''">
+                <td
+                  class="text-sm"
+                  :class="isOverdue(pay.dueDate, pay.status) ? 'text-error font-semibold' : ''"
+                >
                   {{ pay.dueDate ? formatDate(pay.dueDate) : '-' }}
                 </td>
               </tr>
@@ -341,15 +365,26 @@
           <span v-if="modalMode === 'INVOICE'">Buat Invoice / Tagihan</span>
           <span v-else>{{ modalMode === 'PROJECT' ? 'Pembayaran Proyek' : 'Pembayaran POS' }}</span>
         </h3>
-        
+
         <!-- Info Alert for Invoice -->
         <div v-if="modalMode === 'INVOICE'" class="alert alert-info mb-4 text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <span>Invoice untuk tagihan yang belum dibayar oleh customer</span>
         </div>
-        
+
         <form @submit.prevent="savePayment">
           <div class="space-y-4">
             <!-- Project Selection (PROJECT/INVOICE mode only) -->
@@ -416,7 +451,7 @@
                 required
               />
             </div>
-            
+
             <!-- Due Date (Invoice mode only) -->
             <div v-if="modalMode === 'INVOICE'" class="form-control">
               <label class="label"><span class="label-text">Jatuh Tempo</span></label>
@@ -426,7 +461,11 @@
                 class="input input-bordered w-full"
                 :min="new Date().toISOString().split('T')[0]"
               />
-              <label class="label"><span class="label-text-alt text-base-content/60">Kosongkan jika tidak ada batas waktu</span></label>
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                  Kosongkan jika tidak ada batas waktu
+                </span>
+              </label>
             </div>
 
             <!-- Method -->
@@ -465,10 +504,10 @@
             <button type="button" class="btn" @click="showModal = false" :disabled="saving">
               Batal
             </button>
-            <button 
-              type="submit" 
-              class="btn" 
-              :class="modalMode === 'INVOICE' ? 'btn-warning' : 'btn-primary'" 
+            <button
+              type="submit"
+              class="btn"
+              :class="modalMode === 'INVOICE' ? 'btn-warning' : 'btn-primary'"
               :disabled="saving"
             >
               <span v-if="saving" class="loading loading-spinner"></span>
@@ -650,7 +689,8 @@ const savePayment = async () => {
   try {
     const body: any = {
       mode: modalMode.value === 'INVOICE' ? 'PROJECT' : modalMode.value,
-      projectId: (modalMode.value === 'PROJECT' || modalMode.value === 'INVOICE') ? form.projectId : null,
+      projectId:
+        modalMode.value === 'PROJECT' || modalMode.value === 'INVOICE' ? form.projectId : null,
       type: form.type,
       amount: form.amount,
       method: form.method,
@@ -658,18 +698,19 @@ const savePayment = async () => {
       notes: form.notes || null,
       status: form.status,
     }
-    
+
     // Add due date for invoice
     if (modalMode.value === 'INVOICE' && form.dueDate) {
       body.dueDate = new Date(form.dueDate).toISOString()
     }
-    
+
     await $fetch('/api/payments', {
       method: 'POST',
       body,
     })
-    
-    const message = modalMode.value === 'INVOICE' ? 'Invoice berhasil dibuat!' : 'Pembayaran berhasil disimpan!'
+
+    const message =
+      modalMode.value === 'INVOICE' ? 'Invoice berhasil dibuat!' : 'Pembayaran berhasil disimpan!'
     showAlert(message, 'success')
     showModal.value = false
     await refresh()
