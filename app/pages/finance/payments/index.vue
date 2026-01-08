@@ -76,23 +76,13 @@
 
     <!-- Status Tabs -->
     <div class="tabs tabs-boxed bg-base-100 shadow p-2 mb-4">
-      <a
-        class="tab"
-        :class="{ 'tab-active': statusFilter === '' }"
-        @click="
-          statusFilter = ''
-          fetchPayments()
-        "
-      >
+      <a class="tab" :class="{ 'tab-active': statusFilter === '' }" @click="changeStatusFilter('')">
         Semua
       </a>
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'UNPAID' }"
-        @click="
-          statusFilter = 'UNPAID'
-          fetchPayments()
-        "
+        @click="changeStatusFilter('UNPAID')"
       >
         <Icon name="mdi:clock-alert-outline" class="w-4 h-4 text-warning" />
         Belum Dibayar
@@ -100,10 +90,7 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'PARTIAL' }"
-        @click="
-          statusFilter = 'PARTIAL'
-          fetchPayments()
-        "
+        @click="changeStatusFilter('PARTIAL')"
       >
         <Icon name="mdi:chart-pie" class="w-4 h-4 text-info" />
         Sebagian
@@ -111,10 +98,7 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'PAID' }"
-        @click="
-          statusFilter = 'PAID'
-          fetchPayments()
-        "
+        @click="changeStatusFilter('PAID')"
       >
         <Icon name="mdi:check-circle" class="w-4 h-4 text-success" />
         Lunas
@@ -122,10 +106,7 @@
       <a
         class="tab gap-2"
         :class="{ 'tab-active': statusFilter === 'OVERDUE' }"
-        @click="
-          statusFilter = 'OVERDUE'
-          fetchPayments()
-        "
+        @click="changeStatusFilter('OVERDUE')"
       >
         <Icon name="mdi:alert-circle" class="w-4 h-4 text-error" />
         Jatuh Tempo
@@ -682,6 +663,11 @@ const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
   form.status = mode === 'INVOICE' ? 'UNPAID' : 'PAID'
   form.dueDate = ''
   showModal.value = true
+}
+
+const changeStatusFilter = (status: string) => {
+  statusFilter.value = status
+  fetchPayments()
 }
 
 const savePayment = async () => {
