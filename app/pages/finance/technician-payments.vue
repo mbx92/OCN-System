@@ -54,7 +54,7 @@ const periodSlipYear = ref(new Date().getFullYear())
 const generatingSlip = ref(false)
 
 // Company data
-const { data: company } = await useFetch('/api/company')
+const company = ref<any>(null)
 
 // Data for dropdowns
 const technicians = ref<any[]>([])
@@ -553,7 +553,11 @@ watch(
 )
 
 // Init
-onMounted(() => {
+onMounted(async () => {
+  // Load company data
+  const companyData = await $fetch('/api/company')
+  company.value = companyData
+
   loadPayments()
   loadTechnicians()
   loadProjects()
