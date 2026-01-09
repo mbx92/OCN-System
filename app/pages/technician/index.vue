@@ -1,5 +1,31 @@
 <template>
   <div class="space-y-6">
+    <!-- Error Alert -->
+    <div v-if="technicianError || statsError || projectsError" class="alert alert-error shadow-lg">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <div>
+        <h3 class="font-bold">Terjadi Kesalahan!</h3>
+        <p class="text-sm">
+          {{ technicianError?.message || statsError?.message || projectsError?.message }}
+        </p>
+        <p class="text-sm mt-1">
+          Silakan refresh halaman atau hubungi administrator jika masalah berlanjut.
+        </p>
+      </div>
+    </div>
+
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -9,7 +35,7 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-if="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="stat bg-base-100 shadow rounded-box">
         <div class="stat-figure text-primary">
           <svg
@@ -28,7 +54,7 @@
           </svg>
         </div>
         <div class="stat-title">Project Aktif</div>
-        <div class="stat-value text-primary">{{ stats?.activeProjects || 0 }}</div>
+        <div class="stat-value text-primary">{{ stats.activeProjects || 0 }}</div>
         <div class="stat-desc">Sedang dikerjakan</div>
       </div>
 
@@ -50,7 +76,7 @@
           </svg>
         </div>
         <div class="stat-title">Project Selesai</div>
-        <div class="stat-value text-success">{{ stats?.completedProjects || 0 }}</div>
+        <div class="stat-value text-success">{{ stats.completedProjects || 0 }}</div>
         <div class="stat-desc">Bulan ini</div>
       </div>
 
@@ -73,7 +99,7 @@
         </div>
         <div class="stat-title">Total Fee</div>
         <div class="stat-value text-info text-2xl">
-          {{ formatCurrency(stats?.totalEarnings || 0) }}
+          {{ formatCurrency(stats.totalEarnings || 0) }}
         </div>
         <div class="stat-desc">Bulan ini</div>
       </div>
@@ -97,9 +123,16 @@
         </div>
         <div class="stat-title">Pending Payment</div>
         <div class="stat-value text-warning text-2xl">
-          {{ formatCurrency(stats?.pendingPayment || 0) }}
+          {{ formatCurrency(stats.pendingPayment || 0) }}
         </div>
         <div class="stat-desc">Belum dibayar</div>
+      </div>
+    </div>
+
+    <!-- Loading Stats -->
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div v-for="i in 4" :key="i" class="stat bg-base-100 shadow rounded-box animate-pulse">
+        <div class="h-20"></div>
       </div>
     </div>
 
@@ -241,14 +274,14 @@
         <div class="card bg-base-100 shadow">
           <div class="card-body">
             <h2 class="card-title">Info Teknisi</h2>
-            <div class="space-y-2 text-sm">
+            <div v-if="technician" class="space-y-2 text-sm">
               <div class="flex justify-between">
                 <span class="text-base-content/60">Tipe</span>
-                <span class="badge badge-primary">{{ technician?.type }}</span>
+                <span class="badge badge-primary">{{ technician.type || 'FREELANCE' }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Kontak</span>
-                <span>{{ technician?.phone || '-' }}</span>
+                <span>{{ technician.phone || '-' }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Total Proyek</span>
@@ -258,8 +291,13 @@
               </div>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Min Fee</span>
-                <span>{{ formatCurrency(technician?.minFee || 0) }}</span>
+                <span>{{ formatCurrency(Number(technician.minFee) || 0) }}</span>
               </div>
+            </div>
+            <div v-else class="space-y-2">
+              <div class="h-6 bg-base-300 rounded animate-pulse"></div>
+              <div class="h-6 bg-base-300 rounded animate-pulse"></div>
+              <div class="h-6 bg-base-300 rounded animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -275,22 +313,38 @@ definePageMeta({
 
 const { user } = useAuth()
 const { formatCurrency, formatDate } = useFormatter()
+const { showAlert } = useAlert()
 
 // Redirect if not technician
 if (user.value?.role !== 'TECHNICIAN') {
   navigateTo('/dashboard')
 }
 
-// Fetch technician data
-const { data: technician } = await useFetch('/api/technician/profile')
+// Fetch technician data with error handling
+const { data: technician, error: technicianError } = await useFetch('/api/technician/profile')
 
-// Fetch dashboard stats
-const { data: stats } = await useFetch('/api/technician/dashboard-stats')
+if (technicianError.value) {
+  console.error('Failed to load technician profile:', technicianError.value)
+  showAlert('Gagal memuat profil teknisi', 'error')
+}
 
-// Fetch recent projects
-const { data: projects } = await useFetch('/api/technician/my-projects', {
+// Fetch dashboard stats with error handling
+const { data: stats, error: statsError } = await useFetch('/api/technician/dashboard-stats')
+
+if (statsError.value) {
+  console.error('Failed to load stats:', statsError.value)
+  showAlert('Gagal memuat statistik', 'error')
+}
+
+// Fetch recent projects with error handling
+const { data: projects, error: projectsError } = await useFetch('/api/technician/my-projects', {
   query: { limit: 5 },
 })
+
+if (projectsError.value) {
+  console.error('Failed to load projects:', projectsError.value)
+  showAlert('Gagal memuat daftar proyek', 'error')
+}
 
 const getStatusClass = (status: string) => {
   const classes: Record<string, string> = {

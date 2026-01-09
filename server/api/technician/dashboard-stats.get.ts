@@ -49,21 +49,27 @@ export default defineEventHandler(async event => {
     },
   })
 
-  // Total earnings this month (from payments)
-  const paymentsThisMonth = await prisma.technicianPayment.aggregate({
+  // Total earnings this month (from paid assignments)
+  const paidAssignmentsThisMonth = await prisma.projectTechnician.findMany({
     where: {
       technicianId: technician.id,
-      paymentDate: {
+      isPaid: true,
+      paidDate: {
         gte: startOfMonth,
         lte: endOfMonth,
       },
     },
-    _sum: {
-      amount: true,
+    select: {
+      fee: true,
     },
   })
 
-  // Pending payment (unpaid assignments)
+  const totalEarnings = paidAssignmentsThisMonth.reduce(
+    (sum, assignment) => sum + Number(assignment.fee),
+    0
+  )
+
+  // Pending payment (unpaid assignments from completed projects)
   const unpaidAssignments = await prisma.projectTechnician.findMany({
     where: {
       technicianId: technician.id,
@@ -85,7 +91,7 @@ export default defineEventHandler(async event => {
   return {
     activeProjects,
     completedProjects,
-    totalEarnings: paymentsThisMonth._sum.amount?.toNumber() || 0,
+    totalEarnings,
     pendingPayment,
   }
 })
