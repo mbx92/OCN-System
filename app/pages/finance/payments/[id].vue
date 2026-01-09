@@ -42,7 +42,27 @@
           </div>
           <p class="text-base-content/60">{{ formatDate(payment.paymentDate) }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
+          <!-- Pay Button for UNPAID/PARTIAL -->
+          <button
+            v-if="payment.status === 'UNPAID' || payment.status === 'PARTIAL'"
+            @click="showPaymentRecordDialog = true"
+            class="btn btn-success gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            Bayar / Lunasi
+          </button>
           <button @click="showInvoice = true" class="btn btn-outline btn-info">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -102,6 +122,12 @@
               <div class="flex justify-between">
                 <span class="text-base-content/60">Tipe</span>
                 <span class="badge badge-ghost">{{ getTypeLabel(payment.type) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-base-content/60">Status</span>
+                <span class="badge" :class="getStatusBadgeClass(payment.status)">
+                  {{ getStatusLabel(payment.status) }}
+                </span>
               </div>
               <div class="divider my-1"></div>
               <div class="flex justify-between text-lg font-bold">
@@ -311,6 +337,107 @@
         <button @click="showReceipt = false">close</button>
       </form>
     </dialog>
+
+    <!-- Record Payment Dialog -->
+    <dialog class="modal" :class="{ 'modal-open': showPaymentRecordDialog }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Catat Pembayaran</h3>
+
+        <!-- Invoice Info -->
+        <div v-if="payment" class="bg-base-200 rounded-lg p-4 mb-4">
+          <div class="flex justify-between mb-2">
+            <span class="text-base-content/60">No. Invoice:</span>
+            <span class="font-mono font-bold">{{ payment.paymentNumber }}</span>
+          </div>
+          <div class="flex justify-between mb-2">
+            <span class="text-base-content/60">Total Tagihan:</span>
+            <span class="font-mono font-bold text-success">
+              {{ formatCurrency(payment.amount) }}
+            </span>
+          </div>
+          <div class="flex justify-between mb-2">
+            <span class="text-base-content/60">Status Saat Ini:</span>
+            <span class="badge" :class="getStatusBadgeClass(payment.status)">
+              {{ getStatusLabel(payment.status) }}
+            </span>
+          </div>
+          <div v-if="payment.project" class="flex justify-between">
+            <span class="text-base-content/60">Proyek:</span>
+            <span>{{ payment.project.projectNumber }}</span>
+          </div>
+        </div>
+
+        <form @submit.prevent="recordPayment">
+          <div class="space-y-4">
+            <!-- Status -->
+            <div class="form-control">
+              <label class="label"><span class="label-text">Status Pembayaran *</span></label>
+              <select
+                v-model="paymentRecordForm.status"
+                class="select select-bordered w-full"
+                required
+              >
+                <option value="PAID">Lunas</option>
+                <option value="PARTIAL">Dibayar Sebagian</option>
+              </select>
+            </div>
+
+            <!-- Paid Date -->
+            <div class="form-control">
+              <label class="label"><span class="label-text">Tanggal Pembayaran *</span></label>
+              <input
+                v-model="paymentRecordForm.paidDate"
+                type="date"
+                class="input input-bordered w-full"
+                required
+              />
+            </div>
+
+            <!-- Notes -->
+            <div class="form-control">
+              <label class="label"><span class="label-text">Catatan (opsional)</span></label>
+              <textarea
+                v-model="paymentRecordForm.notes"
+                class="textarea textarea-bordered w-full"
+                rows="2"
+                placeholder="Catatan pembayaran..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-action">
+            <button
+              type="button"
+              class="btn"
+              @click="showPaymentRecordDialog = false"
+              :disabled="recordingPayment"
+            >
+              Batal
+            </button>
+            <button type="submit" class="btn btn-success" :disabled="recordingPayment">
+              <span v-if="recordingPayment" class="loading loading-spinner loading-sm"></span>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              {{ recordingPayment ? 'Menyimpan...' : 'Simpan Pembayaran' }}
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showPaymentRecordDialog = false">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
@@ -386,6 +513,65 @@ const downloadReceiptPdf = async () => {
   } catch (err) {
     console.error('Error downloading receipt:', err)
     showAlert('Gagal mengunduh kwitansi', 'error')
+  }
+}
+
+// === Payment Recording ===
+const showPaymentRecordDialog = ref(false)
+const recordingPayment = ref(false)
+
+const paymentRecordForm = reactive({
+  status: 'PAID' as 'PARTIAL' | 'PAID',
+  paidDate: new Date().toISOString().split('T')[0],
+  notes: '',
+})
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    UNPAID: 'Belum Dibayar',
+    PARTIAL: 'Sebagian',
+    PAID: 'Lunas',
+    OVERDUE: 'Jatuh Tempo',
+    CANCELLED: 'Dibatalkan',
+  }
+  return labels[status] || status
+}
+
+const getStatusBadgeClass = (status: string) => {
+  const classes: Record<string, string> = {
+    PENDING: 'badge-ghost',
+    UNPAID: 'badge-warning',
+    PARTIAL: 'badge-info',
+    PAID: 'badge-success',
+    OVERDUE: 'badge-error',
+    CANCELLED: 'badge-ghost',
+  }
+  return classes[status] || 'badge-ghost'
+}
+
+const recordPayment = async () => {
+  recordingPayment.value = true
+  try {
+    await $fetch(`/api/payments/${route.params.id}/status`, {
+      method: 'PATCH',
+      body: {
+        status: paymentRecordForm.status,
+        paidDate: new Date(paymentRecordForm.paidDate).toISOString(),
+        notes: paymentRecordForm.notes || null,
+      },
+    })
+
+    const statusLabel = paymentRecordForm.status === 'PAID' ? 'Lunas' : 'Sebagian'
+    showAlert(`Pembayaran berhasil dicatat sebagai ${statusLabel}!`, 'success')
+    showPaymentRecordDialog.value = false
+
+    // Refresh the page to show updated status
+    await refreshNuxtData()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mencatat pembayaran', 'error')
+  } finally {
+    recordingPayment.value = false
   }
 }
 </script>

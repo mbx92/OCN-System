@@ -88,16 +88,16 @@ async function loadTechnicians() {
 }
 
 function calculateSummary() {
-  summary.value.totalPayments = payments.value.reduce((sum, p) => sum + p.amount, 0)
+  summary.value.totalPayments = payments.value.reduce((sum, p) => sum + Number(p.amount || 0), 0)
   summary.value.totalPaid = payments.value
     .filter(p => p.status === 'PAID')
-    .reduce((sum, p) => sum + p.amount, 0)
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
   summary.value.totalPending = payments.value
     .filter(p => p.status === 'PENDING')
-    .reduce((sum, p) => sum + p.amount, 0)
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
   summary.value.totalCancelled = payments.value
     .filter(p => p.status === 'CANCELLED')
-    .reduce((sum, p) => sum + p.amount, 0)
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
 
   // Count unique technicians
   const techIds = new Set(payments.value.map(p => p.technicianId))
@@ -125,9 +125,9 @@ function prepareChartData() {
     }
 
     if (p.status === 'PAID') {
-      grouped[key].paid += p.amount
+      grouped[key].paid += Number(p.amount || 0)
     } else if (p.status === 'PENDING') {
-      grouped[key].pending += p.amount
+      grouped[key].pending += Number(p.amount || 0)
     }
     grouped[key].count += 1
   })

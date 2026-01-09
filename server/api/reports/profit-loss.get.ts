@@ -208,6 +208,17 @@ export default defineEventHandler(async (event: H3Event) => {
     // Filter expenses from cancelled projects
     const validExpenses = expenses.filter(e => !e.project || e.project.status !== 'CANCELLED')
 
+    // Get cash transactions (expenses) in the period - includes PO and other cash expenses
+    const cashTransactions = await prisma.cashTransaction.findMany({
+      where: {
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        type: 'EXPENSE',
+      },
+    })
+
     // Calculate revenue (Pendapatan Kotor)
     // Use payments received or project values
     let pendapatanKotor = 0
@@ -254,6 +265,16 @@ export default defineEventHandler(async (event: H3Event) => {
         biayaProjectItems.set(displayName, (biayaProjectItems.get(displayName) || 0) + amount)
       })
 
+    // NOTE: PO (Purchase Order) costs are already reflected in project.items.totalCost
+    // when items are added from PO to the project. Adding CashTransaction PO here
+    // would cause double-counting. PO expenses are tracked separately in the
+    // Laporan Pembelian (purchases report).
+
+    // Add other cash transaction expenses to operating expenses (except PO and PAYMENT which are handled differently)
+    const otherCashExpenses = cashTransactions.filter(
+      ct => !['PO', 'PAYMENT'].includes(ct.category)
+    )
+
     const labaKotor = penjualanBersih - hpp
 
     // Categorize expenses
@@ -295,6 +316,20 @@ export default defineEventHandler(async (event: H3Event) => {
       biayaAdministratifItems.set(
         displayName,
         (biayaAdministratifItems.get(displayName) || 0) + Number(e.amount)
+      )
+    })
+
+    // Add other cash transaction expenses to administratif
+    otherCashExpenses.forEach(ct => {
+      const categoryMap: Record<string, string> = {
+        ASSET: 'Pembelian Aset',
+        SALARY: 'Biaya Gaji & Fee',
+        EXPENSE: 'Biaya Operasional',
+      }
+      const displayName = categoryMap[ct.category] || ct.description || 'Biaya Lainnya'
+      biayaAdministratifItems.set(
+        displayName,
+        (biayaAdministratifItems.get(displayName) || 0) + Number(ct.amount)
       )
     })
 

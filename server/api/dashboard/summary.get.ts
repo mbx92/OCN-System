@@ -20,14 +20,26 @@ export default defineEventHandler(async event => {
     where: { status: 'ONGOING' },
   })
 
-  // Monthly revenue (hanya hitung pembayaran dengan status PAID bulan ini)
+  // Monthly revenue (hitung pembayaran dengan status PAID bulan ini)
+  // Use OR condition: paidDate in range OR (status PAID and paymentDate in range when paidDate is null)
   const paymentsThisMonth = await prisma.payment.aggregate({
     where: {
       status: 'PAID',
-      paidDate: {
-        gte: startOfMonth,
-        lte: endOfMonth,
-      },
+      OR: [
+        {
+          paidDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+        {
+          paidDate: null,
+          paymentDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+      ],
     },
     _sum: { amount: true },
   })
@@ -36,10 +48,21 @@ export default defineEventHandler(async event => {
   const paidProjectsCount = await prisma.payment.count({
     where: {
       status: 'PAID',
-      paidDate: {
-        gte: startOfMonth,
-        lte: endOfMonth,
-      },
+      OR: [
+        {
+          paidDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+        {
+          paidDate: null,
+          paymentDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+      ],
     },
   })
 
@@ -62,15 +85,18 @@ export default defineEventHandler(async event => {
       where: {
         status: { notIn: ['COMPLETED', 'CANCELLED'] },
       },
-      select: {
-        id: true,
-        totalAmount: true,
-        paidAmount: true,
+      include: {
+        payments: {
+          where: { status: 'PAID' },
+        },
       },
     })
 
-    pendingPayments = projectsWithRemaining.reduce((sum, p) => {
-      const remaining = Number(p.totalAmount) - Number(p.paidAmount || 0)
+    pendingPayments = (projectsWithRemaining as any[]).reduce((sum, p) => {
+      const projectTotal = Number(p.finalPrice || p.budget || 0)
+      const paidAmount =
+        p.payments?.reduce((ps: number, pay: any) => ps + Number(pay.amount || 0), 0) || 0
+      const remaining = projectTotal - paidAmount
       return sum + (remaining > 0 ? remaining : 0)
     }, 0)
   }

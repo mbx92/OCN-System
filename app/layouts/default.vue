@@ -594,6 +594,16 @@
                             </NuxtLink>
                           </li>
                           <li>
+                            <NuxtLink to="/finance/reports/purchases" active-class="active">
+                              Pembelian
+                            </NuxtLink>
+                          </li>
+                          <li>
+                            <NuxtLink to="/finance/reports/expenses" active-class="active">
+                              Pengeluaran
+                            </NuxtLink>
+                          </li>
+                          <li>
                             <NuxtLink to="/finance/reports/inventory" active-class="active">
                               Inventory
                             </NuxtLink>

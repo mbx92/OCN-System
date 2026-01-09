@@ -390,7 +390,8 @@
                     </div>
                   </div>
 
-                  <div class="alert alert-info py-2 text-xs">
+                  <!-- Show saved message if already saved -->
+                  <div v-if="project.remainingWageSaved" class="alert alert-success py-2 text-xs">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       class="h-4 w-4"
@@ -402,30 +403,15 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    <span>
-                      Sisa upah teknisi:
-                      {{
-                        formatCurrency(
-                          calculateTechnicianWage(project) - calculateTotalTechFee(project)
-                        )
-                      }}
-                      dapat dialokasikan sesuai kesepakatan
-                    </span>
+                    <span>Sisa upah teknisi sudah disimpan ke kas usaha</span>
                   </div>
 
-                  <!-- Action buttons for remaining wage -->
-                  <div
-                    v-if="calculateTechnicianWage(project) - calculateTotalTechFee(project) > 0"
-                    class="flex flex-col gap-2 mt-3"
-                  >
-                    <button
-                      @click="saveRemainingToCash(project)"
-                      class="btn btn-sm btn-success"
-                      :disabled="!!processing"
-                    >
+                  <!-- Only show sisa upah info and buttons if not saved yet -->
+                  <template v-else>
+                    <div class="alert alert-info py-2 text-xs">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         class="h-4 w-4"
@@ -437,33 +423,69 @@
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Simpan ke Kas Usaha
-                    </button>
-                    <button
-                      @click="openAllocateBonusModal(project)"
-                      class="btn btn-sm btn-primary btn-outline"
-                      :disabled="!!processing"
+                      <span>
+                        Sisa upah teknisi:
+                        {{
+                          formatCurrency(
+                            calculateTechnicianWage(project) - calculateTotalTechFee(project)
+                          )
+                        }}
+                        dapat dialokasikan sesuai kesepakatan
+                      </span>
+                    </div>
+
+                    <!-- Action buttons for remaining wage -->
+                    <div
+                      v-if="calculateTechnicianWage(project) - calculateTotalTechFee(project) > 0"
+                      class="flex flex-col gap-2 mt-3"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                      <button
+                        @click="saveRemainingToCash(project)"
+                        class="btn btn-sm btn-success"
+                        :disabled="!!processing"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      Alokasikan ke Teknisi
-                    </button>
-                  </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Simpan ke Kas Usaha
+                      </button>
+                      <button
+                        @click="openAllocateBonusModal(project)"
+                        class="btn btn-sm btn-primary btn-outline"
+                        :disabled="!!processing"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        Alokasikan ke Teknisi
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>

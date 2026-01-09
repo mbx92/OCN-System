@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 definePageMeta({
   layout: 'default',
 })
@@ -39,6 +42,20 @@ const form = ref({
   notes: '',
 })
 
+// Batch selection state
+const selectedPayments = ref<string[]>([])
+const selectAll = ref(false)
+
+// Period slip modal state
+const showPeriodSlipModal = ref(false)
+const periodSlipTechnician = ref('')
+const periodSlipMonth = ref('')
+const periodSlipYear = ref(new Date().getFullYear())
+const generatingSlip = ref(false)
+
+// Company data
+const { data: company } = await useFetch('/api/company')
+
 // Data for dropdowns
 const technicians = ref<any[]>([])
 const projects = ref<any[]>([])
@@ -49,9 +66,244 @@ const paymentStatuses = [
   { value: 'CANCELLED', label: 'Dibatalkan', color: 'badge-error' },
 ]
 
+// Available months for period slip
+const availableMonths = Array.from({ length: 12 }, (_, i) => ({
+  value: (i + 1).toString().padStart(2, '0'),
+  label: new Date(2000, i, 1).toLocaleString('id-ID', { month: 'long' }),
+}))
+
+// Available years for period slip
+const availableYears = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
+
+// Toggle select all
+function toggleSelectAll() {
+  if (selectAll.value) {
+    selectedPayments.value = payments.value.map(p => p.id)
+  } else {
+    selectedPayments.value = []
+  }
+}
+
+// Toggle single selection
+function togglePaymentSelection(id: string) {
+  const index = selectedPayments.value.indexOf(id)
+  if (index > -1) {
+    selectedPayments.value.splice(index, 1)
+  } else {
+    selectedPayments.value.push(id)
+  }
+
+  // Update selectAll state
+  selectAll.value = selectedPayments.value.length === payments.value.length
+}
+
+// Get selected payments data
+function getSelectedPaymentsData() {
+  return payments.value.filter(p => selectedPayments.value.includes(p.id))
+}
+
+// Generate batch payment slip PDF
+async function generateBatchSlip() {
+  const selectedData = getSelectedPaymentsData()
+  if (selectedData.length === 0) {
+    const { showAlert } = useAlert()
+    showAlert('Pilih minimal 1 pembayaran', 'error')
+    return
+  }
+
+  generatingSlip.value = true
+  try {
+    await generateSlipPDF(selectedData, 'Slip Pembayaran Gabungan')
+  } finally {
+    generatingSlip.value = false
+  }
+}
+
+// Open period slip modal
+function openPeriodSlipModal() {
+  periodSlipTechnician.value = ''
+  periodSlipMonth.value = (new Date().getMonth() + 1).toString().padStart(2, '0')
+  periodSlipYear.value = new Date().getFullYear()
+  showPeriodSlipModal.value = true
+}
+
+// Generate period-based slip
+async function generatePeriodSlip() {
+  const { showAlert } = useAlert()
+
+  if (!periodSlipTechnician.value || !periodSlipMonth.value) {
+    showAlert('Pilih teknisi dan bulan', 'error')
+    return
+  }
+
+  generatingSlip.value = true
+  try {
+    // Fetch payments for selected technician and period
+    const periodStr = `${periodSlipYear.value}-${periodSlipMonth.value}`
+    const data: any = await $fetch('/api/technician-payments', {
+      query: {
+        technicianId: periodSlipTechnician.value,
+        status: 'PAID',
+        limit: 1000,
+      },
+    })
+
+    // Filter payments by period (paidDate within the month)
+    const startDate = new Date(periodSlipYear.value, parseInt(periodSlipMonth.value) - 1, 1)
+    const endDate = new Date(periodSlipYear.value, parseInt(periodSlipMonth.value), 0)
+
+    const periodPayments = (data?.payments || []).filter((p: any) => {
+      if (!p.paidDate) return false
+      const paidDate = new Date(p.paidDate)
+      return paidDate >= startDate && paidDate <= endDate
+    })
+
+    if (periodPayments.length === 0) {
+      showAlert('Tidak ada pembayaran untuk periode ini', 'warning')
+      return
+    }
+
+    const techName =
+      technicians.value.find(t => t.id === periodSlipTechnician.value)?.name || 'Teknisi'
+    const monthName = availableMonths.find(m => m.value === periodSlipMonth.value)?.label || ''
+    const title = `Slip Pembayaran ${techName} - ${monthName} ${periodSlipYear.value}`
+
+    await generateSlipPDF(periodPayments, title)
+    showPeriodSlipModal.value = false
+  } catch (error: any) {
+    showAlert(error.data?.message || 'Gagal membuat slip', 'error')
+  } finally {
+    generatingSlip.value = false
+  }
+}
+
+// Generate PDF for payment slip
+async function generateSlipPDF(paymentsData: any[], title: string) {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+
+  // Header
+  doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold')
+  doc.text(company.value?.name || 'OCN System', pageWidth / 2, 20, { align: 'center' })
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  if (company.value?.address) {
+    doc.text(company.value.address, pageWidth / 2, 27, { align: 'center' })
+  }
+
+  // Title
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text(title, pageWidth / 2, 40, { align: 'center' })
+
+  // Date
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 50)
+
+  // Group by technician if mixed
+  const technicianGroups = paymentsData.reduce((groups: any, payment: any) => {
+    const techId = payment.technicianId
+    if (!groups[techId]) {
+      groups[techId] = {
+        name: payment.technician?.name || 'Unknown',
+        payments: [],
+      }
+    }
+    groups[techId].payments.push(payment)
+    return groups
+  }, {})
+
+  let yPos = 60
+  let grandTotal = 0
+
+  // For each technician
+  Object.values(technicianGroups).forEach((group: any, index: number) => {
+    if (index > 0) {
+      yPos += 10
+    }
+
+    // Technician name
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Teknisi: ${group.name}`, 14, yPos)
+    yPos += 7
+
+    // Table for this technician's payments
+    const tableData = group.payments.map((p: any, i: number) => {
+      // Build description with project info
+      let desc = p.description || ''
+      if (p.project) {
+        const projectInfo = p.project.title || ''
+        const customerInfo = p.project.customer?.name || ''
+        if (projectInfo || customerInfo) {
+          const parts = [projectInfo, customerInfo].filter(Boolean).join(' - ')
+          desc = desc ? `${desc}\n${parts}` : parts
+        }
+      }
+
+      return [
+        (i + 1).toString(),
+        p.paymentNumber,
+        p.project?.projectNumber || p.period || '-',
+        desc || '-',
+        p.paidDate ? formatDate(p.paidDate) : '-',
+        formatCurrency(Number(p.amount)),
+      ]
+    })
+
+    const techTotal = group.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+    grandTotal += techTotal
+
+    // Add total row
+    tableData.push(['', '', '', '', 'Subtotal:', formatCurrency(techTotal)])
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['No', 'No. Pembayaran', 'Project/Periode', 'Deskripsi', 'Tgl Bayar', 'Jumlah']],
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [66, 139, 202] },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        5: { halign: 'right' },
+      },
+    })
+
+    yPos = (doc as any).lastAutoTable.finalY + 5
+  })
+
+  // Grand total
+  yPos += 5
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`TOTAL: ${formatCurrency(grandTotal)}`, pageWidth - 14, yPos, { align: 'right' })
+
+  // Signature section
+  yPos += 20
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+
+  const signatureY = yPos
+  doc.text('Penerima,', 40, signatureY)
+  doc.text('Pembuat,', pageWidth - 40, signatureY, { align: 'center' })
+
+  doc.text('(                              )', 40, signatureY + 30)
+  doc.text('(                              )', pageWidth - 40, signatureY + 30, { align: 'center' })
+
+  // Save
+  const filename = title.toLowerCase().replace(/\s+/g, '-') + '.pdf'
+  doc.save(filename)
+}
+
 // Load data
 async function loadPayments() {
   loading.value = true
+  selectedPayments.value = []
+  selectAll.value = false
   try {
     const query: any = {
       page: pagination.value.page,
@@ -316,17 +568,80 @@ onMounted(() => {
         <h1 class="text-2xl font-bold">Pembayaran Teknisi</h1>
         <p class="text-base-content/60">Kelola pembayaran fee/gaji teknisi</p>
       </div>
-      <button @click="openModal()" class="btn btn-primary">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        Tambah Pembayaran
-      </button>
+      <div class="flex gap-2">
+        <!-- Batch Slip Dropdown -->
+        <div class="dropdown dropdown-end">
+          <label tabindex="0" class="btn btn-outline">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Slip Gabungan
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </label>
+          <ul
+            tabindex="0"
+            class="dropdown-content z-999 menu p-2 shadow-lg bg-base-100 rounded-box w-60"
+          >
+            <li>
+              <button
+                @click="generateBatchSlip"
+                :disabled="selectedPayments.length === 0 || generatingSlip"
+                class="flex items-center gap-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+                <span v-if="selectedPayments.length > 0">
+                  Slip Terpilih ({{ selectedPayments.length }})
+                </span>
+                <span v-else class="text-base-content/60">Pilih pembayaran dulu</span>
+              </button>
+            </li>
+            <li>
+              <button @click="openPeriodSlipModal" class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Slip Per Periode
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <button @click="openModal()" class="btn btn-primary">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Tambah Pembayaran
+        </button>
+      </div>
     </div>
 
     <!-- Summary Cards -->
@@ -502,6 +817,14 @@ onMounted(() => {
           <table class="table">
             <thead>
               <tr>
+                <th class="w-10">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    v-model="selectAll"
+                    @change="toggleSelectAll"
+                  />
+                </th>
                 <th>No. Pembayaran</th>
                 <th>Teknisi</th>
                 <th>Project</th>
@@ -513,7 +836,19 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="payment in payments" :key="payment.id">
+              <tr
+                v-for="payment in payments"
+                :key="payment.id"
+                :class="{ 'bg-primary/5': selectedPayments.includes(payment.id) }"
+              >
+                <td>
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    :checked="selectedPayments.includes(payment.id)"
+                    @change="togglePaymentSelection(payment.id)"
+                  />
+                </td>
                 <td class="font-mono text-sm">{{ payment.paymentNumber }}</td>
                 <td>
                   <div class="font-medium">{{ payment.technician.name }}</div>
@@ -715,6 +1050,81 @@ onMounted(() => {
         </div>
       </div>
       <div class="modal-backdrop" @click="closeModal"></div>
+    </div>
+
+    <!-- Period Slip Modal -->
+    <div v-if="showPeriodSlipModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Slip Pembayaran Per Periode</h3>
+
+        <div class="space-y-4">
+          <!-- Technician -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Pilih Teknisi *</span>
+            </label>
+            <select v-model="periodSlipTechnician" class="select select-bordered w-full">
+              <option value="">-- Pilih Teknisi --</option>
+              <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
+                {{ tech.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Month & Year -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Bulan *</span>
+              </label>
+              <select v-model="periodSlipMonth" class="select select-bordered w-full">
+                <option v-for="month in availableMonths" :key="month.value" :value="month.value">
+                  {{ month.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Tahun *</span>
+              </label>
+              <select v-model="periodSlipYear" class="select select-bordered w-full">
+                <option v-for="year in availableYears" :key="year" :value="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="alert alert-info py-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              Akan menghasilkan slip gabungan untuk semua pembayaran teknisi yang sudah PAID pada
+              periode tersebut.
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button @click="showPeriodSlipModal = false" class="btn">Batal</button>
+          <button
+            @click="generatePeriodSlip"
+            class="btn btn-primary"
+            :disabled="!periodSlipTechnician || !periodSlipMonth || generatingSlip"
+          >
+            <span v-if="generatingSlip" class="loading loading-spinner loading-sm"></span>
+            <span v-else>Generate Slip</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-backdrop" @click="showPeriodSlipModal = false"></div>
     </div>
   </div>
 </template>

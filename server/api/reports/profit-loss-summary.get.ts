@@ -52,34 +52,60 @@ export default defineEventHandler(async (event: H3Event) => {
         const startDate = new Date(year, month - 1, 1)
         const endDate = new Date(year, month, 0, 23, 59, 59, 999)
 
-        const [projectData, expenseData, paymentData] = await Promise.all([
-          // Get projects
-          prisma.project.findMany({
-            where: {
-              OR: [
-                { startDate: { gte: startDate, lte: endDate } },
-                { endDate: { gte: startDate, lte: endDate } },
-              ],
-              status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
-            },
-            select: { id: true, finalPrice: true, budget: true },
-          }),
-          // Get expenses
-          prisma.expense.aggregate({
-            where: { date: { gte: startDate, lte: endDate } },
-            _sum: { amount: true },
-          }),
-          // Get payments
-          prisma.payment.aggregate({
-            where: { paymentDate: { gte: startDate, lte: endDate } },
-            _sum: { amount: true },
-          }),
-        ])
+        const [projectData, expenseData, paymentData, cashExpenseData, projectItemsCost] =
+          await Promise.all([
+            // Get projects
+            prisma.project.findMany({
+              where: {
+                OR: [
+                  { startDate: { gte: startDate, lte: endDate } },
+                  { endDate: { gte: startDate, lte: endDate } },
+                ],
+                status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
+              },
+              select: { id: true, finalPrice: true, budget: true },
+            }),
+            // Get expenses from Expense model
+            prisma.expense.aggregate({
+              where: { date: { gte: startDate, lte: endDate } },
+              _sum: { amount: true },
+            }),
+            // Get payments
+            prisma.payment.aggregate({
+              where: { paymentDate: { gte: startDate, lte: endDate } },
+              _sum: { amount: true },
+            }),
+            // Get expenses from CashTransaction (excludes PO to avoid double-counting with project items)
+            prisma.cashTransaction.aggregate({
+              where: {
+                date: { gte: startDate, lte: endDate },
+                type: 'EXPENSE',
+                category: { notIn: ['PO', 'PAYMENT'] },
+              },
+              _sum: { amount: true },
+            }),
+            // Get project items cost (material/HPP)
+            prisma.projectItem.aggregate({
+              where: {
+                project: {
+                  OR: [
+                    { startDate: { gte: startDate, lte: endDate } },
+                    { endDate: { gte: startDate, lte: endDate } },
+                  ],
+                  status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
+                },
+              },
+              _sum: { totalCost: true },
+            }),
+          ])
 
         const revenue =
           Number(paymentData._sum.amount) ||
           projectData.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
-        const expenses = Number(expenseData._sum.amount) || 0
+        const expenses =
+          Number(projectItemsCost._sum.totalCost || 0) +
+          Number(expenseData._sum.amount || 0) +
+          Number(cashExpenseData._sum.amount || 0)
 
         summaries.push({
           period: 'month',
@@ -98,7 +124,73 @@ export default defineEventHandler(async (event: H3Event) => {
         const startDate = new Date(year, quarterStartMonth, 1)
         const endDate = new Date(year, quarterStartMonth + 3, 0, 23, 59, 59, 999)
 
-        const [projectData, expenseData, paymentData] = await Promise.all([
+        const [projectData, expenseData, paymentData, cashExpenseData, projectItemsCost] =
+          await Promise.all([
+            prisma.project.findMany({
+              where: {
+                OR: [
+                  { startDate: { gte: startDate, lte: endDate } },
+                  { endDate: { gte: startDate, lte: endDate } },
+                ],
+                status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
+              },
+              select: { id: true, finalPrice: true, budget: true },
+            }),
+            prisma.expense.aggregate({
+              where: { date: { gte: startDate, lte: endDate } },
+              _sum: { amount: true },
+            }),
+            prisma.payment.aggregate({
+              where: { paymentDate: { gte: startDate, lte: endDate } },
+              _sum: { amount: true },
+            }),
+            prisma.cashTransaction.aggregate({
+              where: {
+                date: { gte: startDate, lte: endDate },
+                type: 'EXPENSE',
+                category: { notIn: ['PO', 'PAYMENT'] },
+              },
+              _sum: { amount: true },
+            }),
+            prisma.projectItem.aggregate({
+              where: {
+                project: {
+                  OR: [
+                    { startDate: { gte: startDate, lte: endDate } },
+                    { endDate: { gte: startDate, lte: endDate } },
+                  ],
+                  status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
+                },
+              },
+              _sum: { totalCost: true },
+            }),
+          ])
+
+        const revenue =
+          Number(paymentData._sum.amount) ||
+          projectData.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
+        const expenses =
+          Number(projectItemsCost._sum.totalCost || 0) +
+          Number(expenseData._sum.amount || 0) +
+          Number(cashExpenseData._sum.amount || 0)
+
+        summaries.push({
+          period: 'quarter',
+          periodValue: quarter,
+          periodLabel: `Q${quarter}`,
+          revenue,
+          expenses,
+          profit: revenue - expenses,
+          projectCount: projectData.length,
+        })
+      }
+    } else {
+      // Full year
+      const startDate = new Date(year, 0, 1)
+      const endDate = new Date(year, 11, 31, 23, 59, 59, 999)
+
+      const [projectData, expenseData, paymentData, cashExpenseData, projectItemsCost] =
+        await Promise.all([
           prisma.project.findMany({
             where: {
               OR: [
@@ -117,53 +209,35 @@ export default defineEventHandler(async (event: H3Event) => {
             where: { paymentDate: { gte: startDate, lte: endDate } },
             _sum: { amount: true },
           }),
+          prisma.cashTransaction.aggregate({
+            where: {
+              date: { gte: startDate, lte: endDate },
+              type: 'EXPENSE',
+              category: { notIn: ['PO', 'PAYMENT'] },
+            },
+            _sum: { amount: true },
+          }),
+          prisma.projectItem.aggregate({
+            where: {
+              project: {
+                OR: [
+                  { startDate: { gte: startDate, lte: endDate } },
+                  { endDate: { gte: startDate, lte: endDate } },
+                ],
+                status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
+              },
+            },
+            _sum: { totalCost: true },
+          }),
         ])
-
-        const revenue =
-          Number(paymentData._sum.amount) ||
-          projectData.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
-        const expenses = Number(expenseData._sum.amount) || 0
-
-        summaries.push({
-          period: 'quarter',
-          periodValue: quarter,
-          periodLabel: `Q${quarter}`,
-          revenue,
-          expenses,
-          profit: revenue - expenses,
-          projectCount: projectData.length,
-        })
-      }
-    } else {
-      // Full year
-      const startDate = new Date(year, 0, 1)
-      const endDate = new Date(year, 11, 31, 23, 59, 59, 999)
-
-      const [projectData, expenseData, paymentData] = await Promise.all([
-        prisma.project.findMany({
-          where: {
-            OR: [
-              { startDate: { gte: startDate, lte: endDate } },
-              { endDate: { gte: startDate, lte: endDate } },
-            ],
-            status: { in: ['COMPLETED', 'PAID', 'CLOSED', 'ONGOING'] },
-          },
-          select: { id: true, finalPrice: true, budget: true },
-        }),
-        prisma.expense.aggregate({
-          where: { date: { gte: startDate, lte: endDate } },
-          _sum: { amount: true },
-        }),
-        prisma.payment.aggregate({
-          where: { paymentDate: { gte: startDate, lte: endDate } },
-          _sum: { amount: true },
-        }),
-      ])
 
       const revenue =
         Number(paymentData._sum.amount) ||
         projectData.reduce((sum, p) => sum + Number(p.finalPrice || p.budget || 0), 0)
-      const expenses = Number(expenseData._sum.amount) || 0
+      const expenses =
+        Number(projectItemsCost._sum.totalCost || 0) +
+        Number(expenseData._sum.amount || 0) +
+        Number(cashExpenseData._sum.amount || 0)
 
       summaries.push({
         period: 'year',
