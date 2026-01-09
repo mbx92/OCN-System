@@ -39,7 +39,17 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const body = await readBody(event)
 
-  const { technicianId, projectId, period, amount, description, status, paidDate, notes } = body
+  const {
+    technicianId,
+    projectId,
+    projectTechnicianId,
+    period,
+    amount,
+    description,
+    status,
+    paidDate,
+    notes,
+  } = body
 
   // Validate required fields
   if (!technicianId || !amount) {
@@ -91,6 +101,17 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
+    // If payment status is PAID and we have a projectTechnicianId, update the assignment
+    if ((status === 'PAID' || !status) && projectTechnicianId) {
+      await prisma.projectTechnician.update({
+        where: { id: projectTechnicianId },
+        data: {
+          isPaid: true,
+          paidDate: paidDate ? new Date(paidDate) : new Date(),
+        },
+      })
+    }
+
     // Log activity
     await prisma.activity.create({
       data: {
@@ -102,6 +123,7 @@ export default defineEventHandler(async (event: H3Event) => {
           paymentNumber,
           technicianId,
           amount,
+          projectTechnicianId,
         },
         ipAddress: getRequestHeader(event, 'x-forwarded-for') || 'unknown',
       },

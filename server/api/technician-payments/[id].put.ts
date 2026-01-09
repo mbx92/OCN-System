@@ -19,7 +19,17 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const body = await readBody(event)
 
-  const { technicianId, projectId, period, amount, description, status, paidDate, notes } = body
+  const {
+    technicianId,
+    projectId,
+    projectTechnicianId,
+    period,
+    amount,
+    description,
+    status,
+    paidDate,
+    notes,
+  } = body
 
   // Validate status if provided
   if (status) {
@@ -89,6 +99,17 @@ export default defineEventHandler(async (event: H3Event) => {
           createdBy: user.id,
         },
       })
+
+      // Update ProjectTechnician.isPaid if we have projectTechnicianId
+      if (projectTechnicianId) {
+        await prisma.projectTechnician.update({
+          where: { id: projectTechnicianId },
+          data: {
+            isPaid: true,
+            paidDate: payment.paidDate || new Date(),
+          },
+        })
+      }
     }
 
     // Log activity

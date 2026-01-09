@@ -14,6 +14,10 @@ const selectedCategory = ref('')
 const selectedType = ref('')
 const stockStatus = ref<'all' | 'low' | 'out'>('all')
 
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(25)
+
 // Data
 const loading = ref(false)
 const products = ref<any[]>([])
@@ -111,6 +115,42 @@ const filteredProducts = computed(() => {
 
   return filtered
 })
+
+// Paginated products
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredProducts.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredProducts.value.length / itemsPerPage.value)
+})
+
+// Page range for display
+const pageRange = computed(() => {
+  const range: number[] = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  return range
+})
+
+// Go to page
+function goToPage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
 
 // Get unique categories
 const categories = computed(() => {
@@ -232,7 +272,13 @@ function resetFilters() {
   selectedCategory.value = ''
   selectedType.value = ''
   stockStatus.value = 'all'
+  currentPage.value = 1
 }
+
+// Watch filters to reset page
+watch([selectedCategory, selectedType, stockStatus], () => {
+  currentPage.value = 1
+})
 
 // Init
 onMounted(() => {
@@ -391,7 +437,7 @@ onMounted(() => {
                     Tidak ada data produk
                   </td>
                 </tr>
-                <tr v-for="product in filteredProducts" :key="product.id">
+                <tr v-for="product in paginatedProducts" :key="product.id">
                   <td class="font-mono text-sm">{{ product.sku }}</td>
                   <td>
                     <div class="font-medium">{{ product.name }}</div>
@@ -455,6 +501,75 @@ onMounted(() => {
                 </tr>
               </tfoot>
             </table>
+          </div>
+
+          <!-- Pagination -->
+          <div
+            v-if="totalPages > 1"
+            class="flex items-center justify-between p-4 border-t border-base-200 print:hidden"
+          >
+            <div class="text-sm text-base-content/60">
+              Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} -
+              {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }}
+              dari {{ filteredProducts.length }} produk
+            </div>
+            <div class="flex items-center gap-1">
+              <!-- First -->
+              <button
+                class="btn btn-sm btn-ghost"
+                :disabled="currentPage === 1"
+                @click="goToPage(1)"
+              >
+                «
+              </button>
+              <!-- Prev -->
+              <button
+                class="btn btn-sm btn-ghost"
+                :disabled="currentPage === 1"
+                @click="goToPage(currentPage - 1)"
+              >
+                ‹
+              </button>
+              <!-- Page numbers -->
+              <button
+                v-for="page in pageRange"
+                :key="page"
+                class="btn btn-sm"
+                :class="page === currentPage ? 'btn-primary' : 'btn-ghost'"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+              <!-- Next -->
+              <button
+                class="btn btn-sm btn-ghost"
+                :disabled="currentPage === totalPages"
+                @click="goToPage(currentPage + 1)"
+              >
+                ›
+              </button>
+              <!-- Last -->
+              <button
+                class="btn btn-sm btn-ghost"
+                :disabled="currentPage === totalPages"
+                @click="goToPage(totalPages)"
+              >
+                »
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm">Per halaman:</span>
+              <select
+                v-model="itemsPerPage"
+                class="select select-sm select-bordered w-20"
+                @change="currentPage = 1"
+              >
+                <option :value="10">10</option>
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

@@ -24,30 +24,27 @@ export default defineEventHandler(async event => {
   const payments = await prisma.technicianPayment.findMany({
     where: {
       technicianId: technician.id,
+      status: 'PAID', // Only show paid payments
     },
     include: {
-      projectTechnician: {
-        include: {
-          project: {
-            select: {
-              name: true,
-              projectCode: true,
-            },
-          },
+      project: {
+        select: {
+          title: true,
+          projectNumber: true,
         },
       },
     },
     orderBy: {
-      paymentDate: 'desc',
+      paidDate: 'desc',
     },
   })
 
   return payments.map(payment => ({
     id: payment.id,
     amount: payment.amount.toNumber(),
-    paymentDate: payment.paymentDate,
+    paymentDate: payment.paidDate || payment.createdAt,
     notes: payment.notes,
-    projectName: payment.projectTechnician.project.name,
-    projectCode: payment.projectTechnician.project.projectCode,
+    projectName: payment.project?.title || payment.description || '-',
+    projectCode: payment.project?.projectNumber || '-',
   }))
 })

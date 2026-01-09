@@ -49,44 +49,61 @@ export default defineEventHandler(async event => {
     },
   })
 
-  // Total earnings this month (from paid assignments)
-  const paidAssignmentsThisMonth = await prisma.projectTechnician.findMany({
+  // Total earnings this month (from paid TechnicianPayments)
+  const paidPaymentsThisMonth = await prisma.technicianPayment.findMany({
     where: {
       technicianId: technician.id,
-      isPaid: true,
+      status: 'PAID',
       paidDate: {
         gte: startOfMonth,
         lte: endOfMonth,
       },
     },
     select: {
-      fee: true,
+      amount: true,
     },
   })
 
-  const totalEarnings = paidAssignmentsThisMonth.reduce(
-    (sum, assignment) => sum + Number(assignment.fee),
+  const totalEarnings = paidPaymentsThisMonth.reduce(
+    (sum, payment) => sum + Number(payment.amount),
     0
   )
 
-  // Pending payment (unpaid assignments from completed projects)
-  const unpaidAssignments = await prisma.projectTechnician.findMany({
+  // Pending payment (assignments from completed projects that don't have PAID payment record)
+  // First get all assignments from completed projects
+  const completedAssignments = await prisma.projectTechnician.findMany({
     where: {
       technicianId: technician.id,
-      isPaid: false,
       project: {
         status: { in: ['COMPLETED', 'PAID', 'CLOSED'] },
       },
     },
     select: {
+      id: true,
+      projectId: true,
       fee: true,
+      isPaid: true,
     },
   })
 
-  const pendingPayment = unpaidAssignments.reduce(
-    (sum, assignment) => sum + Number(assignment.fee),
-    0
-  )
+  // Get all paid payments for this technician
+  const paidPayments = await prisma.technicianPayment.findMany({
+    where: {
+      technicianId: technician.id,
+      status: 'PAID',
+    },
+    select: {
+      projectId: true,
+    },
+  })
+
+  // Create a set of projectIds that have been paid
+  const paidProjectIds = new Set(paidPayments.map(p => p.projectId).filter(Boolean))
+
+  // Calculate pending = assignments where isPaid is false AND no payment record exists
+  const pendingPayment = completedAssignments
+    .filter(a => !a.isPaid && !paidProjectIds.has(a.projectId))
+    .reduce((sum, assignment) => sum + Number(assignment.fee), 0)
 
   return {
     activeProjects,

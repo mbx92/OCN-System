@@ -995,6 +995,8 @@ const saveTechnicianPayment = async () => {
         body: {
           amount: paymentAmount.value,
           description: paymentDescription.value,
+          projectTechnicianId: selectedTech.value.id, // Assignment ID for updating isPaid
+          status: 'PAID', // Set to PAID so isPaid is updated
         },
       })
       showAlert('Pembayaran teknisi berhasil diupdate', 'success')
@@ -1005,10 +1007,11 @@ const saveTechnicianPayment = async () => {
         body: {
           technicianId: selectedTech.value.technician?.id,
           projectId: selectedProject.value?.id,
+          projectTechnicianId: selectedTech.value.id, // Assignment ID for updating isPaid
           amount: paymentAmount.value,
           description: paymentDescription.value,
           period: new Date().toISOString().slice(0, 7), // YYYY-MM format
-          status: 'PENDING',
+          status: 'PAID', // Set to PAID so isPaid is updated immediately
         },
       })
       showAlert('Pembayaran teknisi berhasil disimpan', 'success')
