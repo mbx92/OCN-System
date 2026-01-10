@@ -47,11 +47,28 @@ export default defineEventHandler(async event => {
     },
   })
 
-  return unpaidAssignments.map(assignment => ({
+  // Get all paid payments for this technician to filter out already-paid assignments
+  const paidPayments = await prisma.technicianPayment.findMany({
+    where: {
+      technicianId: technician.id,
+      status: 'PAID',
+    },
+    select: {
+      projectId: true,
+    },
+  })
+
+  // Create a set of projectIds that have been paid
+  const paidProjectIds = new Set(paidPayments.map(p => p.projectId).filter(Boolean))
+
+  // Filter out assignments that already have a paid payment record
+  const trulyUnpaidAssignments = unpaidAssignments.filter(a => !paidProjectIds.has(a.projectId))
+
+  return trulyUnpaidAssignments.map(assignment => ({
     id: assignment.id,
     projectId: assignment.projectId,
-    projectName: assignment.project.name,
-    projectCode: assignment.project.projectCode,
+    projectName: assignment.project.title,
+    projectCode: assignment.project.projectNumber,
     customer: assignment.project.customer?.name || '-',
     status: assignment.project.status,
     fee: assignment.fee.toNumber(),

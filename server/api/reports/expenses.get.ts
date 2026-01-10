@@ -56,7 +56,7 @@ export default defineEventHandler(async (event: H3Event) => {
           where: {
             date: { gte: startDate, lte: endDate },
             type: 'EXPENSE',
-            category: { notIn: ['PO', 'PAYMENT'] },
+            category: { notIn: ['PO', 'PAYMENT', 'SALARY'] },
           },
         }),
       ])

@@ -130,11 +130,10 @@ export const useAuth = () => {
   }
 
   const fetchUser = async (): Promise<void> => {
-    if (initialized.value) return
-
     const token = useCookie('auth-token')
 
     // Try to restore user from localStorage first (client-side only)
+    // Do this BEFORE the initialized check so user is available immediately
     if (import.meta.client && !user.value) {
       const storedUser = localStorage.getItem('ocn-user')
       if (storedUser) {
@@ -145,6 +144,9 @@ export const useAuth = () => {
         }
       }
     }
+
+    // If already initialized and user exists, no need to fetch again
+    if (initialized.value && user.value) return
 
     if (!token.value) {
       // No token - clear user and mark initialized
