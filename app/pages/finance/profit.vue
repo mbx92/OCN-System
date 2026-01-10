@@ -996,25 +996,25 @@ const saveTechnicianPayment = async () => {
           amount: paymentAmount.value,
           description: paymentDescription.value,
           projectTechnicianId: selectedTech.value.id, // Assignment ID for updating isPaid
-          status: 'PAID', // Set to PAID so isPaid is updated
+          // Don't change status - let user manually mark as PAID later
         },
       })
       showAlert('Pembayaran teknisi berhasil diupdate', 'success')
     } else {
-      // Create new payment
+      // Create new payment with PENDING status (not auto-PAID)
       await $fetch('/api/technician-payments', {
         method: 'POST',
         body: {
           technicianId: selectedTech.value.technician?.id,
           projectId: selectedProject.value?.id,
-          projectTechnicianId: selectedTech.value.id, // Assignment ID for updating isPaid
+          projectTechnicianId: selectedTech.value.id,
           amount: paymentAmount.value,
           description: paymentDescription.value,
           period: new Date().toISOString().slice(0, 7), // YYYY-MM format
-          status: 'PAID', // Set to PAID so isPaid is updated immediately
+          status: 'PENDING', // Save as PENDING, user will mark as PAID manually when ready
         },
       })
-      showAlert('Pembayaran teknisi berhasil disimpan', 'success')
+      showAlert('Pembayaran teknisi berhasil disimpan (Status: Belum Dibayar)', 'success')
     }
 
     showPaymentModal.value = false

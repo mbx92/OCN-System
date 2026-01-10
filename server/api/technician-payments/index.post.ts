@@ -101,8 +101,9 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
-    // If payment status is PAID and we have a projectTechnicianId, update the assignment
-    if ((status === 'PAID' || !status) && projectTechnicianId) {
+    // If payment status is explicitly PAID and we have a projectTechnicianId, update the assignment
+    // Only set isPaid when status is explicitly 'PAID', not on PENDING or undefined
+    if (status === 'PAID' && projectTechnicianId) {
       await prisma.projectTechnician.update({
         where: { id: projectTechnicianId },
         data: {
