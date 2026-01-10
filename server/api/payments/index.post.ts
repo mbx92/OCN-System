@@ -18,6 +18,7 @@ const createPaymentSchema = z.object({
     .default('PAID'),
   dueDate: z.string().datetime().optional().nullable(),
   paidDate: z.string().datetime().optional().nullable(),
+  paymentDate: z.string().datetime().optional().nullable(), // Support backdate
 })
 
 export default defineEventHandler(async event => {
@@ -34,9 +35,11 @@ export default defineEventHandler(async event => {
 
   const data = result.data
 
-  // Generate payment number: PAY-YYYYMMDD-XXX
-  const now = new Date()
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
+  // Use custom payment date if provided (backdate), otherwise use now
+  const paymentDateToUse = data.paymentDate ? new Date(data.paymentDate) : new Date()
+
+  // Generate payment number: PAY-YYYYMMDD-XXX (using payment date, not today)
+  const dateStr = paymentDateToUse.toISOString().slice(0, 10).replace(/-/g, '')
   const prefix = `PAY-${dateStr}-`
 
   const lastPayment = await prisma.payment.findFirst({
@@ -67,10 +70,11 @@ export default defineEventHandler(async event => {
       receivedBy: data.receivedBy || null,
       status: data.status || 'PAID',
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      paymentDate: paymentDateToUse, // Use custom date (backdate support)
       paidDate: data.paidDate
         ? new Date(data.paidDate)
         : data.status === 'PAID'
-          ? new Date()
+          ? paymentDateToUse // Also use same date for paidDate
           : null,
     },
     include: {
@@ -93,7 +97,7 @@ export default defineEventHandler(async event => {
         reference: paymentNumber,
         referenceType: 'Payment',
         referenceId: payment.id,
-        date: new Date(),
+        date: paymentDateToUse, // Use same date as payment (backdate support)
       },
     })
 
