@@ -519,6 +519,19 @@
               </label>
             </div>
 
+            <!-- Payment Date (for backdate) - only if not Invoice -->
+            <div v-if="modalMode !== 'INVOICE'" class="form-control">
+              <label class="label">
+                <span class="label-text">Tanggal Pembayaran</span>
+              </label>
+              <input v-model="form.paymentDate" type="date" class="input input-bordered w-full" />
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                  Kosongkan untuk menggunakan tanggal hari ini
+                </span>
+              </label>
+            </div>
+
             <!-- Method -->
             <div>
               <label class="block text-sm font-medium mb-2">Metode Pembayaran *</label>
@@ -699,6 +712,7 @@ const form = reactive({
   notes: '',
   status: 'PAID' as 'PENDING' | 'UNPAID' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED',
   dueDate: '',
+  paymentDate: new Date().toISOString().split('T')[0], // Default: hari ini
 })
 
 const {
@@ -827,6 +841,7 @@ const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
   form.notes = ''
   form.status = mode === 'INVOICE' ? 'UNPAID' : 'PAID'
   form.dueDate = ''
+  form.paymentDate = new Date().toISOString().split('T')[0] // Reset to today
   showModal.value = true
 }
 
@@ -848,6 +863,11 @@ const savePayment = async () => {
       reference: form.reference || null,
       notes: form.notes || null,
       status: form.status,
+    }
+
+    // Add payment date (backdate support)
+    if (form.paymentDate) {
+      body.paymentDate = new Date(form.paymentDate).toISOString()
     }
 
     // Add due date for invoice
