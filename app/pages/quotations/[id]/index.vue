@@ -381,6 +381,37 @@
         </div>
       </div>
     </template>
+
+    <!-- Approve Modal with Date Selection -->
+    <dialog class="modal" :class="{ 'modal-open': showApproveModal }">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Setujui Penawaran</h3>
+        <p class="text-base-content/60 mb-4">Proyek baru akan dibuat dari penawaran ini.</p>
+
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Tanggal Proyek</span>
+          </label>
+          <input v-model="approveProjectDate" type="date" class="input input-bordered w-full" />
+        </div>
+
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="showApproveModal = false" :disabled="!!processing">
+            Batal
+          </button>
+          <button class="btn btn-success" @click="confirmApprove" :disabled="!!processing">
+            <span
+              v-if="processing === 'approving'"
+              class="loading loading-spinner loading-sm"
+            ></span>
+            Ya, Setujui
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button @click="showApproveModal = false">close</button>
+      </form>
+    </dialog>
   </div>
 </template>
 
@@ -400,6 +431,8 @@ const {
 } = await useFetch(`/api/quotations/${route.params.id}`)
 
 const processing = ref<string | null>(null)
+const showApproveModal = ref(false)
+const approveProjectDate = ref(new Date().toISOString().split('T')[0])
 
 const isExpired = computed(() => {
   if (!quotation.value) return false
@@ -460,19 +493,23 @@ const rejectQuotation = async () => {
   }
 }
 
-const approveQuotation = async () => {
-  const isConfirmed = await confirm({
-    title: 'Setujui Penawaran',
-    message: 'Apakah Anda yakin ingin menyetujui penawaran ini? Proyek baru akan dibuat.',
-    confirmText: 'Ya, Setujui',
-    type: 'success',
-  })
-  if (!isConfirmed) return
+const approveQuotation = () => {
+  // Reset date to today when opening modal
+  approveProjectDate.value = new Date().toISOString().split('T')[0]
+  showApproveModal.value = true
+}
 
+const confirmApprove = async () => {
   processing.value = 'approving'
   try {
-    const result = await $fetch(`/api/quotations/${route.params.id}/approve`, { method: 'POST' })
+    const result = await $fetch(`/api/quotations/${route.params.id}/approve`, {
+      method: 'POST',
+      body: {
+        projectDate: approveProjectDate.value,
+      },
+    })
     showAlert('Penawaran berhasil disetujui', 'success')
+    showApproveModal.value = false
     await navigateTo(`/projects/${(result as any).id}`)
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal menyetujui penawaran', 'error')

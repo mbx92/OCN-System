@@ -228,6 +228,17 @@
 
             <div class="form-control w-full mt-4">
               <label class="label">
+                <span class="label-text">Tanggal Penawaran</span>
+              </label>
+              <input
+                v-model="form.quotationDate"
+                type="date"
+                class="input input-bordered input-sm w-full"
+              />
+            </div>
+
+            <div class="form-control w-full mt-4">
+              <label class="label">
                 <span class="label-text">Masa Berlaku</span>
               </label>
               <select
@@ -436,6 +447,7 @@ const form = reactive({
   items: [] as QuotationItem[],
   validDays: 14,
   notes: '',
+  quotationDate: new Date().toISOString().split('T')[0], // Default: hari ini
 })
 
 const loading = ref(false)

@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 
 export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
+  const body = await readBody(event)
 
   if (!id) {
     throw createError({
@@ -28,15 +29,18 @@ export default defineEventHandler(async event => {
     })
   }
 
-  // Generate project number
-  const startOfMonth = dayjs().startOf('month').toDate()
-  const endOfMonth = dayjs().endOf('month').toDate()
+  // Use custom date if provided (backdate), otherwise use now
+  const projectDate = body?.projectDate ? dayjs(body.projectDate) : dayjs()
+
+  // Generate project number based on selected date (backdate support)
+  const startOfMonth = projectDate.startOf('month').toDate()
+  const endOfMonth = projectDate.endOf('month').toDate()
   const count = await prisma.project.count({
     where: {
       createdAt: { gte: startOfMonth, lte: endOfMonth },
     },
   })
-  const projectNumber = `PRJ-${dayjs().format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
+  const projectNumber = `PRJ-${projectDate.format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
 
   // Get customer
   const customer = await prisma.customer.findUnique({
@@ -133,6 +137,7 @@ export default defineEventHandler(async event => {
         title: quotation.title || `Project untuk ${customer.name}`,
         budget: quotation.totalAmount,
         status: 'APPROVED',
+        createdAt: projectDate.toDate(), // Use custom date (backdate support)
         items: {
           create: projectItemsData,
         },

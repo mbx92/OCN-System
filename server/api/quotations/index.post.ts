@@ -17,6 +17,7 @@ const quotationSchema = z.object({
     .min(1, 'Minimal 1 item'),
   validDays: z.number().default(14),
   notes: z.string().optional().nullable(),
+  quotationDate: z.string().optional().nullable(), // Support backdate
 })
 
 export default defineEventHandler(async event => {
@@ -30,15 +31,18 @@ export default defineEventHandler(async event => {
     })
   }
 
-  // Generate quotation number
-  const startOfMonth = dayjs().startOf('month').toDate()
-  const endOfMonth = dayjs().endOf('month').toDate()
+  // Use custom date if provided (backdate), otherwise use now
+  const quotationDate = result.data.quotationDate ? dayjs(result.data.quotationDate) : dayjs()
+
+  // Generate quotation number based on the selected date (backdate support)
+  const startOfMonth = quotationDate.startOf('month').toDate()
+  const endOfMonth = quotationDate.endOf('month').toDate()
   const count = await prisma.quotation.count({
     where: {
       createdAt: { gte: startOfMonth, lte: endOfMonth },
     },
   })
-  const quotationNo = `QT-${dayjs().format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
+  const quotationNo = `QT-${quotationDate.format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
 
   // Calculate total
   const items = result.data.items.map(item => ({
@@ -54,9 +58,10 @@ export default defineEventHandler(async event => {
       title: result.data.title || null,
       items,
       totalAmount,
-      validUntil: dayjs().add(result.data.validDays, 'day').toDate(),
+      validUntil: quotationDate.add(result.data.validDays, 'day').toDate(),
       notes: result.data.notes || null,
       status: 'DRAFT',
+      createdAt: quotationDate.toDate(), // Use custom date (backdate)
     },
     include: {
       project: true,
