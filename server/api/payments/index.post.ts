@@ -101,7 +101,7 @@ export default defineEventHandler(async event => {
       },
     })
 
-    // Send Telegram notification for paid payment
+    // Send Telegram notification for paid payment (Receipt/Kwitansi)
     if (payment.project) {
       const { notifyPaymentReceived } = await import('../../utils/telegram')
       notifyPaymentReceived({
@@ -109,6 +109,21 @@ export default defineEventHandler(async event => {
         projectNumber: payment.project.projectNumber,
         customerName: payment.project.customer.name,
         paymentType: payment.type,
+        paymentId: payment.id,
+      }).catch(err => {
+        console.error('Failed to send Telegram notification:', err)
+      })
+    }
+  } else if (payment.status === 'UNPAID' || payment.status === 'PARTIAL') {
+    // Send Telegram notification for invoice (UNPAID/PARTIAL)
+    if (payment.project) {
+      const { notifyInvoiceCreated } = await import('../../utils/telegram')
+      notifyInvoiceCreated({
+        amount: payment.amount,
+        projectNumber: payment.project.projectNumber,
+        customerName: payment.project.customer.name,
+        paymentNumber: payment.paymentNumber,
+        dueDate: payment.dueDate,
         paymentId: payment.id,
       }).catch(err => {
         console.error('Failed to send Telegram notification:', err)

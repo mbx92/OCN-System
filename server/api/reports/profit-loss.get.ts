@@ -240,17 +240,37 @@ export default defineEventHandler(async (event: H3Event) => {
     let hpp = 0
     const hppDetailItems: Map<string, number> = new Map()
 
-    // Add project items cost to HPP
-    let projectItemsCost = 0
+    // Add project items cost to HPP - separate by type
+    let hppBarangFisik = 0
+    let hppJasa = 0
     projects.forEach(project => {
       project.items.forEach(item => {
         const cost = Number(item.totalCost || 0)
         hpp += cost
-        projectItemsCost += cost
+
+        // Check if item is service
+        const itemName = item.name.toLowerCase()
+        const isService =
+          itemName.includes('jasa') ||
+          itemName.includes('service') ||
+          itemName.includes('instalasi') ||
+          itemName.includes('setting') ||
+          itemName.includes('konfigurasi') ||
+          itemName.includes('pemasangan') ||
+          itemName.includes('kunjungan')
+
+        if (isService) {
+          hppJasa += cost
+        } else {
+          hppBarangFisik += cost
+        }
       })
     })
-    if (projectItemsCost > 0) {
-      hppDetailItems.set('Biaya Material/Produk Project', projectItemsCost)
+    if (hppBarangFisik > 0) {
+      hppDetailItems.set('Biaya Barang/Material', hppBarangFisik)
+    }
+    if (hppJasa > 0) {
+      hppDetailItems.set('Biaya Jasa/Service', hppJasa)
     }
 
     // Collect project-type expenses for display AND add to HPP

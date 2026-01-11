@@ -679,9 +679,25 @@ const detailPeriodLabel = computed(() => {
                   </td>
                 </tr>
 
-                <!-- HPP -->
+                <!-- HPP Header & Detail -->
                 <tr class="bg-error/5">
-                  <td class="font-semibold">HPP (Harga Pokok Penjualan)</td>
+                  <td colspan="3" class="font-semibold">HPP (Harga Pokok Penjualan):</td>
+                </tr>
+                <tr
+                  v-for="(item, idx) in detailData.data.hppDetail?.items || []"
+                  :key="'hpp-' + idx"
+                >
+                  <td class="pl-6">{{ item.name }}</td>
+                  <td class="text-right">{{ formatCurrency(item.amount) }}</td>
+                  <td class="text-right"></td>
+                </tr>
+                <tr v-if="!detailData.data.hppDetail?.items?.length">
+                  <td class="pl-6 text-base-content/50 italic">Tidak ada data</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr class="bg-error/10 border-t">
+                  <td class="font-semibold">Total HPP</td>
                   <td class="text-right"></td>
                   <td class="text-right font-bold text-error">
                     ({{ formatCurrency(detailData.data.hpp) }})

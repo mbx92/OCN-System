@@ -30,5 +30,13 @@ export default defineEventHandler(async () => {
     })
   }
 
+  const settings = company?.settings as any
+  console.log(
+    '[Company API] Get company, logo exists:',
+    !!settings?.logo,
+    'length:',
+    settings?.logo?.length
+  )
+
   return company
 })

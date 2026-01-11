@@ -85,11 +85,15 @@ const getPaymentTypeLabel = (type: string) => {
 // Load logo as base64
 const loadLogoBase64 = async (companyLogo?: string): Promise<string | null> => {
   try {
+    console.log('[PDF] Loading logo, exists:', !!companyLogo, 'length:', companyLogo?.length)
     if (companyLogo && companyLogo.startsWith('data:image')) {
+      console.log('[PDF] Logo is valid base64 image')
       return companyLogo
     }
+    console.log('[PDF] Logo not found or invalid format')
     return null
-  } catch {
+  } catch (error) {
+    console.error('[PDF] Error loading logo:', error)
     return null
   }
 }

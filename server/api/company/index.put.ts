@@ -35,6 +35,13 @@ export default defineEventHandler(async event => {
     })
   }
 
+  console.log(
+    '[Company] Updating company settings, logo exists:',
+    !!result.data.settings.logo,
+    'length:',
+    result.data.settings.logo?.length
+  )
+
   // Get existing company or create new
   let company = await prisma.company.findFirst()
 

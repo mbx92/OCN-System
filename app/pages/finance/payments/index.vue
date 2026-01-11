@@ -84,7 +84,14 @@
         :class="{ 'tab-active': statusFilter === 'UNPAID' }"
         @click="changeStatusFilter('UNPAID')"
       >
-        <Icon name="mdi:clock-alert-outline" class="w-4 h-4 text-warning" />
+        <svg class="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
         Belum Dibayar
       </a>
       <a
@@ -92,7 +99,20 @@
         :class="{ 'tab-active': statusFilter === 'PARTIAL' }"
         @click="changeStatusFilter('PARTIAL')"
       >
-        <Icon name="mdi:chart-pie" class="w-4 h-4 text-info" />
+        <svg class="w-4 h-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+          />
+        </svg>
         Sebagian
       </a>
       <a
@@ -100,7 +120,14 @@
         :class="{ 'tab-active': statusFilter === 'PAID' }"
         @click="changeStatusFilter('PAID')"
       >
-        <Icon name="mdi:check-circle" class="w-4 h-4 text-success" />
+        <svg class="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
         Lunas
       </a>
       <a
@@ -108,7 +135,14 @@
         :class="{ 'tab-active': statusFilter === 'OVERDUE' }"
         @click="changeStatusFilter('OVERDUE')"
       >
-        <Icon name="mdi:alert-circle" class="w-4 h-4 text-error" />
+        <svg class="w-4 h-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
         Jatuh Tempo
       </a>
     </div>
@@ -174,13 +208,14 @@
       <div
         v-for="pay in payments"
         :key="pay.id"
-        @click="navigateTo(`/finance/payments/${pay.id}`)"
-        class="card bg-base-100 shadow-md hover:shadow-lg border border-base-200 transition-all cursor-pointer"
+        class="card bg-base-100 shadow-md hover:shadow-lg border border-base-200 transition-all"
       >
         <div class="card-body p-4">
           <div class="flex justify-between items-start mb-3">
             <div class="flex-1">
-              <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
+              <NuxtLink :to="`/finance/payments/${pay.id}`" class="link link-primary">
+                <h3 class="font-mono text-sm font-bold">{{ pay.paymentNumber }}</h3>
+              </NuxtLink>
               <div class="flex gap-1 mt-1">
                 <span
                   class="badge badge-xs sm:badge-sm"
@@ -231,9 +266,24 @@
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t border-base-300">
-              <span class="text-base-content/60 font-semibold">Jumlah</span>
-              <span class="font-mono font-bold text-success">
+              <span class="text-base-content/60">Jumlah</span>
+              <span class="font-mono">
                 {{ formatCurrency(pay.amount) }}
+              </span>
+            </div>
+
+            <div v-if="pay.discount > 0" class="flex justify-between items-center">
+              <span class="text-base-content/60">Diskon</span>
+              <span class="font-mono text-warning">-{{ formatCurrency(pay.discount) }}</span>
+            </div>
+
+            <div
+              class="flex justify-between items-center"
+              :class="pay.discount > 0 ? '' : 'pt-2 border-t border-base-300'"
+            >
+              <span class="text-base-content/60 font-semibold">Total</span>
+              <span class="font-mono font-bold text-success">
+                {{ formatCurrency(pay.amount - (pay.discount || 0)) }}
               </span>
             </div>
 
@@ -279,6 +329,8 @@
                 <th>Proyek</th>
                 <th>Tipe</th>
                 <th class="text-right">Jumlah</th>
+                <th class="text-right">Diskon</th>
+                <th class="text-right">Total</th>
                 <th>Metode</th>
                 <th>Tanggal</th>
                 <th>Jatuh Tempo</th>
@@ -287,21 +339,16 @@
             </thead>
             <tbody>
               <tr v-if="pending" class="text-center">
-                <td colspan="9" class="py-8">
+                <td colspan="12" class="py-8">
                   <span class="loading loading-spinner loading-lg"></span>
                 </td>
               </tr>
               <tr v-else-if="!payments?.length" class="text-center">
-                <td colspan="9" class="py-8 text-base-content/60">
+                <td colspan="12" class="py-8 text-base-content/60">
                   <p class="text-lg">Belum ada pembayaran</p>
                 </td>
               </tr>
-              <tr
-                v-for="pay in payments"
-                :key="pay.id"
-                class="hover cursor-pointer"
-                @click="navigateTo(`/finance/payments/${pay.id}`)"
-              >
+              <tr v-for="pay in payments" :key="pay.id" class="hover">
                 <td class="font-mono text-sm">
                   <NuxtLink :to="`/finance/payments/${pay.id}`" class="link link-primary">
                     {{ pay.paymentNumber }}
@@ -332,8 +379,15 @@
                 <td>
                   <span class="badge badge-ghost">{{ getTypeLabel(pay.type) }}</span>
                 </td>
-                <td class="text-right font-mono font-bold text-success">
+                <td class="text-right font-mono">
                   {{ formatCurrency(pay.amount) }}
+                </td>
+                <td class="text-right font-mono text-warning">
+                  <span v-if="pay.discount > 0">-{{ formatCurrency(pay.discount) }}</span>
+                  <span v-else class="text-base-content/40">-</span>
+                </td>
+                <td class="text-right font-mono font-bold text-success">
+                  {{ formatCurrency(pay.amount - (pay.discount || 0)) }}
                 </td>
                 <td>{{ pay.method }}</td>
                 <td class="text-sm">{{ formatDate(pay.paymentDate) }}</td>
@@ -444,6 +498,7 @@
               <AppProjectSelect
                 v-model="form.projectId"
                 placeholder="Cari proyek..."
+                :unpaid-only="true"
                 @select="onProjectSelectFromComponent"
               />
               <div v-if="selectedProject" class="text-sm mt-2 space-y-1">
@@ -500,6 +555,32 @@
                 min="0"
                 class="input input-bordered w-full"
                 required
+              />
+            </div>
+
+            <!-- Discount -->
+            <div>
+              <label class="block text-sm font-medium mb-2">Diskon</label>
+              <input
+                v-model.number="form.discount"
+                type="number"
+                min="0"
+                class="input input-bordered w-full"
+                placeholder="0"
+              />
+              <label class="label">
+                <span class="label-text-alt text-base-content/60">Potongan harga (jika ada)</span>
+              </label>
+            </div>
+
+            <!-- Discount Note -->
+            <div v-if="form.discount > 0">
+              <label class="block text-sm font-medium mb-2">Keterangan Diskon</label>
+              <input
+                v-model="form.discountNote"
+                type="text"
+                class="input input-bordered w-full"
+                placeholder="Contoh: Diskon customer loyal, promo akhir tahun"
               />
             </div>
 
@@ -707,6 +788,8 @@ const form = reactive({
   projectId: '',
   type: 'FULL' as 'FULL' | 'DP' | 'INSTALLMENT' | 'SETTLEMENT',
   amount: 0,
+  discount: 0,
+  discountNote: '',
   method: 'CASH',
   reference: '',
   notes: '',
@@ -836,6 +919,8 @@ const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
   form.projectId = ''
   form.type = 'FULL'
   form.amount = 0
+  form.discount = 0
+  form.discountNote = ''
   form.method = 'TRANSFER'
   form.reference = ''
   form.notes = ''
@@ -859,6 +944,8 @@ const savePayment = async () => {
         modalMode.value === 'PROJECT' || modalMode.value === 'INVOICE' ? form.projectId : null,
       type: form.type,
       amount: form.amount,
+      discount: form.discount || 0,
+      discountNote: form.discountNote || null,
       method: form.method,
       reference: form.reference || null,
       notes: form.notes || null,

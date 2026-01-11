@@ -95,6 +95,7 @@ import { useDebounceFn } from '@vueuse/core'
 const props = defineProps<{
   modelValue?: string
   placeholder?: string
+  unpaidOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -164,7 +165,18 @@ const searchProjects = async (query: string) => {
     const response = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
       params: { search: query, limit: 20 },
     })
-    results.value = response?.data || []
+    let projectData = response?.data || []
+
+    // Filter only unpaid projects if prop is set
+    if (props.unpaidOnly) {
+      projectData = projectData.filter((p: any) => {
+        const total = getProjectTotal(p)
+        const paid = parseFloat(p.paidAmount || 0)
+        return paid < total
+      })
+    }
+
+    results.value = projectData
   } catch (err) {
     console.error('Search error:', err)
     results.value = []
@@ -179,7 +191,18 @@ const loadAllProjects = async () => {
     const response = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
       params: { limit: 50 },
     })
-    results.value = response?.data || []
+    let projectData = response?.data || []
+
+    // Filter only unpaid projects if prop is set
+    if (props.unpaidOnly) {
+      projectData = projectData.filter((p: any) => {
+        const total = getProjectTotal(p)
+        const paid = parseFloat(p.paidAmount || 0)
+        return paid < total
+      })
+    }
+
+    results.value = projectData
   } catch (err) {
     console.error('Load error:', err)
     results.value = []

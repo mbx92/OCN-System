@@ -75,6 +75,7 @@
       <div
         v-for="project in filteredProjects"
         :key="project.id"
+        :id="`project-${project.id}`"
         class="card bg-base-100 shadow hover:shadow-lg transition-shadow"
       >
         <div class="card-body">
@@ -935,6 +936,17 @@ const toggleDetail = (projectId: string) => {
   }
 }
 
+// Scroll to project card after refresh
+const scrollToProject = (projectId: string | undefined) => {
+  if (!projectId) return
+  nextTick(() => {
+    const element = document.getElementById(`project-${projectId}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+}
+
 const updateBusinessCashPercentage = async (project: any) => {
   savingProject.value = project.id
   try {
@@ -946,6 +958,7 @@ const updateBusinessCashPercentage = async (project: any) => {
     })
     showAlert('Persentase kas usaha berhasil diupdate', 'success')
     await refresh()
+    scrollToProject(project.id)
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal mengupdate persentase', 'error')
   } finally {
@@ -1019,6 +1032,9 @@ const saveTechnicianPayment = async () => {
 
     showPaymentModal.value = false
 
+    // Save projectId before resetting
+    const projectId = selectedProject.value?.id
+
     // Clear modified flag after payment saved
     if (selectedTech.value?.id) {
       const { [selectedTech.value.id]: _, ...rest } = modifiedFees.value
@@ -1031,8 +1047,9 @@ const saveTechnicianPayment = async () => {
     paymentAmount.value = 0
     paymentDescription.value = ''
 
-    // Refresh data
+    // Refresh data and scroll back to the project
     await refresh()
+    scrollToProject(projectId)
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal menyimpan pembayaran', 'error')
   } finally {

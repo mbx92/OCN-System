@@ -750,6 +750,9 @@
                         Activity Logs
                       </NuxtLink>
                     </li>
+                    <li>
+                      <NuxtLink to="/settings/utilities" active-class="active">Utilitas</NuxtLink>
+                    </li>
                   </ul>
                 </details>
               </li>

@@ -186,6 +186,12 @@ export async function notifyProjectCompleted(project: {
       console.log('[Telegram] Project data fetched, payments count:', projectData.payments.length)
 
       const company = await prisma.company.findFirst()
+      console.log('[Telegram] Company data:', {
+        found: !!company,
+        name: company?.name,
+        hasSettings: !!company?.settings,
+        settings: company?.settings,
+      })
       const latestPayment = projectData.payments[projectData.payments.length - 1]
 
       if (latestPayment) {
@@ -299,6 +305,12 @@ ${payment.projectNumber ? `📁 <b>Project:</b> ${payment.projectNumber}` : ''}
       console.log('[Telegram] Payment data fetched, generating Receipt PDF...')
 
       const company = await prisma.company.findFirst()
+      console.log('[Telegram] Company data:', {
+        found: !!company,
+        name: company?.name,
+        hasSettings: !!company?.settings,
+        settings: company?.settings,
+      })
 
       // Generate and send Receipt PDF
       try {
@@ -321,6 +333,117 @@ ${payment.projectNumber ? `📁 <b>Project:</b> ${payment.projectNumber}` : ''}
       }
     } catch (error) {
       console.error('[Telegram] Error sending Receipt PDF:', error)
+      await sendTelegramMessage(`❌ Error: ${error.message}`)
+    }
+  }
+
+  return true
+}
+
+/**
+ * Send invoice created notification with Invoice PDF
+ */
+export async function notifyInvoiceCreated(invoice: {
+  amount: number
+  projectNumber?: string
+  customerName?: string
+  paymentNumber: string
+  dueDate?: Date | null
+  paymentId?: string
+}) {
+  const amountStr = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(invoice.amount)
+
+  const dueDateStr = invoice.dueDate
+    ? new Date(invoice.dueDate).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Tidak ada batas waktu'
+
+  const message = `📄 <b>Invoice Baru</b>
+
+📋 <b>No Invoice:</b> ${invoice.paymentNumber}
+💵 <b>Jumlah:</b> ${amountStr}
+${invoice.customerName ? `👤 <b>Customer:</b> ${invoice.customerName}` : ''}
+${invoice.projectNumber ? `📁 <b>Project:</b> ${invoice.projectNumber}` : ''}
+📅 <b>Jatuh Tempo:</b> ${dueDateStr}
+
+📄 Invoice sedang dikirim...`
+
+  await sendTelegramMessage(message)
+
+  // Send Invoice PDF
+  if (invoice.paymentId) {
+    try {
+      console.log('[Telegram] Fetching payment data for Invoice PDF:', invoice.paymentId)
+
+      const { generateInvoicePdfBuffer } = await import('./pdf-generator')
+      const { prisma } = await import('./prisma')
+
+      // Get payment data with project info
+      const paymentData = await prisma.payment.findUnique({
+        where: { id: invoice.paymentId },
+        include: {
+          project: {
+            include: {
+              customer: true,
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (!paymentData) {
+        console.error('[Telegram] Payment not found:', invoice.paymentId)
+        await sendTelegramMessage('❌ Error: Payment data tidak ditemukan')
+        return true
+      }
+
+      if (!paymentData.project) {
+        console.log('[Telegram] Payment tidak terkait dengan project, skip PDF')
+        return true
+      }
+
+      console.log('[Telegram] Payment data fetched, generating Invoice PDF...')
+
+      const company = await prisma.company.findFirst()
+      console.log('[Telegram] Company data:', {
+        found: !!company,
+        name: company?.name,
+        hasSettings: !!company?.settings,
+        logoLength: (company?.settings as any)?.logo?.length,
+      })
+
+      // Generate and send Invoice PDF
+      try {
+        console.log('[Telegram] Generating invoice PDF...')
+        const invoicePdf = await generateInvoicePdfBuffer(paymentData, company)
+        if (invoicePdf) {
+          console.log('[Telegram] Invoice PDF generated, sending...')
+          await sendTelegramDocument(
+            invoicePdf,
+            `Invoice_${invoice.projectNumber}.pdf`,
+            `📄 <b>Invoice</b>\nProject: ${invoice.projectNumber}\nJatuh Tempo: ${dueDateStr}`
+          )
+          console.log('[Telegram] Invoice PDF sent successfully')
+        } else {
+          console.error('[Telegram] Invoice PDF generation returned null')
+        }
+      } catch (err) {
+        console.error('[Telegram] Error generating invoice PDF:', err)
+        await sendTelegramMessage(`❌ Error generating invoice: ${err.message}`)
+      }
+    } catch (error) {
+      console.error('[Telegram] Error sending Invoice PDF:', error)
       await sendTelegramMessage(`❌ Error: ${error.message}`)
     }
   }

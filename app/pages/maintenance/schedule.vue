@@ -388,7 +388,9 @@
           />
           <label class="label">
             <span class="label-text-alt text-base-content/60">
-              Nilai ini digunakan untuk analisis margin. Bisa diupdate nanti di halaman project.
+              Nilai ini digunakan untuk analisis margin.
+              <br />
+              Bisa diupdate nanti di halaman project.
             </span>
           </label>
         </div>
