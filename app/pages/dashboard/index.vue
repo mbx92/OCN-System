@@ -163,7 +163,12 @@
                 </div>
                 <div class="text-right">
                   <p class="font-semibold">{{ formatCurrency(project.totalAmount) }}</p>
-                  <p class="text-xs text-base-content/60">{{ formatDate(project.createdAt) }}</p>
+                  <ClientOnly>
+                    <p class="text-xs text-base-content/60">{{ formatDate(project.createdAt) }}</p>
+                    <template #fallback>
+                      <p class="text-xs text-base-content/60">&nbsp;</p>
+                    </template>
+                  </ClientOnly>
                 </div>
               </div>
             </div>

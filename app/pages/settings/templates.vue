@@ -309,6 +309,9 @@ const pending = ref(false)
 const saving = ref(false)
 const activeTab = ref<'invoice' | 'quotation'>('invoice')
 
+// Store company data for updates
+const companyData = ref<{ name: string; settings: Record<string, any> } | null>(null)
+
 // Invoice template
 const invoiceTemplate = reactive({
   headerText: 'INVOICE',
@@ -338,6 +341,7 @@ onMounted(async () => {
   pending.value = true
   try {
     const company = await $fetch<any>('/api/company')
+    companyData.value = company
     if (company?.settings?.invoiceTemplate) {
       Object.assign(invoiceTemplate, company.settings.invoiceTemplate)
     }
@@ -357,7 +361,9 @@ const saveInvoiceTemplate = async () => {
     await $fetch('/api/company', {
       method: 'PUT',
       body: {
+        name: companyData.value?.name || 'Company',
         settings: {
+          ...companyData.value?.settings,
           invoiceTemplate: { ...invoiceTemplate },
         },
       },
@@ -376,7 +382,9 @@ const saveQuotationTemplate = async () => {
     await $fetch('/api/company', {
       method: 'PUT',
       body: {
+        name: companyData.value?.name || 'Company',
         settings: {
+          ...companyData.value?.settings,
           quotationTemplate: { ...quotationTemplate },
         },
       },
