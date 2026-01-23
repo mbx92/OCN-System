@@ -4,10 +4,6 @@ definePageMeta({
 })
 
 const { formatCurrency, formatDate } = useFormatter()
-const { downloadReportPdf, generating: pdfGenerating } = usePdfGenerator()
-
-// Company settings
-const { data: company } = await useFetch('/api/company')
 
 // Date filters
 const fromDate = ref('')
@@ -40,15 +36,15 @@ toDate.value = lastDay.toISOString().split('T')[0]
 async function loadSalesReport() {
   loading.value = true
   try {
-    // Load projects using $fetch for fresh data
-    const projectsData = await $fetch<{ data: any[]; meta: any }>('/api/projects', {
+    // Load projects
+    const { data: projectsData } = await useFetch('/api/projects', {
       query: {
         limit: 1000,
       },
     })
 
-    if (projectsData) {
-      let allProjects = projectsData.data || []
+    if (projectsData.value) {
+      let allProjects = projectsData.value.data || []
 
       // Filter by date
       if (fromDate.value || toDate.value) {
@@ -60,21 +56,18 @@ async function loadSalesReport() {
         })
       }
 
-      // Filter out cancelled projects
-      allProjects = allProjects.filter((p: any) => p.status !== 'CANCELLED')
-
       projects.value = allProjects
     }
 
-    // Load payments using $fetch for fresh data
-    const paymentsData = await $fetch<{ data: any[]; meta: any }>('/api/payments', {
+    // Load payments
+    const { data: paymentsData } = await useFetch('/api/payments', {
       query: {
         limit: 1000,
       },
     })
 
-    if (paymentsData) {
-      let allPayments = paymentsData.data || []
+    if (paymentsData.value) {
+      let allPayments = paymentsData.value.data || []
 
       // Filter by date
       if (fromDate.value || toDate.value) {
@@ -85,9 +78,6 @@ async function loadSalesReport() {
           return true
         })
       }
-
-      // Filter out payments from cancelled projects
-      allPayments = allPayments.filter((p: any) => !p.project || p.project.status !== 'CANCELLED')
 
       payments.value = allPayments
     }
@@ -107,16 +97,14 @@ async function loadSalesReport() {
 function calculateSummary() {
   summary.value.totalProjects = projects.value.length
 
-  // Total revenue from projects - must convert Decimal to Number
+  // Total revenue from projects
   summary.value.totalRevenue = projects.value.reduce((sum, p) => {
-    // Use totalAmount from API (already calculated) or fallback to finalPrice/budget
-    const projectValue = Number(p.totalAmount) || Number(p.finalPrice) || Number(p.budget) || 0
-    return sum + projectValue
+    return sum + (parseFloat(p.finalPrice) || parseFloat(p.budget) || 0)
   }, 0)
 
-  // Total payments received - must convert Decimal to Number
+  // Total payments received
   summary.value.totalPayments = payments.value.reduce((sum, p) => {
-    return sum + Number(p.amount || 0)
+    return sum + (parseFloat(p.amount) || 0)
   }, 0)
 
   // Average project value
@@ -145,7 +133,7 @@ function prepareChartData() {
     }
 
     const current = dataMap.get(key)
-    current.revenue += Number(payment.amount || 0)
+    current.revenue += parseFloat(payment.amount) || 0
     current.count += 1
   })
 
@@ -220,38 +208,6 @@ function printReport() {
   window.print()
 }
 
-// Export to PDF
-function exportToPdf() {
-  downloadReportPdf({
-    title: 'Laporan Penjualan',
-    subtitle: company.value?.name || 'OCN CCTV & Networking Solutions',
-    period: `${formatDate(fromDate.value)} - ${formatDate(toDate.value)}`,
-    summary: [
-      { label: 'Total Project', value: summary.value.totalProjects.toString() },
-      { label: 'Total Revenue', value: formatCurrency(summary.value.totalRevenue) },
-      { label: 'Total Pembayaran', value: formatCurrency(summary.value.totalPayments) },
-      { label: 'Rata-rata Project', value: formatCurrency(summary.value.averageProjectValue) },
-    ],
-    columns: [
-      { header: 'Tanggal', key: 'date', align: 'left' },
-      { header: 'No. Pembayaran', key: 'paymentNumber', align: 'left' },
-      { header: 'Project', key: 'project', align: 'left' },
-      { header: 'Customer', key: 'customer', align: 'left' },
-      { header: 'Jumlah', key: 'amount', align: 'right', format: v => formatCurrency(v) },
-      { header: 'Metode', key: 'method', align: 'center' },
-    ],
-    data: payments.value.map(p => ({
-      date: formatDate(p.paymentDate),
-      paymentNumber: p.paymentNumber,
-      project: p.project?.projectNumber || '-',
-      customer: p.project?.customer?.name || '-',
-      amount: p.amount,
-      method: p.method || '-',
-    })),
-    filename: `laporan-penjualan-${fromDate.value}-${toDate.value}`,
-  })
-}
-
 // Get status color
 function getStatusColor(status: string) {
   switch (status) {
@@ -291,18 +247,6 @@ onMounted(() => {
         <p class="text-base-content/60">Analisis penjualan dan pembayaran</p>
       </div>
       <div class="flex gap-2">
-        <button @click="exportToPdf" class="btn btn-primary btn-sm" :disabled="pdfGenerating">
-          <span v-if="pdfGenerating" class="loading loading-spinner loading-sm"></span>
-          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-            />
-          </svg>
-          Download PDF
-        </button>
         <button @click="exportToCSV" class="btn btn-ghost btn-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -336,21 +280,21 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Dari Tanggal</span>
             </label>
-            <input v-model="fromDate" type="date" class="input input-bordered w-full" />
+            <input v-model="fromDate" type="date" class="input input-bordered" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Sampai Tanggal</span>
             </label>
-            <input v-model="toDate" type="date" class="input input-bordered w-full" />
+            <input v-model="toDate" type="date" class="input input-bordered" />
           </div>
 
           <div class="form-control">
             <label class="label">
               <span class="label-text">Kelompokkan Per</span>
             </label>
-            <select v-model="groupBy" class="select select-bordered w-full">
+            <select v-model="groupBy" class="select select-bordered">
               <option value="day">Hari</option>
               <option value="month">Bulan</option>
               <option value="year">Tahun</option>
@@ -480,12 +424,16 @@ onMounted(() => {
                     </span>
                   </td>
                   <td class="text-right font-medium">
-                    {{
-                      formatCurrency(project.totalAmount || project.finalPrice || project.budget)
-                    }}
+                    {{ formatCurrency(project.finalPrice || project.budget) }}
                   </td>
                   <td class="text-right">
-                    {{ formatCurrency(project.paidAmount || 0) }}
+                    {{
+                      formatCurrency(
+                        payments
+                          .filter(p => p.projectId === project.id)
+                          .reduce((sum, p) => sum + p.amount, 0)
+                      )
+                    }}
                   </td>
                 </tr>
               </tbody>

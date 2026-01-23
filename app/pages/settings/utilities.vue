@@ -5,6 +5,231 @@
       <p class="text-base-content/60">Tools untuk maintenance dan perbaikan data</p>
     </div>
 
+    <!-- Fix Remaining Wage Date Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          Perbaiki Tanggal Sisa Upah Teknisi
+        </h2>
+
+        <div class="alert alert-info text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">
+              Fungsi: Memperbaiki tanggal transaksi sisa upah teknisi ke periode proyek
+            </p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>CHECK:</strong>
+                Lihat transaksi yang perlu diperbaiki
+              </li>
+              <li>
+                <strong>EXECUTE:</strong>
+                Update tanggal transaksi ke tanggal selesai proyek (endDate)
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="form-control w-full max-w-xs">
+          <label class="label">
+            <span class="label-text font-semibold">Pilih Mode</span>
+          </label>
+          <select v-model="selectedWageMode" class="select select-bordered">
+            <option value="CHECK">CHECK - Lihat Data Saja</option>
+            <option value="EXECUTE">EXECUTE - Perbaiki Tanggal</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card-actions justify-end">
+          <button
+            @click="fixRemainingWageDate"
+            class="btn"
+            :class="{
+              'btn-primary': selectedWageMode === 'CHECK',
+              'btn-warning': selectedWageMode === 'EXECUTE',
+            }"
+            :disabled="loadingWage"
+          >
+            <span v-if="loadingWage" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            {{ loadingWage ? 'Memproses...' : `Jalankan ${selectedWageMode}` }}
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div v-if="wageResult" class="mt-6 space-y-4">
+          <!-- Summary -->
+          <div class="alert" :class="wageResult.success ? 'alert-success' : 'alert-error'">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                v-if="wageResult.success"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+              <path
+                v-else
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <h3 class="font-bold">{{ wageResult.message }}</h3>
+              <div class="text-sm mt-2">
+                <p>
+                  Mode:
+                  <strong>{{ wageResult.mode }}</strong>
+                </p>
+                <p>
+                  Total transaksi:
+                  <strong>{{ wageResult.totalTransactions }}</strong>
+                </p>
+                <p v-if="wageResult.mode === 'CHECK'">
+                  Perlu update:
+                  <strong class="text-warning">{{ wageResult.needsUpdateCount }}</strong>
+                </p>
+                <p v-if="wageResult.mode === 'CHECK'">
+                  Sudah benar:
+                  <strong class="text-success">{{ wageResult.alreadyCorrectCount }}</strong>
+                </p>
+                <p v-if="wageResult.updated !== undefined">
+                  Berhasil diupdate:
+                  <strong class="text-success">{{ wageResult.updated }}</strong>
+                </p>
+                <p v-if="wageResult.skipped !== undefined">
+                  Diskip:
+                  <strong>{{ wageResult.skipped }}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Updated Transactions List (EXECUTE mode) -->
+          <div
+            v-if="wageResult.updatedTransactions && wageResult.updatedTransactions.length > 0"
+            class="card bg-base-200"
+          >
+            <div class="card-body">
+              <h3 class="card-title text-lg">Transaksi yang Diupdate:</h3>
+              <ul class="list-disc list-inside space-y-1">
+                <li
+                  v-for="(tx, idx) in wageResult.updatedTransactions"
+                  :key="idx"
+                  class="font-mono text-sm"
+                >
+                  {{ tx }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Transactions Table (CHECK mode) -->
+          <div
+            v-if="wageResult.transactions && wageResult.transactions.length > 0"
+            class="card bg-base-200"
+          >
+            <div class="card-body">
+              <h3 class="card-title text-lg">
+                Detail Transaksi ({{ wageResult.transactions.length }})
+              </h3>
+              <div class="overflow-x-auto">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Project</th>
+                      <th>Status</th>
+                      <th>Deskripsi</th>
+                      <th class="text-right">Jumlah</th>
+                      <th>Tanggal Saat Ini</th>
+                      <th>Tanggal Project</th>
+                      <th class="text-center">Perlu Update?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="tx in wageResult.transactions"
+                      :key="tx.id"
+                      :class="{ 'bg-warning/10': tx.needsUpdate }"
+                    >
+                      <td class="font-mono text-xs">{{ tx.projectNumber }}</td>
+                      <td>
+                        <span class="badge badge-sm">{{ tx.projectStatus }}</span>
+                      </td>
+                      <td class="max-w-xs truncate">{{ tx.description }}</td>
+                      <td class="text-right font-mono text-xs">
+                        {{ formatCurrency(tx.amount) }}
+                      </td>
+                      <td class="text-sm">{{ formatDate(new Date(tx.currentDate)) }}</td>
+                      <td class="text-sm">
+                        {{ tx.projectDate ? formatDate(new Date(tx.projectDate)) : 'Tidak ada' }}
+                      </td>
+                      <td class="text-center">
+                        <span v-if="tx.needsUpdate" class="text-warning font-bold">⚠️ YA</span>
+                        <span v-else class="text-success">✅ Tidak</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Clear Pending PO Card -->
     <div class="card bg-base-100 shadow">
       <div class="card-body">
@@ -248,11 +473,54 @@
 
 <script setup lang="ts">
 const { showAlert } = useAlert()
-const { formatCurrency } = useFormatter()
+const { formatCurrency, formatDate } = useFormatter()
 
 const selectedMode = ref<'CHECK' | 'SIMPLE' | 'FULL'>('CHECK')
 const loading = ref(false)
 const result = ref<any>(null)
+
+// Fix Remaining Wage Date states
+const selectedWageMode = ref<'CHECK' | 'EXECUTE'>('CHECK')
+const loadingWage = ref(false)
+const wageResult = ref<any>(null)
+
+const fixRemainingWageDate = async () => {
+  if (selectedWageMode.value === 'EXECUTE') {
+    const confirmMessage =
+      'Apakah Anda yakin ingin memperbaiki tanggal transaksi sisa upah teknisi? Data akan diupdate ke tanggal selesai proyek. (tidak bisa diundo)'
+
+    if (!confirm(confirmMessage)) {
+      return
+    }
+  }
+
+  loadingWage.value = true
+  wageResult.value = null
+
+  try {
+    const response = await $fetch('/api/utilities/fix-remaining-wage-date', {
+      method: 'POST',
+      body: {
+        mode: selectedWageMode.value,
+      },
+    })
+
+    wageResult.value = response
+
+    if (response.success) {
+      const action =
+        selectedWageMode.value === 'CHECK'
+          ? 'Data berhasil diambil'
+          : 'Tanggal transaksi berhasil diperbaiki'
+      showAlert(action, 'success')
+    }
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal memproses', 'error')
+    console.error('Error:', err)
+  } finally {
+    loadingWage.value = false
+  }
+}
 
 const clearPendingPO = async () => {
   if (selectedMode.value !== 'CHECK') {

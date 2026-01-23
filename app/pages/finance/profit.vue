@@ -255,19 +255,23 @@
                       <div class="flex items-center gap-2">
                         <div
                           class="badge badge-sm"
-                          :class="tech.isPaid ? 'badge-success' : 'badge-warning'"
+                          :class="
+                            isTechPaymentPaid(tech, project) ? 'badge-success' : 'badge-warning'
+                          "
                         >
-                          {{ tech.isPaid ? 'Lunas' : 'Belum Bayar' }}
+                          {{ isTechPaymentPaid(tech, project) ? 'Lunas' : 'Belum Bayar' }}
                         </div>
                         <button
-                          v-if="!tech.isPaid && !editingTechFee[tech.id]"
+                          v-if="!isTechPaymentPaid(tech, project) && !editingTechFee[tech.id]"
                           @click="startEditTechFee(tech, project)"
                           class="btn btn-xs btn-ghost"
                         >
                           Edit
                         </button>
                         <button
-                          v-if="!tech.isPaid && !hasPaymentRecord(tech, project)"
+                          v-if="
+                            !isTechPaymentPaid(tech, project) && !hasPaymentRecord(tech, project)
+                          "
                           @click="openSavePaymentModal(tech, project)"
                           class="btn btn-xs btn-primary"
                         >
@@ -868,6 +872,13 @@ const hasPaymentRecord = (tech: any, project: any) => {
   return tech.technician.payments.some((payment: any) => payment.projectId === project.id)
 }
 
+// Check if payment for tech+project is already PAID (synced with TechnicianPayment table)
+const isTechPaymentPaid = (tech: any, project: any) => {
+  if (!tech.technician?.payments || !project?.id) return false
+  const payment = tech.technician.payments.find((p: any) => p.projectId === project.id)
+  return payment?.status === 'PAID'
+}
+
 const calculateExpenseCost = (project: any) => {
   if (!project.expenses) return 0
   return project.expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0)
@@ -1126,9 +1137,12 @@ const saveRemainingToCash = async (project: any) => {
     return
   }
 
+  // Gunakan tanggal selesai proyek (completedAt), atau endDate, atau tanggal sekarang
+  const transactionDate = project.completedAt || project.endDate || new Date()
+
   const isConfirmed = await confirm({
     title: 'Simpan Sisa Upah ke Kas Usaha',
-    message: `Simpan sisa upah sebesar ${formatCurrency(remainingWage)} ke kas usaha?`,
+    message: `Simpan sisa upah sebesar ${formatCurrency(remainingWage)} ke kas usaha dengan tanggal ${formatDate(transactionDate)}?`,
     confirmText: 'Ya, Simpan',
     type: 'success',
   })
@@ -1147,6 +1161,7 @@ const saveRemainingToCash = async (project: any) => {
         reference: project.projectNumber,
         referenceType: 'Project',
         referenceId: project.id,
+        date: transactionDate,
       },
     })
     showAlert('Sisa upah berhasil disimpan ke kas usaha', 'success')

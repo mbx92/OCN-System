@@ -88,16 +88,20 @@ async function loadTechnicians() {
 }
 
 function calculateSummary() {
-  summary.value.totalPayments = payments.value.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+  // Ensure proper number conversion to avoid string concatenation
+  summary.value.totalPayments = payments.value.reduce(
+    (sum, p) => sum + (parseFloat(p.amount) || 0),
+    0
+  )
   summary.value.totalPaid = payments.value
     .filter(p => p.status === 'PAID')
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
   summary.value.totalPending = payments.value
     .filter(p => p.status === 'PENDING')
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
   summary.value.totalCancelled = payments.value
     .filter(p => p.status === 'CANCELLED')
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
 
   // Count unique technicians
   const techIds = new Set(payments.value.map(p => p.technicianId))

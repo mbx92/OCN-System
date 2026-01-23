@@ -351,8 +351,7 @@ onMounted(() => {
         <div
           v-for="asset in assets"
           :key="asset.id"
-          @click="navigateTo(`/finance/assets/${asset.id}`)"
-          class="card bg-base-100 shadow hover:shadow-md transition-shadow cursor-pointer"
+          class="card bg-base-100 shadow hover:shadow-md transition-shadow"
         >
           <div class="card-body p-4">
             <div class="flex justify-between items-start mb-2">
@@ -438,29 +437,10 @@ onMounted(() => {
                     Tidak ada data asset
                   </td>
                 </tr>
-                <tr
-                  v-for="asset in assets"
-                  :key="asset.id"
-                  class="hover cursor-pointer"
-                  @click="navigateTo(`/finance/assets/${asset.id}`)"
-                >
-                  <td class="font-mono text-sm">
-                    <NuxtLink
-                      :to="`/finance/assets/${asset.id}`"
-                      class="link link-primary"
-                      @click.stop
-                    >
-                      {{ asset.assetNumber }}
-                    </NuxtLink>
-                  </td>
+                <tr v-for="asset in assets" :key="asset.id">
+                  <td class="font-mono text-sm">{{ asset.assetNumber }}</td>
                   <td>
-                    <NuxtLink
-                      :to="`/finance/assets/${asset.id}`"
-                      class="link link-hover"
-                      @click.stop
-                    >
-                      <div class="font-medium">{{ asset.name }}</div>
-                    </NuxtLink>
+                    <div class="font-medium">{{ asset.name }}</div>
                     <div v-if="asset.serialNumber" class="text-xs text-base-content/60">
                       SN: {{ asset.serialNumber }}
                     </div>

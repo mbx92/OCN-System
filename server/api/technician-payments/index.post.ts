@@ -101,16 +101,33 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
-    // If payment status is explicitly PAID and we have a projectTechnicianId, update the assignment
-    // Only set isPaid when status is explicitly 'PAID', not on PENDING or undefined
-    if (status === 'PAID' && projectTechnicianId) {
-      await prisma.projectTechnician.update({
-        where: { id: projectTechnicianId },
+    // If payment status is explicitly PAID, record to cashflow and update assignment
+    if (status === 'PAID') {
+      // Create cash transaction with correct date
+      await prisma.cashTransaction.create({
         data: {
-          isPaid: true,
-          paidDate: paidDate ? new Date(paidDate) : new Date(),
+          type: 'EXPENSE',
+          category: 'SALARY',
+          amount: payment.amount,
+          description: `Gaji Teknisi: ${payment.technician?.name}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
+          reference: payment.paymentNumber,
+          referenceType: 'TechnicianPayment',
+          referenceId: payment.id,
+          date: payment.paidDate || new Date(),
+          createdBy: user.id,
         },
       })
+
+      // Update ProjectTechnician.isPaid if we have projectTechnicianId
+      if (projectTechnicianId) {
+        await prisma.projectTechnician.update({
+          where: { id: projectTechnicianId },
+          data: {
+            isPaid: true,
+            paidDate: paidDate ? new Date(paidDate) : new Date(),
+          },
+        })
+      }
     }
 
     // Log activity

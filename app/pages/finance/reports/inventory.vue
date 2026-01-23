@@ -4,19 +4,11 @@ definePageMeta({
 })
 
 const { formatCurrency } = useFormatter()
-const { downloadReportPdf, generating: pdfGenerating } = usePdfGenerator()
-
-// Company settings
-const { data: company } = await useFetch('/api/company')
 
 // Filters
 const selectedCategory = ref('')
 const selectedType = ref('')
 const stockStatus = ref<'all' | 'low' | 'out'>('all')
-
-// Pagination
-const currentPage = ref(1)
-const itemsPerPage = ref(25)
 
 // Data
 const loading = ref(false)
@@ -116,42 +108,6 @@ const filteredProducts = computed(() => {
   return filtered
 })
 
-// Paginated products
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredProducts.value.slice(start, end)
-})
-
-// Total pages
-const totalPages = computed(() => {
-  return Math.ceil(filteredProducts.value.length / itemsPerPage.value)
-})
-
-// Page range for display
-const pageRange = computed(() => {
-  const range: number[] = []
-  const maxVisible = 5
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  let end = Math.min(totalPages.value, start + maxVisible - 1)
-
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1)
-  }
-
-  for (let i = start; i <= end; i++) {
-    range.push(i)
-  }
-  return range
-})
-
-// Go to page
-function goToPage(page: number) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
-}
-
 // Get unique categories
 const categories = computed(() => {
   const cats = new Set(products.value.map(p => p.category).filter(c => c))
@@ -221,64 +177,12 @@ function printReport() {
   window.print()
 }
 
-// Export to PDF
-function exportToPdf() {
-  downloadReportPdf({
-    title: 'Laporan Inventory',
-    subtitle: company.value?.name || 'OCN CCTV & Networking Solutions',
-    period: new Date().toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }),
-    summary: [
-      { label: 'Total Produk', value: summary.value.totalProducts.toString() },
-      { label: 'Nilai Inventory', value: formatCurrency(summary.value.totalValue) },
-      { label: 'Stok Rendah', value: summary.value.lowStockItems.toString() },
-      { label: 'Stok Habis', value: summary.value.outOfStockItems.toString() },
-    ],
-    columns: [
-      { header: 'SKU', key: 'sku', align: 'left' },
-      { header: 'Nama Produk', key: 'name', align: 'left' },
-      { header: 'Kategori', key: 'category', align: 'left' },
-      { header: 'Stok', key: 'stock', align: 'right' },
-      { header: 'Min Stok', key: 'minStock', align: 'right' },
-      {
-        header: 'Harga Beli',
-        key: 'purchasePrice',
-        align: 'right',
-        format: v => formatCurrency(v),
-      },
-      { header: 'Nilai', key: 'value', align: 'right', format: v => formatCurrency(v) },
-    ],
-    data: filteredProducts.value.map(p => {
-      const stock = getStock(p.id)
-      return {
-        sku: p.sku,
-        name: p.name,
-        category: p.category || '-',
-        stock: stock?.available || 0,
-        minStock: p.minStock || 0,
-        purchasePrice: p.purchasePrice || 0,
-        value: (stock?.available || 0) * (p.purchasePrice || 0),
-      }
-    }),
-    filename: `laporan-inventory-${new Date().toISOString().split('T')[0]}`,
-  })
-}
-
 // Reset filters
 function resetFilters() {
   selectedCategory.value = ''
   selectedType.value = ''
   stockStatus.value = 'all'
-  currentPage.value = 1
 }
-
-// Watch filters to reset page
-watch([selectedCategory, selectedType, stockStatus], () => {
-  currentPage.value = 1
-})
 
 // Init
 onMounted(() => {
@@ -295,18 +199,6 @@ onMounted(() => {
         <p class="text-base-content/60">Status stok dan nilai inventory</p>
       </div>
       <div class="flex gap-2">
-        <button @click="exportToPdf" class="btn btn-primary btn-sm" :disabled="pdfGenerating">
-          <span v-if="pdfGenerating" class="loading loading-spinner loading-sm"></span>
-          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-            />
-          </svg>
-          Download PDF
-        </button>
         <button @click="exportToCSV" class="btn btn-ghost btn-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -340,7 +232,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Kategori</span>
             </label>
-            <select v-model="selectedCategory" class="select select-bordered w-full">
+            <select v-model="selectedCategory" class="select select-bordered">
               <option value="">Semua Kategori</option>
               <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
             </select>
@@ -350,7 +242,7 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Tipe Produk</span>
             </label>
-            <select v-model="selectedType" class="select select-bordered w-full">
+            <select v-model="selectedType" class="select select-bordered">
               <option value="">Semua Tipe</option>
               <option value="PRODUCT">Produk</option>
               <option value="SERVICE">Jasa</option>
@@ -362,11 +254,28 @@ onMounted(() => {
             <label class="label">
               <span class="label-text">Status Stok</span>
             </label>
-            <select v-model="stockStatus" class="select select-bordered w-full">
+            <select v-model="stockStatus" class="select select-bordered">
               <option value="all">Semua</option>
               <option value="low">Stok Rendah</option>
               <option value="out">Habis</option>
             </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">&nbsp;</span>
+            </label>
+            <button @click="resetFilters" class="btn btn-ghost">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Reset
+            </button>
           </div>
         </div>
       </div>
@@ -437,7 +346,7 @@ onMounted(() => {
                     Tidak ada data produk
                   </td>
                 </tr>
-                <tr v-for="product in paginatedProducts" :key="product.id">
+                <tr v-for="product in filteredProducts" :key="product.id">
                   <td class="font-mono text-sm">{{ product.sku }}</td>
                   <td>
                     <div class="font-medium">{{ product.name }}</div>
@@ -501,75 +410,6 @@ onMounted(() => {
                 </tr>
               </tfoot>
             </table>
-          </div>
-
-          <!-- Pagination -->
-          <div
-            v-if="totalPages > 1"
-            class="flex items-center justify-between p-4 border-t border-base-200 print:hidden"
-          >
-            <div class="text-sm text-base-content/60">
-              Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} -
-              {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }}
-              dari {{ filteredProducts.length }} produk
-            </div>
-            <div class="flex items-center gap-1">
-              <!-- First -->
-              <button
-                class="btn btn-sm btn-ghost"
-                :disabled="currentPage === 1"
-                @click="goToPage(1)"
-              >
-                «
-              </button>
-              <!-- Prev -->
-              <button
-                class="btn btn-sm btn-ghost"
-                :disabled="currentPage === 1"
-                @click="goToPage(currentPage - 1)"
-              >
-                ‹
-              </button>
-              <!-- Page numbers -->
-              <button
-                v-for="page in pageRange"
-                :key="page"
-                class="btn btn-sm"
-                :class="page === currentPage ? 'btn-primary' : 'btn-ghost'"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-              <!-- Next -->
-              <button
-                class="btn btn-sm btn-ghost"
-                :disabled="currentPage === totalPages"
-                @click="goToPage(currentPage + 1)"
-              >
-                ›
-              </button>
-              <!-- Last -->
-              <button
-                class="btn btn-sm btn-ghost"
-                :disabled="currentPage === totalPages"
-                @click="goToPage(totalPages)"
-              >
-                »
-              </button>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-sm">Per halaman:</span>
-              <select
-                v-model="itemsPerPage"
-                class="select select-sm select-bordered w-20"
-                @change="currentPage = 1"
-              >
-                <option :value="10">10</option>
-                <option :value="25">25</option>
-                <option :value="50">50</option>
-                <option :value="100">100</option>
-              </select>
-            </div>
           </div>
         </div>
       </div>
