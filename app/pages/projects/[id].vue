@@ -241,31 +241,75 @@
                       {{ item.type }}
                     </span>
                   </div>
-                  <button
-                    v-if="
-                      item.productId &&
-                      ['ONGOING', 'APPROVED'].includes(project.status) &&
-                      item.quantity - (item.returnedQty || 0) > 0
-                    "
-                    @click="openReturnModal(item)"
-                    class="btn btn-xs btn-ghost text-warning flex-shrink-0"
-                    title="Kembalikan item"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <div class="flex gap-1 flex-shrink-0">
+                    <button
+                      v-if="['QUOTATION', 'APPROVED', 'ONGOING'].includes(project.status)"
+                      @click="openEditItemModal(item)"
+                      class="btn btn-xs btn-ghost text-info"
+                      title="Edit Item"
                     >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="['QUOTATION', 'APPROVED'].includes(project.status)"
+                      @click="deleteItem(item.id)"
+                      class="btn btn-xs btn-ghost text-error"
+                      title="Hapus Item"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="
+                        item.productId &&
+                        ['ONGOING', 'APPROVED'].includes(project.status) &&
+                        item.quantity - (item.returnedQty || 0) > 0
+                      "
+                      @click="openReturnModal(item)"
+                      class="btn btn-xs btn-ghost text-warning"
+                      title="Kembalikan item"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="space-y-2 text-sm">
@@ -364,7 +408,7 @@
                   <th v-if="user && ['ADMIN', 'OWNER'].includes(user.role)" class="text-center">
                     Edit HPP
                   </th>
-                  <th></th>
+                  <th class="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -420,37 +464,80 @@
                       </svg>
                     </button>
                   </td>
-                  <td>
-                    <button
-                      v-if="
-                        item.productId &&
-                        ['ONGOING', 'APPROVED'].includes(project.status) &&
-                        item.quantity - (item.returnedQty || 0) > 0
-                      "
-                      @click="openReturnModal(item)"
-                      class="btn btn-xs btn-ghost text-warning"
-                      title="Kembalikan item"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                  <td class="text-center">
+                    <div class="flex gap-1 justify-center">
+                      <button
+                        v-if="['QUOTATION', 'APPROVED', 'ONGOING'].includes(project.status)"
+                        @click="openEditItemModal(item)"
+                        class="btn btn-xs btn-ghost text-info"
+                        title="Edit Item"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                        />
-                      </svg>
-                      <span class="hidden sm:inline">Return</span>
-                    </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        v-if="['QUOTATION', 'APPROVED'].includes(project.status)"
+                        @click="deleteItem(item.id)"
+                        class="btn btn-xs btn-ghost text-error"
+                        title="Hapus Item"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        v-if="
+                          item.productId &&
+                          ['ONGOING', 'APPROVED'].includes(project.status) &&
+                          item.quantity - (item.returnedQty || 0) > 0
+                        "
+                        @click="openReturnModal(item)"
+                        class="btn btn-xs btn-ghost text-warning"
+                        title="Kembalikan item"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 <tr v-if="!project.items?.length">
-                  <td colspan="8" class="text-center py-4 text-base-content/60">Belum ada item</td>
+                  <td colspan="9" class="text-center py-4 text-base-content/60">Belum ada item</td>
                 </tr>
               </tbody>
               <tfoot>
@@ -1186,6 +1273,116 @@
         </form>
       </dialog>
 
+      <!-- Edit Item Modal -->
+      <dialog class="modal" :class="{ 'modal-open': showEditItemModal }">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg mb-4">Edit Item</h3>
+          <form @submit.prevent="saveEditItem" class="space-y-4">
+            <div class="form-control">
+              <label class="label"><span class="label-text">Pilih Produk (Opsional)</span></label>
+              <AppProductSelect
+                v-model="editItemForm.productId"
+                @product-selected="
+                  p => {
+                    if (p) {
+                      editItemForm.name = p.name
+                      editItemForm.unit = p.unit?.name || ''
+                      editItemForm.cost = Number(p.cost || 0)
+                      editItemForm.price = Number(p.price || 0)
+                    }
+                  }
+                "
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label"><span class="label-text">Nama Item</span></label>
+              <input
+                v-model="editItemForm.name"
+                type="text"
+                class="input input-bordered w-full"
+                placeholder="Nama item/material"
+                required
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Quantity</span></label>
+                <input
+                  v-model.number="editItemForm.quantity"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  class="input input-bordered w-full"
+                  required
+                />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Satuan</span></label>
+                <input
+                  v-model="editItemForm.unit"
+                  type="text"
+                  class="input input-bordered w-full"
+                  placeholder="pcs, unit, set"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">HPP (Modal)</span></label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <span>Rp</span>
+                  <input
+                    v-model.number="editItemForm.cost"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="grow"
+                    placeholder="0"
+                  />
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Harga Jual</span></label>
+                <label class="input input-bordered flex items-center gap-2">
+                  <span>Rp</span>
+                  <input
+                    v-model.number="editItemForm.price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="grow"
+                    placeholder="0"
+                    required
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="closeEditItemModal"
+                :disabled="!!processing"
+              >
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!!processing">
+                <span v-if="processing === 'editing-item'" class="loading loading-spinner"></span>
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="closeEditItemModal">close</button>
+        </form>
+      </dialog>
+
       <!-- Edit Timestamps Modal (OWNER only) -->
       <dialog class="modal" :class="{ 'modal-open': showEditTimestamps }">
         <div class="modal-box overflow-visible">
@@ -1913,6 +2110,91 @@ const saveItemCost = async () => {
     await refresh()
   } catch (err: any) {
     showAlert(err.data?.message || 'Gagal mengubah harga pokok', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Edit item modal handlers
+const editingItem = ref<any>(null)
+const showEditItemModal = ref(false)
+const editItemForm = reactive({
+  name: '',
+  quantity: 1,
+  unit: '',
+  price: 0,
+  cost: 0,
+  productId: undefined as string | undefined,
+})
+
+const openEditItemModal = (item: any) => {
+  editingItem.value = item
+  editItemForm.name = item.name
+  editItemForm.quantity = item.quantity
+  editItemForm.unit = item.unit
+  editItemForm.price = Number(item.price)
+  editItemForm.cost = Number(item.cost || 0)
+  editItemForm.productId = item.productId
+  showEditItemModal.value = true
+}
+
+const closeEditItemModal = () => {
+  showEditItemModal.value = false
+  editingItem.value = null
+  editItemForm.name = ''
+  editItemForm.quantity = 1
+  editItemForm.unit = ''
+  editItemForm.price = 0
+  editItemForm.cost = 0
+  editItemForm.productId = undefined
+}
+
+const saveEditItem = async () => {
+  if (!editingItem.value) return
+
+  processing.value = 'editing-item'
+  try {
+    await $fetch(`/api/projects/${route.params.id}/items/${editingItem.value.id}`, {
+      method: 'PATCH',
+      body: {
+        name: editItemForm.name,
+        quantity: editItemForm.quantity,
+        unit: editItemForm.unit,
+        price: editItemForm.price,
+        cost: editItemForm.cost,
+        productId: editItemForm.productId,
+      },
+    })
+    showAlert('Item berhasil diupdate', 'success')
+    closeEditItemModal()
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal mengupdate item', 'error')
+  } finally {
+    processing.value = null
+  }
+}
+
+// Delete item handler
+const deleteItem = async (itemId: string) => {
+  const isConfirmed = await confirm({
+    title: 'Hapus Item',
+    message: 'Apakah Anda yakin ingin menghapus item ini?',
+    confirmText: 'Ya, Hapus',
+    type: 'danger',
+  })
+
+  if (!isConfirmed) return
+
+  processing.value = 'deleting-item'
+  try {
+    await $fetch(`/api/projects/${route.params.id}/items/${itemId}`, {
+      method: 'DELETE',
+    })
+    showAlert('Item berhasil dihapus', 'success')
+    await refresh()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menghapus item', 'error')
   } finally {
     processing.value = null
   }

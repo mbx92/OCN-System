@@ -30,13 +30,10 @@ const summary = ref({
 // Charts data
 const chartData = ref<any>(null)
 
-// Set default dates (current month)
-const now = new Date()
-const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-
-fromDate.value = firstDay.toISOString().split('T')[0]
-toDate.value = lastDay.toISOString().split('T')[0]
+// Set default dates - Leave empty to show all data
+// Users can set date range if needed
+fromDate.value = ''
+toDate.value = ''
 
 // Load data
 async function loadReport() {
@@ -54,7 +51,10 @@ async function loadReport() {
       // Filter by date
       if (fromDate.value || toDate.value) {
         allPayments = allPayments.filter((p: any) => {
-          const paymentDate = new Date(p.createdAt)
+          // Use paidDate for PAID payments, createdAt for others
+          const paymentDate =
+            p.status === 'PAID' && p.paidDate ? new Date(p.paidDate) : new Date(p.createdAt)
+
           if (fromDate.value && paymentDate < new Date(fromDate.value)) return false
           if (toDate.value && paymentDate > new Date(toDate.value + ' 23:59:59')) return false
           return true
@@ -89,19 +89,16 @@ async function loadTechnicians() {
 
 function calculateSummary() {
   // Ensure proper number conversion to avoid string concatenation
-  summary.value.totalPayments = payments.value.reduce(
-    (sum, p) => sum + (parseFloat(p.amount) || 0),
-    0
-  )
+  summary.value.totalPayments = payments.value.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   summary.value.totalPaid = payments.value
     .filter(p => p.status === 'PAID')
-    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   summary.value.totalPending = payments.value
     .filter(p => p.status === 'PENDING')
-    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   summary.value.totalCancelled = payments.value
     .filter(p => p.status === 'CANCELLED')
-    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
   // Count unique technicians
   const techIds = new Set(payments.value.map(p => p.technicianId))
@@ -113,7 +110,9 @@ function prepareChartData() {
   const grouped: Record<string, { paid: number; pending: number; count: number }> = {}
 
   payments.value.forEach(p => {
-    const date = new Date(p.createdAt)
+    // Use paidDate for PAID payments, createdAt for others
+    const date = p.status === 'PAID' && p.paidDate ? new Date(p.paidDate) : new Date(p.createdAt)
+
     let key = ''
 
     if (groupBy.value === 'day') {
@@ -203,6 +202,7 @@ function exportToCSV() {
     'No. Pembayaran',
     'Teknisi',
     'Project',
+    'Customer',
     'Periode',
     'Jumlah',
     'Status',
@@ -212,6 +212,7 @@ function exportToCSV() {
     p.paymentNumber,
     p.technician?.name || '-',
     p.project?.projectNumber || '-',
+    p.project?.customer?.name || '-',
     p.period || '-',
     p.amount,
     getStatusLabel(p.status),
@@ -251,6 +252,7 @@ function exportToPdf() {
       { header: 'No. Pembayaran', key: 'paymentNumber', align: 'left' },
       { header: 'Teknisi', key: 'technician', align: 'left' },
       { header: 'Project', key: 'project', align: 'left' },
+      { header: 'Customer', key: 'customer', align: 'left' },
       { header: 'Periode', key: 'period', align: 'left' },
       { header: 'Jumlah', key: 'amount', align: 'right', format: v => formatCurrency(v) },
       { header: 'Status', key: 'status', align: 'center' },
@@ -259,6 +261,7 @@ function exportToPdf() {
       paymentNumber: p.paymentNumber,
       technician: p.technician?.name || '-',
       project: p.project?.projectNumber || '-',
+      customer: p.project?.customer?.name || '-',
       period: p.period || '-',
       amount: p.amount,
       status: getStatusLabel(p.status),
@@ -478,6 +481,7 @@ onMounted(() => {
                   <th>No. Pembayaran</th>
                   <th>Teknisi</th>
                   <th>Project</th>
+                  <th>Customer</th>
                   <th>Periode</th>
                   <th>Status</th>
                   <th class="text-right">Jumlah</th>
@@ -486,7 +490,7 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr v-if="payments.length === 0">
-                  <td colspan="7" class="text-center py-8 text-base-content/60">
+                  <td colspan="8" class="text-center py-8 text-base-content/60">
                     Tidak ada data pembayaran
                   </td>
                 </tr>
@@ -499,8 +503,17 @@ onMounted(() => {
                     </div>
                   </td>
                   <td>
-                    <div v-if="payment.project" class="text-sm">
-                      {{ payment.project.projectNumber }}
+                    <div v-if="payment.project">
+                      <div class="font-medium text-sm">{{ payment.project.projectNumber }}</div>
+                      <div v-if="payment.project.title" class="text-xs text-base-content/60">
+                        {{ payment.project.title }}
+                      </div>
+                    </div>
+                    <span v-else class="text-base-content/40">-</span>
+                  </td>
+                  <td>
+                    <div v-if="payment.project?.customer" class="text-sm">
+                      {{ payment.project.customer.name }}
                     </div>
                     <span v-else class="text-base-content/40">-</span>
                   </td>

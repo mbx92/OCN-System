@@ -614,6 +614,11 @@
                             </NuxtLink>
                           </li>
                           <li>
+                            <NuxtLink to="/finance/reports/gross-revenue" active-class="active">
+                              Omzet Bruto
+                            </NuxtLink>
+                          </li>
+                          <li>
                             <NuxtLink
                               to="/finance/reports/technician-payments"
                               active-class="active"

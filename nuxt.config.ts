@@ -48,6 +48,23 @@ export default defineNuxtConfig({
     },
   },
 
+  // Disable SSR for protected pages to avoid auth redirect issues
+  routeRules: {
+    '/dashboard/**': { ssr: false },
+    '/projects/**': { ssr: false },
+    '/customers/**': { ssr: false },
+    '/quotations/**': { ssr: false },
+    '/purchase-orders/**': { ssr: false },
+    '/suppliers/**': { ssr: false },
+    '/inventory/**': { ssr: false },
+    '/finance/**': { ssr: false },
+    '/maintenance/**': { ssr: false },
+    '/settings/**': { ssr: false },
+    '/technician/**': { ssr: false },
+    '/packages/**': { ssr: false },
+    '/profile': { ssr: false },
+  },
+
   typescript: {
     strict: false,
     typeCheck: false,

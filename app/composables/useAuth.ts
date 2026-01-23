@@ -96,15 +96,20 @@ export const useAuth = () => {
         maxAge: 60 * 60 * 24 * 7, // 7 days
         path: '/',
         sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
       })
       token.value = response.token
 
       // Backup user to localStorage for persistence
       if (import.meta.client) {
         localStorage.setItem('ocn-user', JSON.stringify(response.user))
+        console.log('[useAuth] Login successful, token stored:', !!token.value)
       }
 
       return response.user
+    } catch (error) {
+      console.error('[useAuth] Login failed:', error)
+      throw error
     } finally {
       loading.value = false
     }
@@ -166,12 +171,22 @@ export const useAuth = () => {
       if (import.meta.client) {
         localStorage.setItem('ocn-user', JSON.stringify(response.user))
       }
-    } catch {
+    } catch (error: any) {
+      console.error(
+        '[useAuth] Failed to fetch user:',
+        error.statusCode,
+        error.statusMessage || error.message
+      )
+
+      // Clear invalid session
       user.value = null
       token.value = null
       if (import.meta.client) {
         localStorage.removeItem('ocn-user')
       }
+
+      // Re-throw error so middleware can handle it
+      throw error
     } finally {
       loading.value = false
       initialized.value = true

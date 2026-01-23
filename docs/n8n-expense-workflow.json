@@ -1,0 +1,371 @@
+{
+  "name": "OCN Expense Tracker - Telegram + Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "expense-telegram-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "OCN Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-photo",
+              "leftValue": "={{ $json.message.photo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-photo",
+      "name": "Has Photo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "fileId": "={{ $json.message.photo.slice(-1)[0].file_id }}",
+        "options": {}
+      },
+      "id": "get-photo-file",
+      "name": "Get Photo File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "OCN Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-photo",
+      "name": "Download Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "toBase64",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "convert-to-base64",
+      "name": "Convert to Base64",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Analisis foto nota/struk ini dan ekstrak informasi berikut dalam format JSON:\\n{\\n  \\\"description\\\": \\\"deskripsi singkat pengeluaran\\\",\\n  \\\"amount\\\": angka_total_tanpa_separator,\\n  \\\"category\\\": \\\"salah satu dari: Makan, Transport, ATK, Internet, Listrik, Sewa, Lainnya\\\",\\n  \\\"date\\\": \\\"YYYY-MM-DD jika terlihat, atau null\\\",\\n  \\\"merchant\\\": \\\"nama toko/merchant jika ada\\\"\\n}\\n\\nJika tidak bisa membaca nota, kembalikan:\\n{\\\"error\\\": \\\"pesan error\\\"}\\n\\nHanya kembalikan JSON, tanpa penjelasan tambahan.\"\n        },\n        {\n          \"inline_data\": {\n            \"mime_type\": \"image/jpeg\",\n            \"data\": \"{{ $json.data }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.1,\n    \"topP\": 0.95,\n    \"maxOutputTokens\": 1024\n  }\n}",
+        "options": {}
+      },
+      "id": "gemini-ocr",
+      "name": "Gemini Vision OCR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "YOUR_GEMINI_API_KEY_CREDENTIAL_ID",
+          "name": "Gemini API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini response\nconst geminiResponse = $input.first().json;\n\ntry {\n  // Get the text content from Gemini response\n  const textContent = geminiResponse.candidates[0].content.parts[0].text;\n  \n  // Clean up the JSON string (remove markdown code blocks if present)\n  let jsonStr = textContent.trim();\n  if (jsonStr.startsWith('```json')) {\n    jsonStr = jsonStr.replace(/^```json\\n?/, '').replace(/\\n?```$/, '');\n  } else if (jsonStr.startsWith('```')) {\n    jsonStr = jsonStr.replace(/^```\\n?/, '').replace(/\\n?```$/, '');\n  }\n  \n  // Parse the JSON\n  const extractedData = JSON.parse(jsonStr);\n  \n  // Check for error\n  if (extractedData.error) {\n    return [{\n      json: {\n        success: false,\n        error: extractedData.error\n      }\n    }];\n  }\n  \n  // Map category to expense type\n  const categoryMap = {\n    'Makan': { type: 'OPERATIONAL', category: 'Makan & Minum' },\n    'Transport': { type: 'OPERATIONAL', category: 'Transport' },\n    'ATK': { type: 'OPERATIONAL', category: 'Alat Tulis & Kantor' },\n    'Internet': { type: 'OPERATIONAL', category: 'Internet & Telekomunikasi' },\n    'Listrik': { type: 'OPERATIONAL', category: 'Listrik' },\n    'Sewa': { type: 'OPERATIONAL', category: 'Sewa' },\n    'Lainnya': { type: 'OPERATIONAL', category: 'Lainnya' }\n  };\n  \n  const mapped = categoryMap[extractedData.category] || categoryMap['Lainnya'];\n  \n  return [{\n    json: {\n      success: true,\n      type: mapped.type,\n      category: mapped.category,\n      description: extractedData.description || 'Pengeluaran dari nota',\n      amount: extractedData.amount || 0,\n      date: extractedData.date || new Date().toISOString().split('T')[0],\n      merchant: extractedData.merchant || null,\n      rawExtraction: extractedData\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      success: false,\n      error: `Failed to parse Gemini response: ${error.message}`,\n      rawResponse: geminiResponse\n    }\n  }];\n}"
+      },
+      "id": "parse-gemini-response",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-extraction-success",
+      "name": "Extraction Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-OCN-SYSTEM-URL/api/expenses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"category\": \"{{ $json.category }}\",\n  \"description\": \"{{ $json.description }}{{ $json.merchant ? ' - ' + $json.merchant : '' }}\",\n  \"amount\": {{ $json.amount }},\n  \"date\": \"{{ $json.date }}\"\n}",
+        "options": {}
+      },
+      "id": "create-expense",
+      "name": "Create Expense in OCN System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_OCN_API_CREDENTIAL_ID",
+          "name": "OCN System API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ *Pengeluaran Berhasil Dicatat!*\n\n📝 *Deskripsi:* {{ $('Parse Gemini Response').item.json.description }}\n💰 *Jumlah:* Rp {{ $('Parse Gemini Response').item.json.amount.toLocaleString('id-ID') }}\n📂 *Kategori:* {{ $('Parse Gemini Response').item.json.category }}\n📅 *Tanggal:* {{ $('Parse Gemini Response').item.json.date }}\n🏪 *Merchant:* {{ $('Parse Gemini Response').item.json.merchant || '-' }}\n\n_Data telah tersimpan di sistem OCN._",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-success-message",
+      "name": "Send Success Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2220, 100],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "OCN Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=❌ *Gagal Membaca Nota*\n\n{{ $json.error }}\n\n_Silakan kirim foto nota yang lebih jelas atau input manual melalui sistem._",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-error-message",
+      "name": "Send Error Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2000, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "OCN Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "📷 *Kirim Foto Nota*\n\nUntuk mencatat pengeluaran, silakan kirim foto nota/struk belanja.\n\nBot akan otomatis membaca:\n• Deskripsi pengeluaran\n• Jumlah nominal\n• Kategori\n• Tanggal transaksi\n\n_Pastikan foto jelas dan terbaca._",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-instruction-message",
+      "name": "Send Instruction",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "OCN Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Has Photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Photo?": {
+      "main": [
+        [
+          {
+            "node": "Get Photo File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Instruction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Photo File": {
+      "main": [
+        [
+          {
+            "node": "Download Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Photo": {
+      "main": [
+        [
+          {
+            "node": "Convert to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Base64": {
+      "main": [
+        [
+          {
+            "node": "Gemini Vision OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Vision OCR": {
+      "main": [
+        [
+          {
+            "node": "Parse Gemini Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Gemini Response": {
+      "main": [
+        [
+          {
+            "node": "Extraction Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Success?": {
+      "main": [
+        [
+          {
+            "node": "Create Expense in OCN System",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Expense in OCN System": {
+      "main": [
+        [
+          {
+            "node": "Send Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "ocn-system-expense-tracker"
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "triggerCount": 0
+}

@@ -890,6 +890,19 @@ const onProjectSelect = () => {
 // Handler for AppProjectSelect component
 const onProjectSelectFromComponent = (project: any) => {
   form.projectId = project.id
+
+  // Auto-fill payment date with project end date if available
+  if (project.endDate && project.endDate !== null) {
+    try {
+      const endDate = new Date(project.endDate)
+      if (!isNaN(endDate.getTime())) {
+        form.paymentDate = endDate.toISOString().split('T')[0]
+      }
+    } catch (e) {
+      console.warn('Failed to parse project endDate:', e)
+    }
+  }
+
   // Use remaining amount if available, otherwise use total
   if (project.remainingAmount !== undefined && project.remainingAmount > 0) {
     form.amount = project.remainingAmount

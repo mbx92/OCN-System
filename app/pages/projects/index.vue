@@ -92,6 +92,23 @@
       </div>
     </div>
 
+    <!-- Pagination for Grid View -->
+    <div v-if="viewMode === 'GRID' && projects?.meta?.totalPages > 1" class="flex justify-center">
+      <div class="join">
+        <button class="join-item btn btn-sm" :disabled="page <= 1" @click="page--">«</button>
+        <button class="join-item btn btn-sm">
+          Halaman {{ page }} dari {{ projects?.meta?.totalPages }}
+        </button>
+        <button
+          class="join-item btn btn-sm"
+          :disabled="page >= projects?.meta?.totalPages"
+          @click="page++"
+        >
+          »
+        </button>
+      </div>
+    </div>
+
     <!-- Project List -->
     <div v-else class="card bg-base-100 shadow">
       <div class="card-body p-0">

@@ -79,6 +79,15 @@ export default defineEventHandler(async event => {
     },
   })
 
+  // Set cookie from server side
+  setCookie(event, 'auth-token', token, {
+    httpOnly: false, // Allow client-side access for now
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+  })
+
   return {
     user: {
       id: user.id,

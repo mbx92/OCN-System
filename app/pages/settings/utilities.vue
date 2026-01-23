@@ -230,6 +230,137 @@
       </div>
     </div>
 
+    <!-- Reopen Completed Projects Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Buka Kembali Proyek yang Sudah Selesai
+        </h2>
+
+        <div class="alert alert-info text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">
+              Fungsi: Mengubah status proyek dari COMPLETED kembali ke ONGOING
+            </p>
+            <p class="mt-2">
+              Pilih proyek yang sudah selesai dan ubah statusnya kembali ke ONGOING agar bisa diedit
+              lagi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Project Search and Selection -->
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text font-semibold">Pilih Proyek</span>
+          </label>
+          <input
+            v-model="reopenSearch"
+            type="text"
+            placeholder="Cari nomor proyek atau nama customer..."
+            class="input input-bordered w-full"
+            @input="searchCompletedProjects"
+          />
+        </div>
+
+        <!-- Projects List -->
+        <div v-if="completedProjects.length > 0" class="max-h-96 overflow-y-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Nomor Proyek</th>
+                <th>Customer</th>
+                <th>Nilai</th>
+                <th>Selesai</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="project in completedProjects" :key="project.id">
+                <td class="font-mono text-xs">{{ project.projectNumber }}</td>
+                <td>{{ project.customer?.name || '-' }}</td>
+                <td class="text-right font-mono text-xs">
+                  {{ formatCurrency(project.totalPrice) }}
+                </td>
+                <td class="text-sm">
+                  {{ project.endDate ? formatDate(new Date(project.endDate)) : '-' }}
+                </td>
+                <td class="text-center">
+                  <button
+                    @click="reopenProject(project.id, project.projectNumber)"
+                    class="btn btn-sm btn-warning"
+                    :disabled="loadingReopen"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Buka
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else-if="reopenSearch" class="alert alert-warning">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <span>Tidak ada proyek yang sesuai dengan pencarian</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Clear Pending PO Card -->
     <div class="card bg-base-100 shadow">
       <div class="card-body">
@@ -474,6 +605,7 @@
 <script setup lang="ts">
 const { showAlert } = useAlert()
 const { formatCurrency, formatDate } = useFormatter()
+const { confirm } = useConfirm()
 
 const selectedMode = ref<'CHECK' | 'SIMPLE' | 'FULL'>('CHECK')
 const loading = ref(false)
@@ -484,12 +616,77 @@ const selectedWageMode = ref<'CHECK' | 'EXECUTE'>('CHECK')
 const loadingWage = ref(false)
 const wageResult = ref<any>(null)
 
+// Reopen Project states
+const reopenSearch = ref('')
+const completedProjects = ref<any[]>([])
+const loadingReopen = ref(false)
+
+const searchCompletedProjects = async () => {
+  if (!reopenSearch.value || reopenSearch.value.length < 2) {
+    completedProjects.value = []
+    return
+  }
+
+  try {
+    const response = await $fetch('/api/projects', {
+      params: {
+        status: 'COMPLETED',
+        search: reopenSearch.value,
+        limit: 20,
+      },
+    })
+    // API returns data, not projects
+    completedProjects.value = response.data || response.projects || []
+  } catch (err) {
+    console.error('Error searching projects:', err)
+    completedProjects.value = []
+  }
+}
+
+const reopenProject = async (projectId: string, projectNumber: string) => {
+  const confirmed = await confirm({
+    title: 'Buka Kembali Proyek',
+    message: `Apakah Anda yakin ingin membuka kembali proyek ${projectNumber}?\n\nStatus akan diubah dari COMPLETED ke ONGOING.`,
+    confirmText: 'Ya, Buka Kembali',
+    cancelText: 'Batal',
+    type: 'warning',
+  })
+
+  if (!confirmed) {
+    return
+  }
+
+  loadingReopen.value = true
+
+  try {
+    await $fetch(`/api/utilities/reopen-project/${projectId}`, {
+      method: 'POST',
+    })
+
+    showAlert(`Proyek ${projectNumber} berhasil dibuka kembali`, 'success')
+
+    // Remove from list
+    completedProjects.value = completedProjects.value.filter(p => p.id !== projectId)
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal membuka kembali proyek', 'error')
+    console.error('Error:', err)
+  } finally {
+    loadingReopen.value = false
+  }
+}
+
 const fixRemainingWageDate = async () => {
   if (selectedWageMode.value === 'EXECUTE') {
-    const confirmMessage =
-      'Apakah Anda yakin ingin memperbaiki tanggal transaksi sisa upah teknisi? Data akan diupdate ke tanggal selesai proyek. (tidak bisa diundo)'
+    const confirmed = await confirm({
+      title: 'Perbaiki Tanggal Sisa Upah',
+      message:
+        'Apakah Anda yakin ingin memperbaiki tanggal transaksi sisa upah teknisi?\n\nData akan diupdate ke tanggal selesai proyek. (tidak bisa diundo)',
+      confirmText: 'Ya, Perbaiki',
+      cancelText: 'Batal',
+      type: 'warning',
+    })
 
-    if (!confirm(confirmMessage)) {
+    if (!confirmed) {
       return
     }
   }
@@ -524,12 +721,18 @@ const fixRemainingWageDate = async () => {
 
 const clearPendingPO = async () => {
   if (selectedMode.value !== 'CHECK') {
-    const confirmMessage =
-      selectedMode.value === 'SIMPLE'
-        ? 'Apakah Anda yakin ingin clear status PO PENDING? (tidak bisa diundo)'
-        : 'Apakah Anda yakin ingin membuat PO backdate? Ini akan membuat record baru di database. (tidak bisa diundo)'
+    const confirmed = await confirm({
+      title: 'Clear Pending PO',
+      message:
+        selectedMode.value === 'SIMPLE'
+          ? 'Apakah Anda yakin ingin clear status PO PENDING?\n\n(tidak bisa diundo)'
+          : 'Apakah Anda yakin ingin membuat PO backdate?\n\nIni akan membuat record baru di database. (tidak bisa diundo)',
+      confirmText: selectedMode.value === 'SIMPLE' ? 'Ya, Clear Status' : 'Ya, Buat PO',
+      cancelText: 'Batal',
+      type: 'warning',
+    })
 
-    if (!confirm(confirmMessage)) {
+    if (!confirmed) {
       return
     }
   }

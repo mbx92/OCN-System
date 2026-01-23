@@ -5,20 +5,41 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return
   }
 
-  const token = useCookie('auth-token')
-
-  // No token at all? Redirect to login
-  if (!token.value) {
-    return navigateTo('/login')
-  }
-
-  // On server-side, token exists - let request proceed
+  // On server-side, skip auth check entirely - let client handle it
+  // This prevents redirect loops during SSR
   if (import.meta.server) {
     return
   }
 
-  // Client-side: check user state
+  // Client-side logic
+  const token = useCookie('auth-token')
   const { user, fetchUser, initialized } = useAuth()
+
+  console.log('[Auth Client] Checking auth for:', to.path)
+  console.log('[Auth Client] Token from useCookie:', !!token.value)
+  console.log('[Auth Client] User exists:', !!user.value)
+  console.log('[Auth Client] Initialized:', initialized.value)
+
+  // Check document.cookie as fallback
+  const docCookie = document.cookie
+  const hasTokenInDoc = docCookie.includes('auth-token=')
+  console.log('[Auth Client] Token in document.cookie:', hasTokenInDoc)
+
+  // No token anywhere? Redirect to login
+  if (!token.value && !hasTokenInDoc) {
+    console.log('[Auth Client] No token found, redirecting to login')
+    return navigateTo('/login')
+  }
+
+  // If useCookie doesn't have token but document.cookie does, there's a sync issue
+  if (!token.value && hasTokenInDoc) {
+    console.log('[Auth Client] Cookie sync issue, extracting from document.cookie...')
+    // Try to get token from document.cookie
+    const match = docCookie.match(/auth-token=([^;]+)/)
+    if (match) {
+      token.value = match[1]
+    }
+  }
 
   // If user is already set, proceed
   if (user.value) {
@@ -36,27 +57,24 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   // User not set - try to fetch
-  await fetchUser()
+  try {
+    console.log('[Auth Client] Fetching user...')
+    await fetchUser()
+    console.log('[Auth Client] Fetch complete, user:', !!user.value)
+  } catch (error) {
+    console.error('[Auth Client] Failed to fetch user:', error)
+    // On fetch failure, clear invalid token and redirect
+    token.value = null
+    localStorage.removeItem('ocn-user')
+    return navigateTo('/login')
+  }
 
   // Check again after fetch
   if (!user.value) {
-    // Last resort: try to restore from localStorage directly
-    if (import.meta.client) {
-      const storedUser = localStorage.getItem('ocn-user')
-      if (storedUser) {
-        try {
-          // Call the API to verify the session is still valid
-          const response = await $fetch<{ user: any }>('/api/auth/me')
-          if (response.user) {
-            // User is valid, let the page load - useAuth will pick it up
-            return
-          }
-        } catch {
-          // Session invalid, redirect to login
-          localStorage.removeItem('ocn-user')
-        }
-      }
-    }
+    console.log('[Auth Client] User not found after fetch, redirecting to login')
+    // Clear invalid token
+    token.value = null
+    localStorage.removeItem('ocn-user')
     return navigateTo('/login')
   }
 

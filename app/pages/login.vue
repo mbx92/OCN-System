@@ -197,13 +197,25 @@ const handleLogin = async () => {
 
   try {
     const result = await login(credentials.username, credentials.password)
+
+    if (!result) {
+      error.value = 'Login gagal, tidak ada data user'
+      return
+    }
+
+    console.log('[Login] Login successful, user role:', result.role)
+
+    // Small delay to ensure cookie is set
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     // Redirect based on role
     if (result?.role === 'TECHNICIAN') {
-      await navigateTo('/technician')
+      await navigateTo('/technician', { replace: true })
     } else {
-      await navigateTo('/dashboard')
+      await navigateTo('/dashboard', { replace: true })
     }
   } catch (err: any) {
+    console.error('[Login] Login error:', err)
     error.value = err.data?.message || err.statusMessage || 'Login gagal. Silakan coba lagi.'
   } finally {
     loading.value = false
