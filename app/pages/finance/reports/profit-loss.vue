@@ -104,7 +104,8 @@ function calculateSummary() {
 
   expenses.value.forEach(expense => {
     if (expense.type && expensesByType.value.hasOwnProperty(expense.type)) {
-      expensesByType.value[expense.type as keyof typeof expensesByType.value] += parseFloat(expense.amount) || 0
+      expensesByType.value[expense.type as keyof typeof expensesByType.value] +=
+        parseFloat(expense.amount) || 0
     }
   })
 
