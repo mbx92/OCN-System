@@ -29,18 +29,58 @@ export default defineEventHandler(async event => {
     })
   }
 
+  // Check if quotation already has a project
+  if (quotation.projectId) {
+    // Quotation already approved, return existing project
+    const existingProject = await prisma.project.findUnique({
+      where: { id: quotation.projectId },
+      include: {
+        customer: true,
+        items: true,
+      },
+    })
+
+    if (existingProject) {
+      return existingProject
+    }
+  }
+
   // Use custom date if provided (backdate), otherwise use now
   const projectDate = body?.projectDate ? dayjs(body.projectDate) : dayjs()
 
-  // Generate project number based on selected date (backdate support)
-  const startOfMonth = projectDate.startOf('month').toDate()
-  const endOfMonth = projectDate.endOf('month').toDate()
-  const count = await prisma.project.count({
-    where: {
-      createdAt: { gte: startOfMonth, lte: endOfMonth },
-    },
-  })
-  const projectNumber = `PRJ-${projectDate.format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
+  // Generate unique project number based on selected date (backdate support)
+  let projectNumber = ''
+  let isUnique = false
+  let attempt = 0
+
+  while (!isUnique && attempt < 10) {
+    const startOfMonth = projectDate.startOf('month').toDate()
+    const endOfMonth = projectDate.endOf('month').toDate()
+    const count = await prisma.project.count({
+      where: {
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+      },
+    })
+    projectNumber = `PRJ-${projectDate.format('YYYYMM')}-${String(count + 1 + attempt).padStart(3, '0')}`
+
+    // Check if this number already exists
+    const existing = await prisma.project.findUnique({
+      where: { projectNumber },
+    })
+
+    if (!existing) {
+      isUnique = true
+    } else {
+      attempt++
+    }
+  }
+
+  if (!isUnique) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Gagal generate nomor project unik',
+    })
+  }
 
   // Get customer
   const customer = await prisma.customer.findUnique({

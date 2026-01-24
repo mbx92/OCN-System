@@ -153,7 +153,7 @@
 
     <!-- Sidebar -->
     <aside class="drawer-side z-50">
-      <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+      <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay bg-black/20"></label>
       <div
         :class="[
           'min-h-full bg-base-100 flex flex-col transition-all duration-300',

@@ -1,16 +1,18 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
       <div>
-        <h1 class="text-2xl font-bold">Laporan Omzet Bruto</h1>
-        <p class="text-base-content/60">Laporan peredaran bruto untuk keperluan pajak</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Laporan Omzet Bruto</h1>
+        <p class="text-sm text-base-content/60 hidden sm:block">
+          Laporan peredaran bruto untuk keperluan pajak
+        </p>
       </div>
       <div class="flex gap-2">
         <button @click="exportToExcel" class="btn btn-ghost btn-sm" :disabled="!reportData">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
+            class="h-4 w-4 sm:h-5 sm:w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -22,15 +24,15 @@
               d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          Export CSV
+          <span class="hidden sm:inline">Export CSV</span>
         </button>
       </div>
     </div>
 
     <!-- Filters -->
     <div class="card bg-base-100 shadow-sm">
-      <div class="card-body py-4">
-        <div class="flex flex-col sm:flex-row items-center gap-4">
+      <div class="card-body p-3 sm:p-6 sm:py-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <!-- Period Tabs -->
           <div class="tabs tabs-boxed">
             <button
@@ -89,29 +91,29 @@
     </div>
 
     <!-- Yearly Summary -->
-    <div v-if="yearlyData" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="stat bg-success/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total Omzet Bruto {{ selectedYear }}</div>
-        <div class="stat-value text-success text-2xl">
+    <div v-if="yearlyData" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+      <div class="stat bg-success/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Total Omzet Bruto {{ selectedYear }}</div>
+        <div class="stat-value text-success text-lg sm:text-2xl">
           {{ formatCurrency(yearlyData.totalRevenue) }}
         </div>
-        <div class="stat-desc">{{ yearlyData.totalTransactions }} transaksi</div>
+        <div class="stat-desc text-xs">{{ yearlyData.totalTransactions }} transaksi</div>
       </div>
 
-      <div class="stat bg-primary/10 rounded-lg shadow-sm">
-        <div class="stat-title">Rata-rata per Bulan</div>
-        <div class="stat-value text-primary text-2xl">
+      <div class="stat bg-primary/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Rata-rata per Bulan</div>
+        <div class="stat-value text-primary text-lg sm:text-2xl">
           {{ formatCurrency(yearlyData.averagePerMonth) }}
         </div>
-        <div class="stat-desc">Total / 12 bulan</div>
+        <div class="stat-desc text-xs">Total / 12 bulan</div>
       </div>
 
-      <div class="stat bg-info/10 rounded-lg shadow-sm">
-        <div class="stat-title">Rata-rata per Transaksi</div>
-        <div class="stat-value text-info text-2xl">
+      <div class="stat bg-info/10 rounded-lg shadow-sm p-3 sm:p-6 hidden sm:flex sm:flex-col">
+        <div class="stat-title text-xs sm:text-sm">Rata-rata per Transaksi</div>
+        <div class="stat-value text-info text-lg sm:text-2xl">
           {{ formatCurrency(yearlyData.averagePerTransaction) }}
         </div>
-        <div class="stat-desc">Total / Jumlah transaksi</div>
+        <div class="stat-desc text-xs">Total / Jumlah transaksi</div>
       </div>
     </div>
 
@@ -122,8 +124,8 @@
 
     <!-- Period Cards -->
     <div v-else-if="yearlyData" class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="card-title text-lg mb-4">
+      <div class="card-body p-3 sm:p-6">
+        <h2 class="card-title text-base sm:text-lg mb-3 sm:mb-4">
           Omzet per
           {{
             selectedPeriod === 'month'
@@ -137,7 +139,7 @@
         <!-- Monthly Grid -->
         <div
           v-if="selectedPeriod === 'month'"
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4"
         >
           <div
             v-for="month in monthlyCards"
@@ -145,7 +147,7 @@
             class="card bg-base-200 hover:bg-base-300 cursor-pointer transition-all shadow-sm hover:shadow-md"
             @click="openMonthDetail(month.number)"
           >
-            <div class="card-body p-4">
+            <div class="card-body p-3 sm:p-4">
               <h3 class="card-title text-sm">{{ month.name }}</h3>
               <div class="text-lg font-bold text-success">
                 {{ formatCurrency(month.revenue) }}
@@ -190,8 +192,8 @@
 
     <!-- Month Detail Modal -->
     <dialog class="modal" :class="{ 'modal-open': showMonthModal }">
-      <div class="modal-box max-w-6xl">
-        <h3 class="font-bold text-lg mb-4">
+      <div class="modal-box max-w-6xl w-full">
+        <h3 class="font-bold text-base sm:text-lg mb-3 sm:mb-4">
           Detail Omzet - {{ getMonthName(selectedMonth) }} {{ selectedYear }}
         </h3>
 

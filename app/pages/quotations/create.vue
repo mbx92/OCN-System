@@ -98,29 +98,189 @@
               </button>
             </div>
 
-            <div v-else class="space-y-2">
+            <div v-else class="space-y-3">
               <div
                 v-for="(item, index) in form.items"
                 :key="index"
-                class="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
+                class="p-3 sm:p-4 bg-base-200 rounded-lg space-y-2"
               >
-                <span class="text-sm font-medium text-base-content/60 w-6 text-center">
-                  {{ index + 1 }}
-                </span>
+                <!-- Mobile Layout -->
+                <div class="flex flex-col gap-2 sm:hidden">
+                  <!-- Row 1: Number & Name with Delete -->
+                  <div class="flex items-center gap-2">
+                    <span class="badge badge-neutral badge-sm">{{ index + 1 }}</span>
+                    <input
+                      v-model="item.name"
+                      type="text"
+                      placeholder="Nama item"
+                      class="input input-bordered input-sm flex-1 min-w-0"
+                      required
+                    />
+                    <button
+                      @click="openProductModal(index)"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-square flex-shrink-0"
+                      title="Pilih dari produk"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      @click="removeItem(index)"
+                      class="btn btn-ghost btn-sm btn-square text-error flex-shrink-0"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
 
-                <div class="flex items-center gap-1 flex-1 min-w-0">
+                  <!-- Row 2: Quantity, Unit, Price -->
+                  <div class="grid grid-cols-3 gap-2">
+                    <div class="form-control">
+                      <label class="label py-0 pb-1">
+                        <span class="label-text text-xs">Qty</span>
+                      </label>
+                      <input
+                        v-model.number="item.quantity"
+                        type="number"
+                        min="1"
+                        class="input input-bordered input-sm w-full text-center"
+                        required
+                      />
+                    </div>
+                    <div class="form-control">
+                      <label class="label py-0 pb-1">
+                        <span class="label-text text-xs">Unit</span>
+                      </label>
+                      <select
+                        v-model="item.unit"
+                        class="select select-bordered select-sm w-full"
+                        required
+                      >
+                        <option v-for="unit in units" :key="unit.id" :value="unit.symbol">
+                          {{ unit.symbol }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-control">
+                      <label class="label py-0 pb-1">
+                        <span class="label-text text-xs">Harga</span>
+                      </label>
+                      <input
+                        v-model.number="item.price"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        class="input input-bordered input-sm w-full text-right"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Row 3: Total -->
+                  <div class="flex justify-between items-center pt-1 border-t border-base-300">
+                    <span class="text-xs text-base-content/60 font-medium">Total</span>
+                    <span class="font-bold text-primary">
+                      {{ formatCurrency(item.quantity * item.price) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Desktop Layout (unchanged) -->
+                <div class="hidden sm:flex items-center gap-2">
+                  <span class="text-sm font-medium text-base-content/60 w-6 text-center">
+                    {{ index + 1 }}
+                  </span>
+
+                  <div class="flex items-center gap-1 flex-1 min-w-0">
+                    <input
+                      v-model="item.name"
+                      type="text"
+                      placeholder="Nama item"
+                      class="input input-bordered input-sm flex-1"
+                      required
+                    />
+                    <button
+                      @click="openProductModal(index)"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-square"
+                      title="Pilih dari produk"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
                   <input
-                    v-model="item.name"
-                    type="text"
-                    placeholder="Nama item"
-                    class="input input-bordered input-sm flex-1"
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    class="input input-bordered input-sm w-16 text-right"
                     required
                   />
+                  <select
+                    v-model="item.unit"
+                    class="select select-bordered select-sm w-20"
+                    required
+                  >
+                    <option v-for="unit in units" :key="unit.id" :value="unit.symbol">
+                      {{ unit.symbol }}
+                    </option>
+                  </select>
+                  <input
+                    v-model.number="item.price"
+                    type="number"
+                    min="0"
+                    placeholder="Harga"
+                    class="input input-bordered input-sm w-28 text-right"
+                    required
+                  />
+
+                  <div class="text-right min-w-24">
+                    <span class="font-semibold text-primary text-sm">
+                      {{ formatCurrency(item.quantity * item.price) }}
+                    </span>
+                  </div>
+
                   <button
-                    @click="openProductModal(index)"
-                    type="button"
-                    class="btn btn-ghost btn-sm btn-square"
-                    title="Pilih dari produk"
+                    @click="removeItem(index)"
+                    class="btn btn-ghost btn-xs btn-circle text-error"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -133,58 +293,11 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        d="M6 18L18 6M6 6l12 12"
                       />
                     </svg>
                   </button>
                 </div>
-
-                <input
-                  v-model.number="item.quantity"
-                  type="number"
-                  min="1"
-                  class="input input-bordered input-sm w-16 text-right"
-                  required
-                />
-                <select v-model="item.unit" class="select select-bordered select-sm w-20" required>
-                  <option v-for="unit in units" :key="unit.id" :value="unit.symbol">
-                    {{ unit.symbol }}
-                  </option>
-                </select>
-                <input
-                  v-model.number="item.price"
-                  type="number"
-                  min="0"
-                  placeholder="Harga"
-                  class="input input-bordered input-sm w-28 text-right"
-                  required
-                />
-
-                <div class="text-right min-w-24">
-                  <span class="font-semibold text-primary text-sm">
-                    {{ formatCurrency(item.quantity * item.price) }}
-                  </span>
-                </div>
-
-                <button
-                  @click="removeItem(index)"
-                  class="btn btn-ghost btn-xs btn-circle text-error"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>

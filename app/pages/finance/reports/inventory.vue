@@ -191,16 +191,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center print:hidden">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 print:hidden"
+    >
       <div>
-        <h1 class="text-2xl font-bold">Laporan Inventory</h1>
-        <p class="text-base-content/60">Status stok dan nilai inventory</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Laporan Inventory</h1>
+        <p class="text-sm text-base-content/60 hidden sm:block">Status stok dan nilai inventory</p>
       </div>
       <div class="flex gap-2">
         <button @click="exportToCSV" class="btn btn-ghost btn-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -208,9 +210,9 @@ onMounted(() => {
               d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          Export CSV
+          <span class="hidden sm:inline">Export CSV</span>
         </button>
-        <button @click="printReport" class="btn btn-ghost btn-sm">
+        <button @click="printReport" class="btn btn-ghost btn-sm hidden sm:inline-flex">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
@@ -226,8 +228,8 @@ onMounted(() => {
 
     <!-- Filters -->
     <div class="card bg-base-100 shadow-sm print:hidden">
-      <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="card-body p-3 sm:p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div class="form-control">
             <label class="label">
               <span class="label-text">Kategori</span>

@@ -117,19 +117,21 @@ function exportToCSV() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4"
+    >
       <div>
-        <h1 class="text-2xl font-bold">Laporan Pembelian</h1>
-        <p class="text-base-content/60">Purchase Order dan Asset</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Laporan Pembelian</h1>
+        <p class="text-sm text-base-content/60 hidden sm:block">Purchase Order dan Asset</p>
       </div>
     </div>
 
     <!-- Filters -->
     <div class="card bg-base-100 shadow-sm">
-      <div class="card-body py-4">
-        <div class="flex flex-col sm:flex-row items-center gap-4">
+      <div class="card-body p-3 sm:p-6 sm:py-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <!-- Period Tabs -->
           <div class="tabs tabs-boxed">
             <button
@@ -184,36 +186,39 @@ function exportToCSV() {
     </div>
 
     <!-- Summary Totals -->
-    <div v-if="summaryData?.totals" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat bg-blue-500/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total PO</div>
-        <div class="stat-value text-blue-600 text-2xl">
+    <div
+      v-if="summaryData?.totals"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+    >
+      <div class="stat bg-blue-500/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Total PO</div>
+        <div class="stat-value text-blue-600 text-lg sm:text-2xl">
           {{ formatCurrency(summaryData.totals.poTotal) }}
         </div>
-        <div class="stat-desc">{{ summaryData.totals.poCount }} transaksi</div>
+        <div class="stat-desc text-xs">{{ summaryData.totals.poCount }} transaksi</div>
       </div>
-      <div class="stat bg-purple-500/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total Asset</div>
-        <div class="stat-value text-purple-600 text-2xl">
+      <div class="stat bg-purple-500/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Total Asset</div>
+        <div class="stat-value text-purple-600 text-lg sm:text-2xl">
           {{ formatCurrency(summaryData.totals.assetTotal) }}
         </div>
-        <div class="stat-desc">{{ summaryData.totals.assetCount }} item</div>
+        <div class="stat-desc text-xs">{{ summaryData.totals.assetCount }} item</div>
       </div>
-      <div class="stat bg-success/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total Pembelian</div>
-        <div class="stat-value text-success text-2xl">
+      <div class="stat bg-success/10 rounded-lg shadow-sm p-3 sm:p-6 hidden sm:flex sm:flex-col">
+        <div class="stat-title text-xs sm:text-sm">Total Pembelian</div>
+        <div class="stat-value text-success text-lg sm:text-2xl">
           {{ formatCurrency(summaryData.totals.total) }}
         </div>
-        <div class="stat-desc">
+        <div class="stat-desc text-xs">
           {{ summaryData.totals.poCount + summaryData.totals.assetCount }} total
         </div>
       </div>
-      <div class="stat bg-base-200 rounded-lg shadow-sm">
-        <div class="stat-title">Total Project</div>
-        <div class="stat-value text-2xl">
+      <div class="stat bg-base-200 rounded-lg shadow-sm p-3 sm:p-6 hidden sm:flex sm:flex-col">
+        <div class="stat-title text-xs sm:text-sm">Total Project</div>
+        <div class="stat-value text-lg sm:text-2xl">
           {{ summaryData.totals.poCount + summaryData.totals.assetCount }}
         </div>
-        <div class="stat-desc">Transaksi pembelian</div>
+        <div class="stat-desc text-xs">Transaksi pembelian</div>
       </div>
     </div>
 
@@ -224,8 +229,8 @@ function exportToCSV() {
 
     <!-- Period Cards -->
     <div v-else-if="summaryData?.summaries" class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="card-title text-lg mb-4">
+      <div class="card-body p-3 sm:p-6">
+        <h2 class="card-title text-base sm:text-lg mb-3 sm:mb-4">
           Ringkasan per
           {{
             selectedPeriod === 'month'
@@ -239,7 +244,7 @@ function exportToCSV() {
         <!-- Monthly Grid -->
         <div
           v-if="selectedPeriod === 'month'"
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4"
         >
           <div
             v-for="item in summaryData.summaries"
@@ -247,7 +252,7 @@ function exportToCSV() {
             class="card bg-base-200 hover:bg-base-300 cursor-pointer transition-all hover:shadow-md"
             @click="openDetail(item.periodValue)"
           >
-            <div class="card-body p-4">
+            <div class="card-body p-3 sm:p-4">
               <h3 class="font-bold text-lg text-center">{{ item.periodLabel }}</h3>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
@@ -310,11 +315,13 @@ function exportToCSV() {
 
     <!-- Detail Modal -->
     <dialog :class="['modal', { 'modal-open': showDetailModal }]">
-      <div class="modal-box max-w-5xl">
+      <div class="modal-box max-w-5xl w-full">
         <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeDetail">
           ✕
         </button>
-        <h3 class="font-bold text-lg mb-4">Detail Pembelian - {{ detailPeriodLabel }}</h3>
+        <h3 class="font-bold text-base sm:text-lg mb-3 sm:mb-4">
+          Detail Pembelian - {{ detailPeriodLabel }}
+        </h3>
 
         <!-- Detail Loading -->
         <div v-if="loadingDetail" class="flex justify-center py-8">
@@ -323,23 +330,35 @@ function exportToCSV() {
 
         <template v-else-if="detailData">
           <!-- Summary -->
-          <div class="grid grid-cols-3 gap-4 mb-6">
-            <div class="stat bg-blue-500/10 rounded-lg p-4">
-              <div class="stat-title text-sm">Total PO</div>
-              <div class="stat-value text-blue-600 text-xl">
-                {{ formatCurrency(detailData.totals.poTotal) }}
+          <div class="mb-4 sm:mb-6">
+            <!-- Mobile: Only Total -->
+            <div class="grid grid-cols-1 gap-2 sm:hidden">
+              <div class="stat bg-success/10 rounded-lg p-3">
+                <div class="stat-title text-xs">Total Pembelian</div>
+                <div class="stat-value text-success text-lg">
+                  {{ formatCurrency(detailData.totals.total) }}
+                </div>
               </div>
             </div>
-            <div class="stat bg-purple-500/10 rounded-lg p-4">
-              <div class="stat-title text-sm">Total Asset</div>
-              <div class="stat-value text-purple-600 text-xl">
-                {{ formatCurrency(detailData.totals.assetTotal) }}
+            <!-- Desktop: All cards -->
+            <div class="hidden sm:grid grid-cols-3 gap-3">
+              <div class="stat bg-blue-500/10 rounded-lg p-4">
+                <div class="stat-title text-sm">Total PO</div>
+                <div class="stat-value text-blue-600 text-xl">
+                  {{ formatCurrency(detailData.totals.poTotal) }}
+                </div>
               </div>
-            </div>
-            <div class="stat bg-success/10 rounded-lg p-4">
-              <div class="stat-title text-sm">Total</div>
-              <div class="stat-value text-success text-xl">
-                {{ formatCurrency(detailData.totals.total) }}
+              <div class="stat bg-purple-500/10 rounded-lg p-4">
+                <div class="stat-title text-sm">Total Asset</div>
+                <div class="stat-value text-purple-600 text-xl">
+                  {{ formatCurrency(detailData.totals.assetTotal) }}
+                </div>
+              </div>
+              <div class="stat bg-success/10 rounded-lg p-4">
+                <div class="stat-title text-sm">Total</div>
+                <div class="stat-value text-success text-xl">
+                  {{ formatCurrency(detailData.totals.total) }}
+                </div>
               </div>
             </div>
           </div>
@@ -349,11 +368,11 @@ function exportToCSV() {
             <table class="table table-sm">
               <thead class="sticky top-0 bg-base-100">
                 <tr>
-                  <th>Tanggal</th>
+                  <th class="hidden sm:table-cell">Tanggal</th>
                   <th>Tipe</th>
-                  <th>Referensi</th>
+                  <th class="hidden md:table-cell">Referensi</th>
                   <th>Deskripsi</th>
-                  <th>Supplier/Kategori</th>
+                  <th class="hidden lg:table-cell">Supplier/Kategori</th>
                   <th class="text-right">Jumlah</th>
                 </tr>
               </thead>
@@ -362,7 +381,7 @@ function exportToCSV() {
                   <td colspan="6" class="text-center py-8 text-base-content/60">Tidak ada data</td>
                 </tr>
                 <tr v-for="item in detailData.items" :key="item.id">
-                  <td>{{ formatDate(item.date) }}</td>
+                  <td class="hidden sm:table-cell text-xs">{{ formatDate(item.date) }}</td>
                   <td>
                     <span
                       class="badge badge-sm"
@@ -371,10 +390,17 @@ function exportToCSV() {
                       {{ item.type }}
                     </span>
                   </td>
-                  <td class="font-mono text-xs">{{ item.reference }}</td>
-                  <td class="max-w-xs truncate">{{ item.description }}</td>
-                  <td>{{ item.supplier || item.category }}</td>
-                  <td class="text-right font-medium">{{ formatCurrency(item.amount) }}</td>
+                  <td class="hidden md:table-cell font-mono text-xs">{{ item.reference }}</td>
+                  <td class="max-w-xs truncate text-xs">
+                    <div class="font-medium">{{ item.description }}</div>
+                    <div class="text-base-content/60 text-xs sm:hidden">
+                      {{ formatDate(item.date) }}
+                    </div>
+                  </td>
+                  <td class="hidden lg:table-cell text-xs">{{ item.supplier || item.category }}</td>
+                  <td class="text-right font-medium text-xs sm:text-sm">
+                    {{ formatCurrency(item.amount) }}
+                  </td>
                 </tr>
               </tbody>
             </table>

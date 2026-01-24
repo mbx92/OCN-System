@@ -322,19 +322,23 @@ const detailPeriodLabel = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4"
+    >
       <div>
-        <h1 class="text-2xl font-bold">Laporan Laba Rugi</h1>
-        <p class="text-base-content/60">Klik periode untuk melihat laporan detail</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Laporan Laba Rugi</h1>
+        <p class="text-sm text-base-content/60 hidden sm:block">
+          Klik periode untuk melihat laporan detail
+        </p>
       </div>
     </div>
 
     <!-- Filters -->
     <div class="card bg-base-100 shadow-sm">
-      <div class="card-body py-4">
-        <div class="flex flex-col sm:flex-row items-center gap-4">
+      <div class="card-body p-3 sm:p-6 sm:py-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <!-- Period Tabs -->
           <div class="tabs tabs-boxed">
             <button
@@ -393,34 +397,37 @@ const detailPeriodLabel = computed(() => {
     </div>
 
     <!-- Summary Totals -->
-    <div v-if="summaryData?.totals" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat bg-success/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total Pendapatan</div>
-        <div class="stat-value text-success text-2xl">
+    <div
+      v-if="summaryData?.totals"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+    >
+      <div class="stat bg-success/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Total Pendapatan</div>
+        <div class="stat-value text-success text-lg sm:text-2xl">
           {{ formatCurrency(summaryData.totals.revenue) }}
         </div>
       </div>
-      <div class="stat bg-error/10 rounded-lg shadow-sm">
-        <div class="stat-title">Total Pengeluaran</div>
-        <div class="stat-value text-error text-2xl">
+      <div class="stat bg-error/10 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="stat-title text-xs sm:text-sm">Total Pengeluaran</div>
+        <div class="stat-value text-error text-lg sm:text-2xl">
           {{ formatCurrency(summaryData.totals.expenses) }}
         </div>
       </div>
       <div
-        class="stat rounded-lg shadow-sm"
+        class="stat rounded-lg shadow-sm p-3 sm:p-6 hidden sm:flex sm:flex-col"
         :class="summaryData.totals.profit >= 0 ? 'bg-primary/10' : 'bg-warning/10'"
       >
-        <div class="stat-title">Laba/Rugi</div>
+        <div class="stat-title text-xs sm:text-sm">Laba/Rugi</div>
         <div
-          class="stat-value text-2xl"
+          class="stat-value text-lg sm:text-2xl"
           :class="summaryData.totals.profit >= 0 ? 'text-primary' : 'text-warning'"
         >
           {{ formatCurrency(summaryData.totals.profit) }}
         </div>
       </div>
-      <div class="stat bg-base-200 rounded-lg shadow-sm">
-        <div class="stat-title">Total Project</div>
-        <div class="stat-value text-2xl">{{ summaryData.totals.projectCount }}</div>
+      <div class="stat bg-base-200 rounded-lg shadow-sm p-3 sm:p-6 hidden sm:flex sm:flex-col">
+        <div class="stat-title text-xs sm:text-sm">Total Project</div>
+        <div class="stat-value text-lg sm:text-2xl">{{ summaryData.totals.projectCount }}</div>
       </div>
     </div>
 
@@ -431,8 +438,8 @@ const detailPeriodLabel = computed(() => {
 
     <!-- Period Cards Dashboard -->
     <div v-else-if="summaryData?.summaries" class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="card-title text-lg mb-4">
+      <div class="card-body p-3 sm:p-6">
+        <h2 class="card-title text-base sm:text-lg mb-3 sm:mb-4">
           Ringkasan per
           {{
             selectedPeriod === 'month'
@@ -446,7 +453,7 @@ const detailPeriodLabel = computed(() => {
         <!-- Monthly Grid -->
         <div
           v-if="selectedPeriod === 'month'"
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4"
         >
           <div
             v-for="item in summaryData.summaries"
@@ -633,10 +640,10 @@ const detailPeriodLabel = computed(() => {
         <!-- Report Content -->
         <div v-else-if="detailData" class="space-y-4 print:space-y-2">
           <!-- Report Header -->
-          <div class="text-center mb-6 bg-primary/10 py-4 rounded-lg">
-            <h2 class="text-xl font-bold text-primary">{{ detailData.companyName }}</h2>
-            <p class="text-lg font-semibold mt-1">Laporan Laba Rugi Multi-Step</p>
-            <p class="text-base-content/70">{{ detailData.periodLabel }}</p>
+          <div class="text-center mb-4 sm:mb-6 bg-primary/10 py-3 sm:py-4 rounded-lg">
+            <h2 class="text-lg sm:text-xl font-bold text-primary">{{ detailData.companyName }}</h2>
+            <p class="text-base sm:text-lg font-semibold mt-1">Laporan Laba Rugi Multi-Step</p>
+            <p class="text-sm text-base-content/70">{{ detailData.periodLabel }}</p>
           </div>
 
           <!-- Report Table -->

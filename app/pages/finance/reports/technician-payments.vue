@@ -287,12 +287,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center print:hidden">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 print:hidden"
+    >
       <div>
-        <h1 class="text-2xl font-bold">Laporan Pembayaran Teknisi</h1>
-        <p class="text-base-content/60">Analisis pembayaran fee/gaji teknisi</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Laporan Pembayaran Teknisi</h1>
+        <p class="text-sm text-base-content/60 hidden sm:block">
+          Analisis pembayaran fee/gaji teknisi
+        </p>
       </div>
       <div class="flex gap-2">
         <button @click="exportToPdf" class="btn btn-primary btn-sm" :disabled="pdfGenerating">
@@ -305,7 +309,7 @@ onMounted(() => {
               d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
             />
           </svg>
-          Download PDF
+          <span class="hidden sm:inline">PDF</span>
         </button>
         <button @click="exportToCSV" class="btn btn-outline btn-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,9 +320,9 @@ onMounted(() => {
               d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          Export CSV
+          <span class="hidden sm:inline">CSV</span>
         </button>
-        <button @click="printReport" class="btn btn-outline btn-sm">
+        <button @click="printReport" class="btn btn-outline btn-sm hidden sm:inline-flex">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
@@ -334,8 +338,8 @@ onMounted(() => {
 
     <!-- Filters -->
     <div class="card bg-base-100 shadow-sm print:hidden">
-      <div class="card-body">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="card-body p-3 sm:p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div class="form-control">
             <label class="label">
               <span class="label-text">Dari Tanggal</span>
@@ -380,24 +384,24 @@ onMounted(() => {
 
     <template v-else>
       <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div class="card bg-base-100 shadow-sm">
-          <div class="card-body">
-            <div class="text-sm text-base-content/60">Total Pembayaran</div>
-            <div class="text-2xl font-bold text-primary">
+          <div class="card-body p-3 sm:p-6">
+            <div class="text-xs sm:text-sm text-base-content/60">Total Pembayaran</div>
+            <div class="text-lg sm:text-2xl font-bold text-primary">
               {{ formatCurrency(summary.totalPayments) }}
             </div>
           </div>
         </div>
         <div class="card bg-success/10 shadow-sm">
-          <div class="card-body">
-            <div class="text-sm text-success/80">Sudah Dibayar</div>
-            <div class="text-2xl font-bold text-success">
+          <div class="card-body p-3 sm:p-6">
+            <div class="text-xs sm:text-sm text-success/80">Sudah Dibayar</div>
+            <div class="text-lg sm:text-2xl font-bold text-success">
               {{ formatCurrency(summary.totalPaid) }}
             </div>
           </div>
         </div>
-        <div class="card bg-warning/10 shadow-sm">
+        <div class="card bg-warning/10 shadow-sm hidden sm:flex">
           <div class="card-body">
             <div class="text-sm text-warning/80">Pending</div>
             <div class="text-2xl font-bold text-warning">
@@ -405,7 +409,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="card bg-error/10 shadow-sm">
+        <div class="card bg-error/10 shadow-sm hidden sm:flex">
           <div class="card-body">
             <div class="text-sm text-error/80">Dibatalkan</div>
             <div class="text-2xl font-bold text-error">
@@ -413,7 +417,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="card bg-info/10 shadow-sm">
+        <div class="card bg-info/10 shadow-sm hidden sm:flex">
           <div class="card-body">
             <div class="text-sm text-info/80">Jumlah Teknisi</div>
             <div class="text-2xl font-bold text-info">
