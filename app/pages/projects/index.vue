@@ -23,7 +23,7 @@
               <input
                 v-model="search"
                 type="text"
-                placeholder="Cari proyek..."
+                placeholder="Cari berdasarkan nomor, judul, atau pelanggan..."
                 class="input input-bordered w-full"
               />
             </div>
@@ -44,70 +44,74 @@
     </div>
 
     <!-- Project Grid -->
-    <div v-if="viewMode === 'GRID'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-if="pending" class="col-span-full text-center py-8">
-        <span class="loading loading-spinner loading-lg"></span>
-      </div>
-      <div
-        v-else-if="!projects?.data?.length"
-        class="col-span-full text-center py-12 text-base-content/60"
-      >
-        <p>Belum ada proyek</p>
-      </div>
+    <template v-if="viewMode === 'GRID'">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-if="pending" class="col-span-full text-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+        <div
+          v-else-if="!projects?.data?.length"
+          class="col-span-full text-center py-12 text-base-content/60"
+        >
+          <p>Belum ada proyek</p>
+        </div>
 
-      <div
-        v-for="project in projects?.data"
-        :key="project.id"
-        class="card bg-base-100 shadow hover:shadow-md transition-shadow cursor-pointer"
-        @click="navigateTo(`/projects/${project.id}`)"
-      >
-        <div class="card-body p-5">
-          <div class="flex justify-between items-start mb-2">
-            <span class="badge" :class="getStatusClass(project.status)">
-              {{ getStatusLabel(project.status) }}
-            </span>
-            <span class="text-xs font-mono text-base-content/60">{{ project.projectNumber }}</span>
-          </div>
-
-          <h2 class="font-bold text-lg mb-1">{{ project.title }}</h2>
-          <p class="text-sm text-base-content/70 line-clamp-2 mb-4">
-            {{ project.description || 'Tidak ada deskripsi' }}
-          </p>
-
-          <div class="space-y-2 text-sm">
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Pelanggan</span>
-              <span class="font-medium">{{ project.customer?.name }}</span>
+        <div
+          v-for="project in projects?.data"
+          :key="project.id"
+          class="card bg-base-100 shadow hover:shadow-md transition-shadow cursor-pointer"
+          @click="navigateTo(`/projects/${project.id}`)"
+        >
+          <div class="card-body p-5">
+            <div class="flex justify-between items-start mb-2">
+              <span class="badge" :class="getStatusClass(project.status)">
+                {{ getStatusLabel(project.status) }}
+              </span>
+              <span class="text-xs font-mono text-base-content/60">
+                {{ project.projectNumber }}
+              </span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Total Nilai</span>
-              <span class="font-medium font-mono">{{ formatCurrency(project.totalAmount) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Dibuat</span>
-              <span>{{ formatDate(project.createdAt) }}</span>
+
+            <h2 class="font-bold text-lg mb-1">{{ project.title }}</h2>
+            <p class="text-sm text-base-content/70 line-clamp-2 mb-4">
+              {{ project.description || 'Tidak ada deskripsi' }}
+            </p>
+
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-base-content/60">Pelanggan</span>
+                <span class="font-medium">{{ project.customer?.name }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-base-content/60">Total Nilai</span>
+                <span class="font-medium font-mono">{{ formatCurrency(project.totalAmount) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-base-content/60">Dibuat</span>
+                <span>{{ formatDate(project.createdAt) }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Pagination for Grid View -->
-    <div v-if="viewMode === 'GRID' && projects?.meta?.totalPages > 1" class="flex justify-center">
-      <div class="join">
-        <button class="join-item btn btn-sm" :disabled="page <= 1" @click="page--">«</button>
-        <button class="join-item btn btn-sm">
-          Halaman {{ page }} dari {{ projects?.meta?.totalPages }}
-        </button>
-        <button
-          class="join-item btn btn-sm"
-          :disabled="page >= projects?.meta?.totalPages"
-          @click="page++"
-        >
-          »
-        </button>
+      <!-- Pagination for Grid View -->
+      <div v-if="projects?.meta?.totalPages > 1" class="flex justify-center">
+        <div class="join">
+          <button class="join-item btn btn-sm" :disabled="page <= 1" @click="page--">«</button>
+          <button class="join-item btn btn-sm">
+            Halaman {{ page }} dari {{ projects?.meta?.totalPages }}
+          </button>
+          <button
+            class="join-item btn btn-sm"
+            :disabled="page >= projects?.meta?.totalPages"
+            @click="page++"
+          >
+            »
+          </button>
+        </div>
       </div>
-    </div>
+    </template>
 
     <!-- Project List -->
     <div v-else class="card bg-base-100 shadow">
@@ -190,6 +194,7 @@ const { formatCurrency, formatDate } = useFormatter()
 const status = ref('all')
 const page = ref(1)
 const search = ref('')
+const debouncedSearch = refDebounced(search, 500)
 const viewMode = ref<'GRID' | 'LIST'>('GRID')
 
 const statusTabs = [
@@ -203,9 +208,18 @@ const statusTabs = [
 ]
 
 const { data: projects, pending } = await useFetch('/api/projects', {
-  query: { status, page, limit: 10, search },
-  watch: [status, page, search], // basic watching, can separate for debounce if needed but native input lazy or useDebounceFn is better for perf.
-  // Using direct watch on search for now as it's simple enough for this user.
+  query: { status, page, limit: 10, search: debouncedSearch },
+  watch: [status, page, debouncedSearch],
+})
+
+// Reset page when search changes
+watch(debouncedSearch, () => {
+  page.value = 1
+})
+
+// Reset page when status changes
+watch(status, () => {
+  page.value = 1
 })
 
 const getStatusClass = (s: string) => {

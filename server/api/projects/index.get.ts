@@ -15,8 +15,7 @@ export default defineEventHandler(async event => {
     where.OR = [
       { projectNumber: { contains: search, mode: 'insensitive' } },
       { title: { contains: search, mode: 'insensitive' } },
-      { customer: { name: { contains: search, mode: 'insensitive' } } },
-      { id: search }, // Allow searching by ID
+      { customer: { is: { name: { contains: search, mode: 'insensitive' } } } },
     ]
   }
 

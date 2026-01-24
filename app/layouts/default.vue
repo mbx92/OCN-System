@@ -771,25 +771,6 @@
             </template>
           </ClientOnly>
         </nav>
-
-        <!-- User info at bottom -->
-        <ClientOnly>
-          <div v-if="user && !isCollapsed" class="p-4 border-t border-base-200">
-            <div class="flex items-center gap-3">
-              <div class="avatar placeholder">
-                <div
-                  class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center"
-                >
-                  <span class="text-sm">{{ userInitials }}</span>
-                </div>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-medium truncate">{{ user.name }}</p>
-                <p class="text-xs text-base-content/60">{{ roleLabel }}</p>
-              </div>
-            </div>
-          </div>
-        </ClientOnly>
       </div>
     </aside>
 

@@ -104,6 +104,28 @@ async function loadProjects() {
   }
 }
 
+// Helper function to auto-fill from project
+function autoFillFromProject(projectId: string, fillPeriod = true, fillDate = false) {
+  if (projectId) {
+    const selectedProject = projects.value.find((p: any) => p.id === projectId)
+    if (selectedProject && selectedProject.startDate) {
+      const projectDate = new Date(selectedProject.startDate)
+      const year = projectDate.getFullYear()
+      const month = String(projectDate.getMonth() + 1).padStart(2, '0')
+
+      // Auto-fill period from project start date
+      if (fillPeriod) {
+        form.value.period = `${year}-${month}`
+      }
+
+      // Auto-fill paid date from project start date if empty
+      if (fillDate && !form.value.paidDate) {
+        form.value.paidDate = new Date(selectedProject.startDate).toISOString().split('T')[0]
+      }
+    }
+  }
+}
+
 // Open modal for create or edit
 function openModal(payment: any = null) {
   editingPayment.value = payment
@@ -117,6 +139,13 @@ function openModal(payment: any = null) {
       status: payment.status,
       paidDate: payment.paidDate ? new Date(payment.paidDate).toISOString().split('T')[0] : '',
       notes: payment.notes || '',
+    }
+
+    // Auto-fill from project when editing
+    if (payment.projectId) {
+      nextTick(() => {
+        autoFillFromProject(payment.projectId, true, !payment.paidDate)
+      })
     }
   } else {
     form.value = {
@@ -137,6 +166,14 @@ function closeModal() {
   showModal.value = false
   editingPayment.value = null
 }
+
+// Auto-fill period and date when project is selected
+watch(
+  () => form.value.projectId,
+  newProjectId => {
+    autoFillFromProject(newProjectId || '', true, true)
+  }
+)
 
 // Save payment
 async function savePayment() {

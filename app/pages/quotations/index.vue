@@ -40,7 +40,7 @@
               <input
                 v-model="search"
                 type="text"
-                placeholder="Cari penawaran..."
+                placeholder="Cari berdasarkan nomor, judul, atau pelanggan..."
                 class="input input-bordered w-full"
               />
             </div>
@@ -237,6 +237,7 @@ const { formatCurrency, formatDate } = useFormatter()
 
 const status = ref('')
 const search = ref('')
+const debouncedSearch = refDebounced(search, 500)
 const page = ref(1)
 
 const statusTabs = [
@@ -248,8 +249,18 @@ const statusTabs = [
 ]
 
 const { data: quotationsData, pending } = await useFetch('/api/quotations', {
-  query: { status, search, page, limit: 10 },
-  watch: [status, search, page],
+  query: { status, search: debouncedSearch, page, limit: 10 },
+  watch: [status, debouncedSearch, page],
+})
+
+// Reset page when search changes
+watch(debouncedSearch, () => {
+  page.value = 1
+})
+
+// Reset page when status changes
+watch(status, () => {
+  page.value = 1
 })
 
 const quotations = computed(() => quotationsData.value?.data || [])
