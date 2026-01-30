@@ -39,8 +39,10 @@
         <!-- Actions -->
         <div class="flex flex-wrap gap-2">
           <!-- Download PDF -->
-          <a :href="`/api/budgets/${budget.id}/pdf`" target="_blank" class="btn btn-outline btn-sm">
+          <button @click="downloadPdf" :disabled="downloadingPdf" class="btn btn-outline btn-sm">
+            <span v-if="downloadingPdf" class="loading loading-spinner loading-xs"></span>
             <svg
+              v-else
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4 mr-1"
               fill="none"
@@ -55,7 +57,7 @@
               />
             </svg>
             Download PDF
-          </a>
+          </button>
 
           <!-- Edit (DRAFT/REJECTED only) -->
           <NuxtLink
@@ -383,12 +385,39 @@ const { user } = useAuth()
 
 const budgetId = route.params.id as string
 const actionLoading = ref(false)
+const downloadingPdf = ref(false)
 const showRejectDialog = ref(false)
 const rejectReason = ref('')
 const confirmDialog = ref()
 
 // Fetch budget
 const { data: budget, pending, refresh } = await useFetch(`/api/budgets/${budgetId}`)
+
+// Download PDF function
+const downloadPdf = async () => {
+  if (!budget.value) return
+  
+  downloadingPdf.value = true
+  try {
+    const response = await $fetch(`/api/budgets/${budgetId}/budget-pdf`, {
+      responseType: 'blob'
+    })
+    
+    const blob = new Blob([response as BlobPart], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Budget-${budget.value.budgetNumber}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (err: any) {
+    showError(err.data?.message || 'Gagal download PDF')
+  } finally {
+    downloadingPdf.value = false
+  }
+}
 
 // Check if user can approve
 const canApprove = computed(() => {

@@ -148,12 +148,11 @@
                       <label class="label py-1">
                         <span class="label-text text-xs">Unit</span>
                       </label>
-                      <input
-                        v-model="item.unit"
-                        type="text"
-                        placeholder="pcs"
-                        class="input input-bordered input-sm w-full"
-                      />
+                      <select v-model="item.unit" class="select select-bordered select-sm w-full">
+                        <option v-for="unit in units" :key="unit.id" :value="unit.symbol">
+                          {{ unit.symbol }}
+                        </option>
+                      </select>
                     </div>
 
                     <!-- Cost Price -->
@@ -465,6 +464,10 @@ const { data: productsData } = await useFetch('/api/products', {
 })
 
 const products = computed(() => productsData.value?.data || [])
+
+// Fetch units
+const { data: unitsResponse } = await useFetch('/api/units')
+const units = computed(() => unitsResponse.value || [])
 
 // Get unique categories for dropdown
 const categories = computed(() => {

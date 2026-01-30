@@ -694,7 +694,8 @@ export const generateBudgetPdfBuffer = async (budget: any, company: any): Promis
     doc.text(budget.customer.name || '-', 35, yPos)
     yPos += 4
 
-    if (budget.customer.companyName) {
+    // Only show companyName if different from name
+    if (budget.customer.companyName && budget.customer.companyName !== budget.customer.name) {
       doc.text(budget.customer.companyName, 35, yPos)
       yPos += 4
     }
