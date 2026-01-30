@@ -73,6 +73,7 @@ model Customer {
   quotations           Quotation[]
   maintenanceSchedules MaintenanceSchedule[]
   credentials          CustomerCredential[]
+  budgets              Budget[]
 }
 
 model CustomerCredential {
@@ -170,6 +171,7 @@ model Quotation {
   updatedAt   DateTime @updatedAt
   customer    Customer @relation(fields: [customerId], references: [id])
   project     Project? @relation(fields: [projectId], references: [id])
+  budget      Budget?
 }
 
 model Package {
@@ -220,6 +222,7 @@ model Product {
   suppliers          SupplierProduct[]
   stockOpnames       StockOpname[]
   packageItems       PackageItem[]
+  budgetItems        BudgetItem[]
 }
 
 model Stock {
@@ -659,4 +662,59 @@ model TechnicianBonus {
   notes        String?
   createdAt    DateTime   @default(now())
   technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+}
+
+// ==================== BUDGET MODULE ====================
+
+model Budget {
+  id            String       @id @default(cuid())
+  budgetNumber  String       @unique // BDG-YYYYMM-XXX
+  customerId    String?
+  title         String
+  description   String?
+  items         BudgetItem[]
+  totalCost     Decimal      @default(0) @db.Decimal(15, 2) // Total biaya/modal
+  totalPrice    Decimal      @default(0) @db.Decimal(15, 2) // Total harga jual
+  marginAmount  Decimal      @default(0) @db.Decimal(15, 2) // Selisih (profit)
+  marginPercent Decimal      @default(0) @db.Decimal(5, 2) // Margin %
+  status        BudgetStatus @default(DRAFT)
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectedBy    String?
+  rejectedAt    DateTime?
+  rejectionNote String?
+  quotationId   String?      @unique // Link to converted quotation
+  notes         String?
+  createdBy     String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  quotation     Quotation?   @relation(fields: [quotationId], references: [id])
+}
+
+model BudgetItem {
+  id            String   @id @default(cuid())
+  budgetId      String
+  productId     String? // Link ke product (jika dari product atau item manual yang di-save)
+  name          String
+  description   String?
+  category      String? // Kategori untuk item manual yang akan di-save sebagai product
+  quantity      Int      @default(1)
+  unit          String   @default("pcs")
+  costPrice     Decimal  @db.Decimal(15, 2) // Harga modal/biaya
+  sellPrice     Decimal  @db.Decimal(15, 2) // Harga jual yang diinginkan
+  totalCost     Decimal  @db.Decimal(15, 2) // quantity * costPrice
+  totalPrice    Decimal  @db.Decimal(15, 2) // quantity * sellPrice
+  margin        Decimal  @db.Decimal(15, 2) // totalPrice - totalCost
+  saveAsProduct Boolean  @default(false) // Flag untuk save item manual sebagai product baru
+  budget        Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  product       Product? @relation(fields: [productId], references: [id])
+}
+
+enum BudgetStatus {
+  DRAFT // Masih draft, bisa diedit
+  PENDING // Menunggu approval
+  APPROVED // Disetujui, siap convert ke quotation
+  REJECTED // Ditolak
+  CONVERTED // Sudah diconvert ke quotation
 }

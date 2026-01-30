@@ -1,0 +1,209 @@
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">Budgeting</h1>
+        <p class="text-base-content/60">Perencanaan anggaran sebelum membuat penawaran</p>
+      </div>
+      <NuxtLink to="/budgets/create" class="btn btn-primary">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        Buat Budget
+      </NuxtLink>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="tabs tabs-boxed bg-base-100 p-1 w-fit">
+      <button
+        v-for="tab in statusTabs"
+        :key="tab.value"
+        class="tab"
+        :class="{ 'tab-active': status === tab.value }"
+        @click="status = tab.value"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="form-control max-w-md">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Cari budget..."
+        class="input input-bordered"
+      />
+    </div>
+
+    <!-- Loading -->
+    <div v-if="pending" class="flex justify-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+
+    <!-- Budget List -->
+    <div v-else class="grid gap-4">
+      <div
+        v-for="budget in budgets"
+        :key="budget.id"
+        class="card bg-base-100 shadow hover:shadow-lg transition-shadow cursor-pointer"
+        @click="navigateTo(`/budgets/${budget.id}`)"
+      >
+        <div class="card-body p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Left: Info -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-lg">{{ budget.budgetNumber }}</h3>
+                <span class="badge" :class="getStatusClass(budget.status)">
+                  {{ getStatusLabel(budget.status) }}
+                </span>
+              </div>
+              <p class="text-base-content/80">{{ budget.title }}</p>
+              <p v-if="budget.customer" class="text-sm text-base-content/60">
+                {{ budget.customer.name }}
+                <span v-if="budget.customer.companyName">- {{ budget.customer.companyName }}</span>
+              </p>
+              <p class="text-xs text-base-content/50">
+                {{ formatDate(budget.createdAt) }}
+              </p>
+            </div>
+
+            <!-- Right: Values -->
+            <div class="flex flex-col sm:items-end gap-1">
+              <div class="text-sm text-base-content/60">
+                Modal:
+                <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
+              </div>
+              <div class="text-lg font-bold text-primary">
+                {{ formatCurrency(budget.totalPrice) }}
+              </div>
+              <div
+                class="badge"
+                :class="Number(budget.marginPercent) >= 20 ? 'badge-success' : 'badge-warning'"
+              >
+                Margin {{ Number(budget.marginPercent).toFixed(1) }}%
+              </div>
+
+              <!-- Converted Quotation Link -->
+              <NuxtLink
+                v-if="budget.quotation"
+                :to="`/quotations/${budget.quotation.id}`"
+                class="text-xs link link-primary mt-1"
+                @click.stop
+              >
+                → {{ budget.quotation.quotationNo }}
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-if="budgets.length === 0" class="card bg-base-100 shadow">
+        <div class="card-body items-center text-center py-12">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-16 w-16 text-base-content/30"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            />
+          </svg>
+          <h3 class="text-lg font-bold mt-4">Belum ada budget</h3>
+          <p class="text-base-content/60">Buat budget pertama untuk memulai perencanaan</p>
+          <NuxtLink to="/budgets/create" class="btn btn-primary mt-4">Buat Budget Baru</NuxtLink>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="budgetsData?.meta?.totalPages > 1" class="flex justify-center">
+      <AppPagination :total="budgetsData.meta.total" :per-page="10" v-model:current-page="page" />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+definePageMeta({
+  layout: 'default',
+})
+
+const { formatCurrency, formatDate } = useFormatter()
+
+const status = ref('')
+const search = ref('')
+const debouncedSearch = refDebounced(search, 500)
+const page = ref(1)
+
+const statusTabs = [
+  { label: 'Semua', value: '' },
+  { label: 'Draft', value: 'DRAFT' },
+  { label: 'Pending', value: 'PENDING' },
+  { label: 'Approved', value: 'APPROVED' },
+  { label: 'Rejected', value: 'REJECTED' },
+  { label: 'Converted', value: 'CONVERTED' },
+]
+
+// Fetch budgets
+const {
+  data: budgetsData,
+  pending,
+  refresh,
+} = await useFetch('/api/budgets', {
+  query: {
+    status,
+    search: debouncedSearch,
+    page,
+    limit: 10,
+  },
+  watch: [status, debouncedSearch, page],
+})
+
+const budgets = computed(() => budgetsData.value?.data || [])
+
+// Reset page when filters change
+watch([status, debouncedSearch], () => {
+  page.value = 1
+})
+
+const getStatusClass = (s: string) => {
+  const classes: Record<string, string> = {
+    DRAFT: 'badge-ghost',
+    PENDING: 'badge-warning',
+    APPROVED: 'badge-success',
+    REJECTED: 'badge-error',
+    CONVERTED: 'badge-info',
+  }
+  return classes[s] || 'badge-ghost'
+}
+
+const getStatusLabel = (s: string) => {
+  const labels: Record<string, string> = {
+    DRAFT: 'Draft',
+    PENDING: 'Menunggu Approval',
+    APPROVED: 'Disetujui',
+    REJECTED: 'Ditolak',
+    CONVERTED: 'Sudah Diconvert',
+  }
+  return labels[s] || s
+}
+</script>

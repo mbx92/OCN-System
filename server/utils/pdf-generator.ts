@@ -629,3 +629,216 @@ export const generateReceiptPdfBuffer = async (payment: any, company: any): Prom
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
   return pdfBuffer
 }
+
+// Generate Budget PDF Buffer - Without modal and margin info
+export const generateBudgetPdfBuffer = async (budget: any, company: any): Promise<Buffer> => {
+  const settings = company?.settings || {}
+  const doc = new jsPDF('p', 'mm', 'a4')
+  const pageWidth = doc.internal.pageSize.getWidth()
+  let yPos = 15
+
+  // Load logo
+  const logoBase64 = await loadLogoBase64(settings.logo)
+
+  // ===== HEADER SECTION =====
+  // Logo on the left
+  if (logoBase64) {
+    doc.addImage(logoBase64, 'PNG', 14, yPos - 5, 15, 15)
+  }
+
+  // BUDGET title and company info
+  doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 128, 128) // Teal color
+  doc.text('BUDGET', 32, yPos + 2)
+
+  doc.setFontSize(10)
+  doc.setTextColor(0, 128, 128)
+  doc.text(company?.name || 'OCN CCTV & Networking Solutions', 32, yPos + 8)
+
+  doc.setFontSize(8)
+  doc.setTextColor(0, 0, 0)
+  doc.setFont('helvetica', 'normal')
+  doc.text(settings.address || '-', 32, yPos + 13)
+  doc.text(settings.phone || '-', 32, yPos + 17)
+
+  // Right column - Budget Info
+  const rightCol = 140
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+
+  const budgetInfo = [
+    ['No. Budget', ':', budget.budgetNumber || '-'],
+    ['Tanggal', ':', formatDateIndo(budget.createdAt)],
+    ['Status', ':', getBudgetStatusLabel(budget.status)],
+  ]
+
+  let infoY = yPos
+  budgetInfo.forEach(([label, colon, value]) => {
+    doc.text(label, rightCol, infoY)
+    doc.text(colon, rightCol + 22, infoY)
+    doc.setFont('helvetica', 'bold')
+    doc.text(String(value), rightCol + 25, infoY)
+    doc.setFont('helvetica', 'normal')
+    infoY += 5
+  })
+
+  yPos = Math.max(yPos + 25, infoY + 5)
+
+  // ===== CUSTOMER INFO =====
+  if (budget.customer) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Kepada:', 14, yPos)
+    doc.setFont('helvetica', 'normal')
+    doc.text(budget.customer.name || '-', 35, yPos)
+    yPos += 4
+
+    if (budget.customer.companyName) {
+      doc.text(budget.customer.companyName, 35, yPos)
+      yPos += 4
+    }
+
+    if (budget.customer.address) {
+      const addressLines = doc.splitTextToSize(budget.customer.address, 80)
+      addressLines.forEach((line: string) => {
+        doc.text(line, 35, yPos)
+        yPos += 4
+      })
+    }
+
+    if (budget.customer.phone) {
+      doc.text('Telp: ' + budget.customer.phone, 35, yPos)
+      yPos += 4
+    }
+  }
+
+  yPos += 5
+
+  // ===== TITLE =====
+  if (budget.title) {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Perihal: ' + budget.title, 14, yPos)
+    yPos += 8
+  }
+
+  // ===== ITEMS TABLE (Only show sell price, no modal/margin) =====
+  const items = budget.items || []
+  const tableBody = items.map((item: any, idx: number) => [
+    (idx + 1).toString(),
+    item.name || '-',
+    item.quantity?.toString() || '0',
+    item.unit || 'pcs',
+    formatNumber(item.sellPrice || 0),
+    formatNumber(item.totalPrice || 0),
+  ])
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['No.', 'Nama Item', 'Qty', 'Satuan', 'Harga', 'Total']],
+    body: tableBody,
+    headStyles: {
+      fillColor: [0, 128, 128],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+      halign: 'center',
+    },
+    bodyStyles: {
+      fontSize: 8,
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 80 },
+      2: { halign: 'center', cellWidth: 15 },
+      3: { halign: 'center', cellWidth: 20 },
+      4: { halign: 'right', cellWidth: 25 },
+      5: { halign: 'right', cellWidth: 30 },
+    },
+    margin: { left: 14, right: 14 },
+    didParseCell: function (data: any) {
+      if (data.section === 'body') {
+        data.cell.styles.lineWidth = 0.1
+        data.cell.styles.lineColor = [200, 200, 200]
+      }
+    },
+  })
+
+  // ===== TOTALS SECTION =====
+  yPos = (doc as any).lastAutoTable.finalY + 5
+
+  const totalPrice = Number(budget.totalPrice) || 0
+
+  // Total box on the right
+  const totalBoxX = pageWidth - 80
+  doc.setFillColor(245, 245, 245)
+  doc.roundedRect(totalBoxX, yPos, 66, 15, 2, 2, 'F')
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Total:', totalBoxX + 5, yPos + 10)
+  doc.setTextColor(0, 128, 128)
+  doc.text('Rp ' + formatNumber(totalPrice), pageWidth - 19, yPos + 10, { align: 'right' })
+  doc.setTextColor(0, 0, 0)
+
+  yPos += 25
+
+  // ===== NOTES =====
+  if (budget.notes) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Catatan:', 14, yPos)
+    doc.setFont('helvetica', 'normal')
+    const notesLines = doc.splitTextToSize(budget.notes, pageWidth - 28)
+    notesLines.forEach((line: string, idx: number) => {
+      doc.text(line, 14, yPos + 5 + idx * 4)
+    })
+    yPos += 10 + notesLines.length * 4
+  }
+
+  // ===== DESCRIPTION =====
+  if (budget.description) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Deskripsi:', 14, yPos)
+    doc.setFont('helvetica', 'normal')
+    const descLines = doc.splitTextToSize(budget.description, pageWidth - 28)
+    descLines.forEach((line: string, idx: number) => {
+      doc.text(line, 14, yPos + 5 + idx * 4)
+    })
+    yPos += 10 + descLines.length * 4
+  }
+
+  // ===== FOOTER =====
+  yPos = Math.max(yPos + 10, 240)
+
+  // Printed date
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Dicetak: ' + formatDateTime(new Date().toISOString()), 14, yPos)
+
+  // Signature area
+  const sigX = pageWidth - 60
+  doc.setFontSize(8)
+  doc.text('Hormat kami,', sigX, yPos)
+  yPos += 20
+  doc.setFont('helvetica', 'bold')
+  doc.text(company?.name || 'OCN', sigX, yPos)
+
+  // Convert to buffer
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+  return pdfBuffer
+}
+
+// Helper function for budget status label
+const getBudgetStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    DRAFT: 'Draft',
+    PENDING: 'Menunggu Approval',
+    APPROVED: 'Disetujui',
+    REJECTED: 'Ditolak',
+    CONVERTED: 'Sudah Diconvert',
+  }
+  return labels[status] || status
+}

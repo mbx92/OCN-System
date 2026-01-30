@@ -396,6 +396,66 @@
                 </NuxtLink>
               </li>
 
+              <!-- Catalog -->
+              <li v-if="canAccess('quotations.view')">
+                <NuxtLink
+                  to="/catalog"
+                  class="flex items-center gap-3"
+                  active-class="active"
+                  :title="isCollapsed ? 'Katalog' : ''"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" />
+                    <path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" />
+                    <path d="M3 6l0 13" />
+                    <path d="M12 6l0 13" />
+                    <path d="M21 6l0 13" />
+                  </svg>
+                  <span v-show="!isCollapsed">Katalog</span>
+                </NuxtLink>
+              </li>
+
+              <!-- Budgeting -->
+              <li v-if="canAccess('quotations.view')">
+                <NuxtLink
+                  to="/budgets"
+                  class="flex items-center gap-3"
+                  active-class="active"
+                  :title="isCollapsed ? 'Budgeting' : ''"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 flex-shrink-0"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M9 7h-3a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-3" />
+                    <path d="M9 15h3l8.5 -8.5a1.5 1.5 0 0 0 -3 -3l-8.5 8.5v3" />
+                    <path d="M16 5l3 3" />
+                  </svg>
+                  <span v-show="!isCollapsed">Budgeting</span>
+                </NuxtLink>
+              </li>
+
               <!-- Projects -->
               <li v-if="canAccess('projects.view.all') || canAccess('projects.view.assigned')">
                 <NuxtLink
