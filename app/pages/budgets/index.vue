@@ -1,10 +1,14 @@
 <template>
   <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
+    >
       <div>
         <h1 class="text-xl sm:text-2xl font-bold">Budgeting</h1>
-        <p class="text-sm sm:text-base text-base-content/60">Perencanaan anggaran sebelum membuat penawaran</p>
+        <p class="text-sm sm:text-base text-base-content/60">
+          Perencanaan anggaran sebelum membuat penawaran
+        </p>
       </div>
       <NuxtLink to="/budgets/create" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
@@ -80,7 +84,12 @@
               <p class="text-sm sm:text-base text-base-content/80 truncate">{{ budget.title }}</p>
               <p v-if="budget.customer" class="text-xs sm:text-sm text-base-content/60 truncate">
                 {{ budget.customer.name }}
-                <span v-if="budget.customer.companyName && budget.customer.companyName !== budget.customer.name">
+                <span
+                  v-if="
+                    budget.customer.companyName &&
+                    budget.customer.companyName !== budget.customer.name
+                  "
+                >
                   - {{ budget.customer.companyName }}
                 </span>
               </p>
@@ -90,10 +99,13 @@
             </div>
 
             <!-- Right: Values -->
-            <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-base-200">
+            <div
+              class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-base-200"
+            >
               <div class="flex flex-col sm:items-end">
                 <div class="text-xs sm:text-sm text-base-content/60">
-                  Modal: <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
+                  Modal:
+                  <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
                 </div>
                 <div class="text-base sm:text-lg font-bold text-primary">
                   {{ formatCurrency(budget.totalPrice) }}

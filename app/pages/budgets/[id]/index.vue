@@ -39,7 +39,11 @@
         <!-- Actions -->
         <div class="flex flex-wrap gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           <!-- Download PDF -->
-          <button @click="downloadPdf" :disabled="downloadingPdf" class="btn btn-outline btn-xs sm:btn-sm">
+          <button
+            @click="downloadPdf"
+            :disabled="downloadingPdf"
+            class="btn btn-outline btn-xs sm:btn-sm"
+          >
             <span v-if="downloadingPdf" class="loading loading-spinner loading-xs"></span>
             <svg
               v-else
@@ -56,7 +60,8 @@
                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <span class="hidden sm:inline">Download</span> PDF
+            <span class="hidden sm:inline">Download</span>
+            PDF
           </button>
 
           <!-- Edit (DRAFT/REJECTED only) -->
@@ -76,7 +81,8 @@
             :disabled="actionLoading"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
-            <span class="hidden sm:inline">Submit untuk</span> Approval
+            <span class="hidden sm:inline">Submit untuk</span>
+            Approval
           </button>
 
           <!-- Approve (PENDING, ADMIN/OWNER only) -->
@@ -108,7 +114,8 @@
             :disabled="actionLoading || !budget.customerId"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
-            <span class="hidden sm:inline">Convert ke</span> Penawaran
+            <span class="hidden sm:inline">Convert ke</span>
+            Penawaran
           </button>
 
           <!-- Delete (DRAFT/REJECTED only) -->
@@ -199,7 +206,13 @@
                   <p class="text-xs sm:text-sm text-base-content/60">Pelanggan</p>
                   <p class="text-sm sm:text-base font-medium">
                     {{ budget.customer?.name || '-' }}
-                    <span v-if="budget.customer?.companyName && budget.customer?.companyName !== budget.customer?.name" class="text-base-content/60">
+                    <span
+                      v-if="
+                        budget.customer?.companyName &&
+                        budget.customer?.companyName !== budget.customer?.name
+                      "
+                      class="text-base-content/60"
+                    >
                       ({{ budget.customer.companyName }})
                     </span>
                   </p>
@@ -243,7 +256,9 @@
                     </div>
                     <div>
                       <span class="text-base-content/60">Jual:</span>
-                      <span class="ml-1 font-mono font-bold text-primary">{{ formatCurrency(item.totalPrice) }}</span>
+                      <span class="ml-1 font-mono font-bold text-primary">
+                        {{ formatCurrency(item.totalPrice) }}
+                      </span>
                     </div>
                     <div class="text-right">
                       <span class="text-base-content/60">Margin:</span>
@@ -262,9 +277,13 @@
                     <div>Total Modal:</div>
                     <div class="text-right font-mono">{{ formatCurrency(budget.totalCost) }}</div>
                     <div>Total Jual:</div>
-                    <div class="text-right font-mono text-primary">{{ formatCurrency(budget.totalPrice) }}</div>
+                    <div class="text-right font-mono text-primary">
+                      {{ formatCurrency(budget.totalPrice) }}
+                    </div>
                     <div>Total Margin:</div>
-                    <div class="text-right font-mono text-success">{{ formatCurrency(budget.marginAmount) }}</div>
+                    <div class="text-right font-mono text-success">
+                      {{ formatCurrency(budget.marginAmount) }}
+                    </div>
                   </div>
                 </div>
               </div>
