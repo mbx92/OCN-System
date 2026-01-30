@@ -396,13 +396,13 @@ const { data: budget, pending, refresh } = await useFetch(`/api/budgets/${budget
 // Download PDF function
 const downloadPdf = async () => {
   if (!budget.value) return
-  
+
   downloadingPdf.value = true
   try {
     const response = await $fetch(`/api/budgets/${budgetId}/budget-pdf`, {
-      responseType: 'blob'
+      responseType: 'blob',
     })
-    
+
     const blob = new Blob([response as BlobPart], { type: 'application/pdf' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')

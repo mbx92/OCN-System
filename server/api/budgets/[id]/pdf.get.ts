@@ -1,8 +1,9 @@
-import { generateBudgetPdfBuffer } from '../../utils/pdf-generator'
+import { generateBudgetPdfBuffer } from '../../../utils/pdf-generator'
 
 export default defineEventHandler(async event => {
   console.log('[Budget PDF] ====== PDF ENDPOINT HIT ======')
   console.log('[Budget PDF] Request URL:', event.node.req.url)
+  console.log('[Budget PDF] Request method:', event.node.req.method)
 
   const user = event.context.user
   console.log('[Budget PDF] User:', user ? user.id : 'NO USER')
