@@ -1,15 +1,15 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
       <div>
-        <h1 class="text-2xl font-bold">Budgeting</h1>
-        <p class="text-base-content/60">Perencanaan anggaran sebelum membuat penawaran</p>
+        <h1 class="text-xl sm:text-2xl font-bold">Budgeting</h1>
+        <p class="text-sm sm:text-base text-base-content/60">Perencanaan anggaran sebelum membuat penawaran</p>
       </div>
-      <NuxtLink to="/budgets/create" class="btn btn-primary">
+      <NuxtLink to="/budgets/create" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 mr-1"
+          class="h-4 w-4 sm:h-5 sm:w-5"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -21,31 +21,37 @@
             d="M12 4v16m8-8H4"
           />
         </svg>
-        Buat Budget
+        <span class="sm:hidden">Buat</span>
+        <span class="hidden sm:inline">Buat Budget</span>
       </NuxtLink>
     </div>
 
-    <!-- Status Tabs -->
-    <div class="tabs tabs-boxed bg-base-100 p-1 w-fit">
-      <button
-        v-for="tab in statusTabs"
-        :key="tab.value"
-        class="tab"
-        :class="{ 'tab-active': status === tab.value }"
-        @click="status = tab.value"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+    <!-- Search & Filter Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body p-3 sm:p-6">
+        <div class="flex flex-col gap-3 sm:gap-4">
+          <!-- Search -->
+          <div class="form-control">
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Cari budget..."
+              class="input input-bordered input-sm sm:input-md w-full"
+            />
+          </div>
 
-    <!-- Search -->
-    <div class="form-control max-w-md">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Cari budget..."
-        class="input input-bordered"
-      />
+          <!-- Status Filter -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="form-control w-full sm:w-48">
+              <select v-model="status" class="select select-bordered select-sm sm:select-md w-full">
+                <option v-for="tab in statusTabs" :key="tab.value" :value="tab.value">
+                  {{ tab.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -54,27 +60,29 @@
     </div>
 
     <!-- Budget List -->
-    <div v-else class="grid gap-4">
+    <div v-else class="grid gap-3 sm:gap-4">
       <div
         v-for="budget in budgets"
         :key="budget.id"
         class="card bg-base-100 shadow hover:shadow-lg transition-shadow cursor-pointer"
         @click="navigateTo(`/budgets/${budget.id}`)"
       >
-        <div class="card-body p-4 sm:p-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="card-body p-3 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <!-- Left: Info -->
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <h3 class="font-bold text-lg">{{ budget.budgetNumber }}</h3>
-                <span class="badge" :class="getStatusClass(budget.status)">
+            <div class="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="font-bold text-base sm:text-lg">{{ budget.budgetNumber }}</h3>
+                <span class="badge badge-sm sm:badge-md" :class="getStatusClass(budget.status)">
                   {{ getStatusLabel(budget.status) }}
                 </span>
               </div>
-              <p class="text-base-content/80">{{ budget.title }}</p>
-              <p v-if="budget.customer" class="text-sm text-base-content/60">
+              <p class="text-sm sm:text-base text-base-content/80 truncate">{{ budget.title }}</p>
+              <p v-if="budget.customer" class="text-xs sm:text-sm text-base-content/60 truncate">
                 {{ budget.customer.name }}
-                <span v-if="budget.customer.companyName">- {{ budget.customer.companyName }}</span>
+                <span v-if="budget.customer.companyName && budget.customer.companyName !== budget.customer.name">
+                  - {{ budget.customer.companyName }}
+                </span>
               </p>
               <p class="text-xs text-base-content/50">
                 {{ formatDate(budget.createdAt) }}
@@ -82,16 +90,17 @@
             </div>
 
             <!-- Right: Values -->
-            <div class="flex flex-col sm:items-end gap-1">
-              <div class="text-sm text-base-content/60">
-                Modal:
-                <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
-              </div>
-              <div class="text-lg font-bold text-primary">
-                {{ formatCurrency(budget.totalPrice) }}
+            <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-base-200">
+              <div class="flex flex-col sm:items-end">
+                <div class="text-xs sm:text-sm text-base-content/60">
+                  Modal: <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
+                </div>
+                <div class="text-base sm:text-lg font-bold text-primary">
+                  {{ formatCurrency(budget.totalPrice) }}
+                </div>
               </div>
               <div
-                class="badge"
+                class="badge badge-sm sm:badge-md"
                 :class="Number(budget.marginPercent) >= 20 ? 'badge-success' : 'badge-warning'"
               >
                 Margin {{ Number(budget.marginPercent).toFixed(1) }}%

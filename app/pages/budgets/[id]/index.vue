@@ -7,9 +7,9 @@
 
     <template v-else-if="budget">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
-        <div class="flex items-center gap-4">
-          <NuxtLink to="/budgets" class="btn btn-ghost btn-sm">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-start gap-2 sm:gap-4">
+          <NuxtLink to="/budgets" class="btn btn-ghost btn-sm btn-square flex-shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-5 w-5"
@@ -25,26 +25,26 @@
               />
             </svg>
           </NuxtLink>
-          <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-2xl font-bold">{{ budget.budgetNumber }}</h1>
-              <span class="badge" :class="getStatusClass(budget.status)">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-lg sm:text-2xl font-bold">{{ budget.budgetNumber }}</h1>
+              <span class="badge badge-sm sm:badge-md" :class="getStatusClass(budget.status)">
                 {{ getStatusLabel(budget.status) }}
               </span>
             </div>
-            <p class="text-base-content/60">{{ budget.title }}</p>
+            <p class="text-sm sm:text-base text-base-content/60 truncate">{{ budget.title }}</p>
           </div>
         </div>
 
         <!-- Actions -->
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           <!-- Download PDF -->
-          <button @click="downloadPdf" :disabled="downloadingPdf" class="btn btn-outline btn-sm">
+          <button @click="downloadPdf" :disabled="downloadingPdf" class="btn btn-outline btn-xs sm:btn-sm">
             <span v-if="downloadingPdf" class="loading loading-spinner loading-xs"></span>
             <svg
               v-else
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
+              class="h-3 w-3 sm:h-4 sm:w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -56,14 +56,14 @@
                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            Download PDF
+            <span class="hidden sm:inline">Download</span> PDF
           </button>
 
           <!-- Edit (DRAFT/REJECTED only) -->
           <NuxtLink
             v-if="['DRAFT', 'REJECTED'].includes(budget.status)"
             :to="`/budgets/${budget.id}/edit`"
-            class="btn btn-outline btn-sm"
+            class="btn btn-outline btn-xs sm:btn-sm"
           >
             Edit
           </NuxtLink>
@@ -72,18 +72,18 @@
           <button
             v-if="budget.status === 'DRAFT'"
             @click="submitForApproval"
-            class="btn btn-warning btn-sm"
+            class="btn btn-warning btn-xs sm:btn-sm whitespace-nowrap"
             :disabled="actionLoading"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
-            Submit untuk Approval
+            <span class="hidden sm:inline">Submit untuk</span> Approval
           </button>
 
           <!-- Approve (PENDING, ADMIN/OWNER only) -->
           <button
             v-if="budget.status === 'PENDING' && canApprove"
             @click="approveBudget"
-            class="btn btn-success btn-sm"
+            class="btn btn-success btn-xs sm:btn-sm"
             :disabled="actionLoading"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
@@ -94,7 +94,7 @@
           <button
             v-if="budget.status === 'PENDING' && canApprove"
             @click="showRejectDialog = true"
-            class="btn btn-error btn-sm"
+            class="btn btn-error btn-xs sm:btn-sm"
             :disabled="actionLoading"
           >
             Reject
@@ -104,18 +104,18 @@
           <button
             v-if="budget.status === 'APPROVED'"
             @click="convertToQuotation"
-            class="btn btn-primary btn-sm"
+            class="btn btn-primary btn-xs sm:btn-sm whitespace-nowrap"
             :disabled="actionLoading || !budget.customerId"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
-            Convert ke Penawaran
+            <span class="hidden sm:inline">Convert ke</span> Penawaran
           </button>
 
           <!-- Delete (DRAFT/REJECTED only) -->
           <button
             v-if="['DRAFT', 'REJECTED'].includes(budget.status)"
             @click="deleteBudget"
-            class="btn btn-ghost btn-sm text-error"
+            class="btn btn-ghost btn-xs sm:btn-sm text-error"
             :disabled="actionLoading"
           >
             Hapus
@@ -192,25 +192,25 @@
         <div class="lg:col-span-2 space-y-6">
           <!-- Customer Info -->
           <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <h2 class="card-title">Informasi</h2>
-              <div class="grid sm:grid-cols-2 gap-4">
+            <div class="card-body p-3 sm:p-6">
+              <h2 class="card-title text-base sm:text-lg">Informasi</h2>
+              <div class="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p class="text-sm text-base-content/60">Pelanggan</p>
-                  <p class="font-medium">
+                  <p class="text-xs sm:text-sm text-base-content/60">Pelanggan</p>
+                  <p class="text-sm sm:text-base font-medium">
                     {{ budget.customer?.name || '-' }}
-                    <span v-if="budget.customer?.companyName" class="text-base-content/60">
+                    <span v-if="budget.customer?.companyName && budget.customer?.companyName !== budget.customer?.name" class="text-base-content/60">
                       ({{ budget.customer.companyName }})
                     </span>
                   </p>
                 </div>
                 <div>
-                  <p class="text-sm text-base-content/60">Tanggal Dibuat</p>
-                  <p class="font-medium">{{ formatDate(budget.createdAt) }}</p>
+                  <p class="text-xs sm:text-sm text-base-content/60">Tanggal Dibuat</p>
+                  <p class="text-sm sm:text-base font-medium">{{ formatDate(budget.createdAt) }}</p>
                 </div>
                 <div v-if="budget.description" class="sm:col-span-2">
-                  <p class="text-sm text-base-content/60">Deskripsi</p>
-                  <p class="font-medium">{{ budget.description }}</p>
+                  <p class="text-xs sm:text-sm text-base-content/60">Deskripsi</p>
+                  <p class="text-sm sm:text-base font-medium">{{ budget.description }}</p>
                 </div>
               </div>
             </div>
@@ -218,10 +218,59 @@
 
           <!-- Items -->
           <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <h2 class="card-title">Item Budget</h2>
+            <div class="card-body p-3 sm:p-6">
+              <h2 class="card-title text-base sm:text-lg">Item Budget</h2>
 
-              <div class="overflow-x-auto">
+              <!-- Mobile: Card View -->
+              <div class="sm:hidden space-y-3">
+                <div
+                  v-for="item in budget.items"
+                  :key="item.id"
+                  class="border border-base-200 rounded-lg p-3 space-y-2"
+                >
+                  <div class="font-medium text-sm">{{ item.name }}</div>
+                  <div v-if="item.description" class="text-xs text-base-content/60">
+                    {{ item.description }}
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-base-200">
+                    <div>
+                      <span class="text-base-content/60">Qty:</span>
+                      <span class="ml-1">{{ item.quantity }} {{ item.unit }}</span>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-base-content/60">Modal:</span>
+                      <span class="ml-1 font-mono">{{ formatCurrency(item.totalCost) }}</span>
+                    </div>
+                    <div>
+                      <span class="text-base-content/60">Jual:</span>
+                      <span class="ml-1 font-mono font-bold text-primary">{{ formatCurrency(item.totalPrice) }}</span>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-base-content/60">Margin:</span>
+                      <span
+                        class="ml-1 font-mono"
+                        :class="Number(item.margin) >= 0 ? 'text-success' : 'text-error'"
+                      >
+                        {{ formatCurrency(item.margin) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Mobile Total -->
+                <div class="bg-base-200 rounded-lg p-3">
+                  <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <div>Total Modal:</div>
+                    <div class="text-right font-mono">{{ formatCurrency(budget.totalCost) }}</div>
+                    <div>Total Jual:</div>
+                    <div class="text-right font-mono text-primary">{{ formatCurrency(budget.totalPrice) }}</div>
+                    <div>Total Margin:</div>
+                    <div class="text-right font-mono text-success">{{ formatCurrency(budget.marginAmount) }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Desktop: Table View -->
+              <div class="hidden sm:block overflow-x-auto">
                 <table class="table table-sm">
                   <thead>
                     <tr>
@@ -285,26 +334,26 @@
 
         <!-- Sidebar -->
         <div class="lg:col-span-1">
-          <div class="card bg-base-100 shadow sticky top-20">
-            <div class="card-body">
-              <h2 class="card-title">Ringkasan</h2>
+          <div class="card bg-base-100 shadow lg:sticky lg:top-20">
+            <div class="card-body p-3 sm:p-6">
+              <h2 class="card-title text-base sm:text-lg">Ringkasan</h2>
 
-              <div class="space-y-3 mt-4">
-                <div class="flex justify-between">
+              <div class="space-y-2 sm:space-y-3 mt-2 sm:mt-4">
+                <div class="flex justify-between text-sm sm:text-base">
                   <span class="text-base-content/60">Total Modal</span>
                   <span class="font-mono">{{ formatCurrency(budget.totalCost) }}</span>
                 </div>
 
-                <div class="flex justify-between">
+                <div class="flex justify-between text-sm sm:text-base">
                   <span class="text-base-content/60">Total Harga Jual</span>
-                  <span class="font-mono font-bold text-primary text-lg">
+                  <span class="font-mono font-bold text-primary sm:text-lg">
                     {{ formatCurrency(budget.totalPrice) }}
                   </span>
                 </div>
 
-                <div class="divider my-2"></div>
+                <div class="divider my-1 sm:my-2"></div>
 
-                <div class="flex justify-between">
+                <div class="flex justify-between text-sm sm:text-base">
                   <span class="text-base-content/60">Margin (Rp)</span>
                   <span
                     class="font-mono font-bold"
@@ -314,17 +363,17 @@
                   </span>
                 </div>
 
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center text-sm sm:text-base">
                   <span class="text-base-content/60">Margin (%)</span>
                   <span
-                    class="badge badge-lg"
+                    class="badge badge-sm sm:badge-lg"
                     :class="Number(budget.marginPercent) >= 20 ? 'badge-success' : 'badge-warning'"
                   >
                     {{ Number(budget.marginPercent).toFixed(1) }}%
                   </span>
                 </div>
 
-                <div class="divider my-2"></div>
+                <div class="divider my-1 sm:my-2"></div>
 
                 <div class="text-xs text-base-content/50">
                   <div>Jumlah Item: {{ budget.items?.length || 0 }}</div>
