@@ -86,9 +86,12 @@
             <div class="card-body">
               <div class="flex justify-between items-center">
                 <h2 class="card-title">Item Budget</h2>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                   <button type="button" @click="openProductModal" class="btn btn-outline btn-sm">
                     + Dari Produk
+                  </button>
+                  <button type="button" @click="openSupplierModal" class="btn btn-outline btn-sm btn-info">
+                    + Dari Supplier
                   </button>
                   <button type="button" @click="addItem" class="btn btn-primary btn-sm">
                     + Item Manual
@@ -422,6 +425,99 @@
           <button @click="closeProductModal">close</button>
         </form>
       </dialog>
+
+      <!-- Supplier Product Selection Modal -->
+      <dialog ref="supplierModal" class="modal">
+        <div class="modal-box w-11/12 max-w-5xl">
+          <h3 class="font-bold text-lg mb-4">
+            <span class="badge badge-info gap-1 mr-2">Supplier</span>
+            Pilih Produk dari Katalog Supplier
+          </h3>
+
+          <!-- Search -->
+          <div class="form-control mb-4 w-full">
+            <input
+              v-model="supplierSearch"
+              type="text"
+              placeholder="Ketik minimal 3 karakter untuk mencari produk supplier..."
+              class="input input-bordered w-full"
+            />
+            <label class="label">
+              <span class="label-text-alt text-base-content/50">
+                Data dari Google Sheets pricelist supplier
+              </span>
+            </label>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="supplierLoading" class="flex justify-center py-8">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
+
+          <!-- Supplier Product List -->
+          <div v-else-if="supplierProducts.length > 0" class="overflow-x-auto max-h-96">
+            <table class="table table-sm table-zebra">
+              <thead class="sticky top-0 bg-base-200">
+                <tr>
+                  <th>Nama Produk</th>
+                  <th>SKU</th>
+                  <th>Brand</th>
+                  <th>Kategori</th>
+                  <th class="text-center">Unit</th>
+                  <th class="text-right">Harga</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="product in supplierProducts"
+                  :key="product.sku"
+                  class="hover cursor-pointer"
+                >
+                  <td>
+                    <div class="font-medium">{{ product.name }}</div>
+                  </td>
+                  <td class="font-mono text-xs">{{ product.sku }}</td>
+                  <td>
+                    <span class="badge badge-primary badge-sm">{{ product.brand }}</span>
+                  </td>
+                  <td>{{ product.category }}</td>
+                  <td class="text-center">{{ product.unit || 'pcs' }}</td>
+                  <td class="text-right font-mono text-primary font-bold">
+                    {{ formatCurrency(product.price) }}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      @click="selectSupplierProduct(product)"
+                      class="btn btn-info btn-xs"
+                    >
+                      Pilih
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="debouncedSupplierSearch.length >= 3" class="text-center py-8 text-base-content/60">
+            Tidak ada produk supplier ditemukan
+          </div>
+
+          <!-- Hint -->
+          <div v-else class="text-center py-8 text-base-content/60">
+            Ketik minimal 3 karakter untuk mencari produk supplier
+          </div>
+
+          <div class="modal-action">
+            <button type="button" @click="closeSupplierModal" class="btn btn-ghost">Tutup</button>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button @click="closeSupplierModal">close</button>
+        </form>
+      </dialog>
     </template>
   </div>
 </template>
@@ -464,6 +560,9 @@ const form = reactive({
 const loading = ref(false)
 const productModal = ref<HTMLDialogElement>()
 const productSearch = ref('')
+const supplierModal = ref<HTMLDialogElement>()
+const supplierSearch = ref('')
+const debouncedSupplierSearch = refDebounced(supplierSearch, 500)
 
 // Fetch products
 const { data: productsData } = await useFetch('/api/products', {
@@ -510,6 +609,77 @@ const openProductModal = () => {
 // Close product modal
 const closeProductModal = () => {
   productModal.value?.close()
+}
+
+// Supplier product interface
+interface SupplierProduct {
+  sku: string
+  name: string
+  brand: string
+  category: string
+  unit: string
+  price: number
+  priceLevel2: number
+}
+
+// Fetch supplier products with search (only when search >= 3 chars)
+const supplierLoading = ref(false)
+const supplierData = ref<SupplierProduct[]>([])
+
+// Watch debounced search and fetch
+watch(debouncedSupplierSearch, async (searchValue) => {
+  if (searchValue.length < 3) {
+    supplierData.value = []
+    return
+  }
+  
+  supplierLoading.value = true
+  try {
+    const response = await $fetch<{ success: boolean; data: SupplierProduct[] }>(
+      '/api/catalog/supplier',
+      {
+        query: { search: searchValue, limit: 50 },
+      }
+    )
+    supplierData.value = response?.data || []
+  } catch (error) {
+    console.error('Error fetching supplier products:', error)
+    supplierData.value = []
+  } finally {
+    supplierLoading.value = false
+  }
+})
+
+const supplierProducts = computed(() => {
+  if (debouncedSupplierSearch.value.length < 3) return []
+  return supplierData.value
+})
+
+// Open supplier modal
+const openSupplierModal = () => {
+  supplierSearch.value = ''
+  supplierModal.value?.showModal()
+}
+
+// Close supplier modal
+const closeSupplierModal = () => {
+  supplierModal.value?.close()
+}
+
+// Select supplier product and add to items
+const selectSupplierProduct = (product: SupplierProduct) => {
+  form.items.push({
+    productId: undefined, // Not from local products
+    name: product.name,
+    description: `Brand: ${product.brand} | SKU Supplier: ${product.sku}`,
+    category: product.category || '',
+    quantity: 1,
+    unit: product.unit || 'pcs',
+    costPrice: Number(product.price) || 0, // Harga supplier = cost price
+    sellPrice: Number(product.price) || 0, // Default sama, bisa di-edit
+    saveAsProduct: false,
+  })
+  closeSupplierModal()
 }
 
 // Select product and add to items
