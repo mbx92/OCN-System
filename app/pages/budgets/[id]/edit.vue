@@ -219,28 +219,33 @@
                   </div>
 
                   <!-- Item Summary -->
-                  <div class="mt-3 pt-3 border-t border-base-300 grid grid-cols-3 gap-2 text-sm">
-                    <div>
-                      <span class="text-base-content/60">Total Modal:</span>
-                      <span class="font-mono block">
-                        {{ formatCurrency(item.quantity * item.costPrice) }}
-                      </span>
-                    </div>
-                    <div>
-                      <span class="text-base-content/60">Total Jual:</span>
-                      <span class="font-mono font-bold text-primary block">
-                        {{ formatCurrency(item.quantity * item.sellPrice) }}
-                      </span>
-                    </div>
-                    <div>
-                      <span class="text-base-content/60">Margin:</span>
-                      <span
-                        class="font-mono block"
-                        :class="getItemMargin(item) >= 0 ? 'text-success' : 'text-error'"
-                      >
-                        {{ formatCurrency(getItemMargin(item)) }}
-                        ({{ getItemMarginPercent(item).toFixed(1) }}%)
-                      </span>
+                  <div class="mt-3 pt-3 border-t border-base-300">
+                    <div class="bg-base-200/50 rounded-lg p-2 sm:p-3">
+                      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm">
+                        <div class="text-base-content/60">Total Modal:</div>
+                        <div class="text-right font-mono">
+                          {{ formatCurrency(item.quantity * item.costPrice) }}
+                        </div>
+                        <div class="text-base-content/60">Total Jual:</div>
+                        <div class="text-right font-mono font-bold text-primary">
+                          {{ formatCurrency(item.quantity * item.sellPrice) }}
+                        </div>
+                        <div class="text-base-content/60">Margin:</div>
+                        <div class="text-right">
+                          <span
+                            class="font-mono"
+                            :class="getItemMargin(item) >= 0 ? 'text-success' : 'text-error'"
+                          >
+                            {{ formatCurrency(getItemMargin(item)) }}
+                          </span>
+                          <span
+                            class="badge badge-xs sm:badge-sm ml-1"
+                            :class="getItemMarginPercent(item) >= 20 ? 'badge-success' : 'badge-warning'"
+                          >
+                            {{ getItemMarginPercent(item).toFixed(1) }}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
