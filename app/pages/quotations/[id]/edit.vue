@@ -64,7 +64,10 @@
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
               <h2 class="card-title text-lg">Item Penawaran</h2>
               <div class="flex gap-2">
-                <button @click="openPackageModal" class="btn btn-secondary btn-sm flex-1 sm:flex-none">
+                <button
+                  @click="openPackageModal"
+                  class="btn btn-secondary btn-sm flex-1 sm:flex-none"
+                >
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -73,7 +76,8 @@
                       d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                     />
                   </svg>
-                  <span class="hidden xs:inline">Pilih</span> Paket
+                  <span class="hidden xs:inline">Pilih</span>
+                  Paket
                 </button>
                 <button @click="addItem" class="btn btn-primary btn-sm flex-1 sm:flex-none">
                   <svg
@@ -128,16 +132,38 @@
                       class="btn btn-ghost btn-sm btn-square shrink-0"
                       title="Pilih dari produk"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
                       </svg>
                     </button>
                     <button
                       @click="removeItem(index)"
                       class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -333,7 +359,7 @@
             class="input input-bordered w-full"
           />
         </div>
-        
+
         <!-- Mobile: Card Layout -->
         <div class="sm:hidden space-y-2 max-h-80 overflow-y-auto">
           <div
@@ -351,7 +377,9 @@
                 </span>
               </div>
               <div class="text-right shrink-0 ml-2">
-                <div class="font-medium text-primary text-sm">{{ formatCurrency(product.sellingPrice) }}</div>
+                <div class="font-medium text-primary text-sm">
+                  {{ formatCurrency(product.sellingPrice) }}
+                </div>
                 <span
                   class="badge badge-xs"
                   :class="product.stock?.available > 0 ? 'badge-success' : 'badge-error'"
@@ -365,7 +393,7 @@
             Tidak ada produk ditemukan
           </div>
         </div>
-        
+
         <!-- Desktop: Table Layout -->
         <div class="hidden sm:block overflow-x-auto max-h-96">
           <table class="table table-sm table-zebra">
@@ -445,7 +473,10 @@
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div class="flex-1 min-w-0">
                   <h4 class="font-bold text-sm sm:text-base">{{ pkg.name }}</h4>
-                  <p v-if="pkg.description" class="text-xs sm:text-sm text-base-content/60 line-clamp-2 mt-1">
+                  <p
+                    v-if="pkg.description"
+                    class="text-xs sm:text-sm text-base-content/60 line-clamp-2 mt-1"
+                  >
                     {{ pkg.description }}
                   </p>
                   <div class="flex flex-wrap gap-1 sm:gap-2 mt-2">

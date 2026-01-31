@@ -90,7 +90,11 @@
                   <button type="button" @click="openProductModal" class="btn btn-outline btn-sm">
                     + Dari Produk
                   </button>
-                  <button type="button" @click="openSupplierModal" class="btn btn-outline btn-sm btn-info">
+                  <button
+                    type="button"
+                    @click="openSupplierModal"
+                    class="btn btn-outline btn-sm btn-info"
+                  >
                     + Dari Supplier
                   </button>
                   <button type="button" @click="addItem" class="btn btn-primary btn-sm">
@@ -501,7 +505,10 @@
           </div>
 
           <!-- Empty State -->
-          <div v-else-if="debouncedSupplierSearch.length >= 3" class="text-center py-8 text-base-content/60">
+          <div
+            v-else-if="debouncedSupplierSearch.length >= 3"
+            class="text-center py-8 text-base-content/60"
+          >
             Tidak ada produk supplier ditemukan
           </div>
 
@@ -627,12 +634,12 @@ const supplierLoading = ref(false)
 const supplierData = ref<SupplierProduct[]>([])
 
 // Watch debounced search and fetch
-watch(debouncedSupplierSearch, async (searchValue) => {
+watch(debouncedSupplierSearch, async searchValue => {
   if (searchValue.length < 3) {
     supplierData.value = []
     return
   }
-  
+
   supplierLoading.value = true
   try {
     const response = await $fetch<{ success: boolean; data: SupplierProduct[] }>(
