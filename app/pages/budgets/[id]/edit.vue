@@ -240,7 +240,9 @@
                           </span>
                           <span
                             class="badge badge-xs sm:badge-sm ml-1"
-                            :class="getItemMarginPercent(item) >= 20 ? 'badge-success' : 'badge-warning'"
+                            :class="
+                              getItemMarginPercent(item) >= 20 ? 'badge-success' : 'badge-warning'
+                            "
                           >
                             {{ getItemMarginPercent(item).toFixed(1) }}%
                           </span>
