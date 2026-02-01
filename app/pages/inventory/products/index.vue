@@ -332,7 +332,7 @@ const deleteProduct = async (product: any) => {
     confirmText: 'Hapus',
     cancelText: 'Batal',
   })
-  
+
   if (!confirmed) return
 
   try {

@@ -51,21 +51,12 @@ let lastFetchTime: number = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
 
 // Prices that indicate discontinued/invalid products
-const INVALID_PRICES = [
-  0,
-  1,
-  86223000,
-  88889000,
-  99999999,
-  79112000,
-  74667000,
-  72383000,
-]
+const INVALID_PRICES = [0, 1, 86223000, 88889000, 99999999, 79112000, 74667000, 72383000]
 
 async function fetchSheetData(gid: string, brand: string): Promise<SupplierProduct[]> {
   try {
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`
-    
+
     const response = await fetch(csvUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -87,9 +78,9 @@ async function fetchSheetData(gid: string, brand: string): Promise<SupplierProdu
 
 async function fetchAllGoogleSheetData(): Promise<SupplierProduct[]> {
   const now = Date.now()
-  
+
   // Return cached data if still valid
-  if (cachedData && (now - lastFetchTime) < CACHE_DURATION) {
+  if (cachedData && now - lastFetchTime < CACHE_DURATION) {
     return cachedData
   }
 
@@ -97,10 +88,10 @@ async function fetchAllGoogleSheetData(): Promise<SupplierProduct[]> {
     // Fetch all sheets in parallel
     const allPromises = SHEETS.map(sheet => fetchSheetData(sheet.gid, sheet.brand))
     const allResults = await Promise.all(allPromises)
-    
+
     // Combine all products
     const products = allResults.flat()
-    
+
     // Update cache
     cachedData = products
     cachedCategories = [...new Set(products.map(p => p.category))].filter(Boolean).sort()
@@ -145,13 +136,13 @@ function parseCSV(csvText: string, brand: string): SupplierProduct[] {
 
     // Parse CSV line (handle quoted values)
     const values = parseCSVLine(line)
-    
+
     if (values.length >= 4) {
       const [kodeItem, namaItem, jenis, harga] = values
-      
+
       // Skip empty rows or rows without SKU
       if (!kodeItem || !namaItem) continue
-      
+
       // Skip if it looks like another header section (brand names, etc)
       if (kodeItem.toLowerCase() === 'kode item') continue
 
@@ -186,7 +177,7 @@ function parseCSVLine(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i]
-    
+
     if (char === '"') {
       inQuotes = !inQuotes
     } else if (char === ',' && !inQuotes) {
@@ -196,10 +187,10 @@ function parseCSVLine(line: string): string[] {
       current += char
     }
   }
-  
+
   // Push last value
   values.push(current.trim())
-  
+
   return values
 }
 
@@ -216,26 +207,23 @@ export default defineEventHandler(async event => {
 
     // Filter by search
     if (search) {
-      products = products.filter(p => 
-        p.sku.toLowerCase().includes(search) ||
-        p.name.toLowerCase().includes(search) ||
-        p.category.toLowerCase().includes(search) ||
-        p.brand.toLowerCase().includes(search)
+      products = products.filter(
+        p =>
+          p.sku.toLowerCase().includes(search) ||
+          p.name.toLowerCase().includes(search) ||
+          p.category.toLowerCase().includes(search) ||
+          p.brand.toLowerCase().includes(search)
       )
     }
 
     // Filter by category
     if (category) {
-      products = products.filter(p => 
-        p.category.toLowerCase().includes(category)
-      )
+      products = products.filter(p => p.category.toLowerCase().includes(category))
     }
 
     // Filter by brand
     if (brand) {
-      products = products.filter(p => 
-        p.brand.toLowerCase().includes(brand)
-      )
+      products = products.filter(p => p.brand.toLowerCase().includes(brand))
     }
 
     // Sort by name
