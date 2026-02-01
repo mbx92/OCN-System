@@ -278,6 +278,7 @@
 <script setup lang="ts">
 const { formatCurrency } = useFormatter()
 const { showAlert } = useAlert()
+const { confirm } = useConfirm()
 
 const search = ref('')
 const debouncedSearch = refDebounced(search, 300)
@@ -324,7 +325,15 @@ const editProduct = (product: any) => {
 }
 
 const deleteProduct = async (product: any) => {
-  if (!confirm(`Hapus produk ${product.name}?`)) return
+  const confirmed = await confirm({
+    title: `Hapus produk "${product.name}"?`,
+    message: 'Produk akan dihapus secara permanen. Aksi ini tidak dapat dibatalkan.',
+    type: 'danger',
+    confirmText: 'Hapus',
+    cancelText: 'Batal',
+  })
+  
+  if (!confirmed) return
 
   try {
     await $fetch(`/api/products/${product.id}`, {
