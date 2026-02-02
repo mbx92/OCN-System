@@ -641,6 +641,9 @@
                       <NuxtLink to="/finance/cashflow" active-class="active">Cashflow</NuxtLink>
                     </li>
                     <li>
+                      <NuxtLink to="/finance/tax" active-class="active">Pajak UMKM</NuxtLink>
+                    </li>
+                    <li>
                       <NuxtLink to="/finance/cash-advances" active-class="active">
                         Kas Bon Teknisi
                       </NuxtLink>

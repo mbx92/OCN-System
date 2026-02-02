@@ -238,21 +238,9 @@
       </div>
     </div>
 
-    <!-- Pagination (moved outside) -->
-    <div v-if="customers?.meta?.totalPages > 1" class="flex justify-center">
-      <div class="join bg-base-100 shadow border border-base-200">
-        <button class="join-item btn btn-sm" :disabled="page <= 1" @click="page--">«</button>
-        <button class="join-item btn btn-sm pointer-events-none bg-base-100">
-          Halaman {{ page }} dari {{ customers?.meta?.totalPages }}
-        </button>
-        <button
-          class="join-item btn btn-sm"
-          :disabled="page >= customers?.meta?.totalPages"
-          @click="page++"
-        >
-          »
-        </button>
-      </div>
+    <!-- Pagination -->
+    <div v-if="customers?.meta?.total" class="mt-6">
+      <AppPagination :total="customers.meta.total" :per-page="10" v-model:current-page="page" />
     </div>
 
     <!-- Delete Modal -->
