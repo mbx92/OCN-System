@@ -33,9 +33,7 @@ export default defineEventHandler(async event => {
 
     const dueDate = new Date(existing.dueDate)
     const today = new Date()
-    const daysUntilDue = Math.ceil(
-      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
     return {
       exists: true,
@@ -77,9 +75,7 @@ export default defineEventHandler(async event => {
   const dueDate = new Date(year, month, 15)
 
   const today = new Date()
-  const daysUntilDue = Math.ceil(
-    (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  )
+  const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   // Check if exempted (annual omzet < 500jt)
   const yearlyOmzet = await getYearlyOmzet(year)

@@ -330,8 +330,19 @@
           <div class="card-body">
             <div class="flex justify-between items-center">
               <h2 class="card-title text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"
+                  />
                 </svg>
                 PPh Final UMKM
               </h2>
@@ -341,16 +352,26 @@
             <div v-if="taxSummary" class="space-y-3 mt-2">
               <!-- Status -->
               <div v-if="taxSummary.upcoming?.length" class="space-y-2">
-                <div 
-                  v-for="tax in taxSummary.upcoming.slice(0, 2)" 
+                <div
+                  v-for="tax in taxSummary.upcoming.slice(0, 2)"
                   :key="tax.id"
                   class="flex items-center justify-between p-2 rounded-lg text-sm"
-                  :class="tax.daysUntilDue < 0 ? 'bg-error/10' : tax.daysUntilDue <= 7 ? 'bg-warning/10' : 'bg-base-200'"
+                  :class="
+                    tax.daysUntilDue < 0
+                      ? 'bg-error/10'
+                      : tax.daysUntilDue <= 7
+                        ? 'bg-warning/10'
+                        : 'bg-base-200'
+                  "
                 >
                   <div>
                     <span class="font-medium">{{ tax.period }}</span>
                     <div class="text-xs text-base-content/60">
-                      {{ tax.daysUntilDue < 0 ? `${Math.abs(tax.daysUntilDue)} hari terlambat` : `${tax.daysUntilDue} hari lagi` }}
+                      {{
+                        tax.daysUntilDue < 0
+                          ? `${Math.abs(tax.daysUntilDue)} hari terlambat`
+                          : `${tax.daysUntilDue} hari lagi`
+                      }}
                     </div>
                   </div>
                   <span class="font-mono font-bold">{{ formatCurrency(tax.taxAmount) }}</span>
@@ -358,8 +379,19 @@
               </div>
 
               <div v-else class="text-center py-2 text-base-content/60 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 mx-auto mb-1 opacity-50"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Semua pajak sudah dibayar
               </div>
@@ -371,11 +403,15 @@
               </div>
               <div class="flex justify-between text-xs">
                 <span class="text-base-content/60">Sudah bayar:</span>
-                <span class="font-mono text-success">{{ formatCurrency(taxSummary.totalPaid || 0) }}</span>
+                <span class="font-mono text-success">
+                  {{ formatCurrency(taxSummary.totalPaid || 0) }}
+                </span>
               </div>
               <div v-if="taxSummary.totalUnpaid > 0" class="flex justify-between text-xs">
                 <span class="text-base-content/60">Belum bayar:</span>
-                <span class="font-mono text-error">{{ formatCurrency(taxSummary.totalUnpaid) }}</span>
+                <span class="font-mono text-error">
+                  {{ formatCurrency(taxSummary.totalUnpaid) }}
+                </span>
               </div>
             </div>
 

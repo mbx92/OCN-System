@@ -31,10 +31,7 @@ export default defineEventHandler(async event => {
   let currentYear = fromYear
   let currentMonth = fromMonth
 
-  while (
-    currentYear < toYear ||
-    (currentYear === toYear && currentMonth <= toMonth)
-  ) {
+  while (currentYear < toYear || (currentYear === toYear && currentMonth <= toMonth)) {
     // Check if already exists
     const existing = await prisma.taxPayment.findUnique({
       where: { year_month: { year: currentYear, month: currentMonth } },

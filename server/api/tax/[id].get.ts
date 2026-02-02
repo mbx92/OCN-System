@@ -68,9 +68,7 @@ export default defineEventHandler(async event => {
 
   const dueDate = new Date(taxPayment.dueDate)
   const today = new Date()
-  const daysUntilDue = Math.ceil(
-    (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  )
+  const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   return {
     ...taxPayment,

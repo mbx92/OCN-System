@@ -29,9 +29,7 @@ export default defineEventHandler(async () => {
 
   const result = upcomingTaxes.map(tax => {
     const dueDate = new Date(tax.dueDate)
-    const daysUntilDue = Math.ceil(
-      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
     return {
       id: tax.id,
