@@ -20,23 +20,23 @@ Lapor setiap tahun paling lambat 30 April tahun berikutnya.
 
 #### Bagian I: Identitas Wajib Pajak
 
-| Field CoreTax | Sumber Data OCN | Keterangan |
-|---------------|-----------------|------------|
-| NPWP | `Company.npwp` | Dari tabel Company/Settings |
-| Nama Wajib Pajak | `Company.name` | Nama perusahaan |
-| Alamat | `Company.address` | Alamat lengkap |
-| Masa Pajak | Parameter bulan | 01-12 |
-| Tahun Pajak | Parameter tahun | YYYY |
+| Field CoreTax    | Sumber Data OCN   | Keterangan                  |
+| ---------------- | ----------------- | --------------------------- |
+| NPWP             | `Company.npwp`    | Dari tabel Company/Settings |
+| Nama Wajib Pajak | `Company.name`    | Nama perusahaan             |
+| Alamat           | `Company.address` | Alamat lengkap              |
+| Masa Pajak       | Parameter bulan   | 01-12                       |
+| Tahun Pajak      | Parameter tahun   | YYYY                        |
 
 #### Bagian II: Perhitungan PPh
 
-| No | Uraian | Sumber Data | Query |
-|----|--------|-------------|-------|
-| 1 | Peredaran Bruto (Omzet) | `Payment.amount` | SUM(amount) WHERE status='APPROVED' AND MONTH(approvedDate)=X |
-| 2 | Tarif PPh Final | Fixed | 0.5% |
-| 3 | PPh Final Terutang | Kalkulasi | (1) × 0.5% |
-| 4 | PPh Final yang sudah dibayar | `TaxPayment.taxAmount` | Jika sudah bayar sebelumnya |
-| 5 | PPh Final yang kurang/(lebih) dibayar | Kalkulasi | (3) - (4) |
+| No  | Uraian                                | Sumber Data            | Query                                                         |
+| --- | ------------------------------------- | ---------------------- | ------------------------------------------------------------- |
+| 1   | Peredaran Bruto (Omzet)               | `Payment.amount`       | SUM(amount) WHERE status='APPROVED' AND MONTH(approvedDate)=X |
+| 2   | Tarif PPh Final                       | Fixed                  | 0.5%                                                          |
+| 3   | PPh Final Terutang                    | Kalkulasi              | (1) × 0.5%                                                    |
+| 4   | PPh Final yang sudah dibayar          | `TaxPayment.taxAmount` | Jika sudah bayar sebelumnya                                   |
+| 5   | PPh Final yang kurang/(lebih) dibayar | Kalkulasi              | (3) - (4)                                                     |
 
 **Format Export CSV:**
 
@@ -51,18 +51,18 @@ Untuk UMKM yang menggunakan PP 55/2022.
 
 #### Bagian A: Peredaran Bruto
 
-| Bulan | Peredaran Bruto | Tarif | PPh Final |
-|-------|-----------------|-------|-----------|
-| Januari | SUM(Payment) Jan | 0.5% | Rp XXX |
-| Februari | SUM(Payment) Feb | 0.5% | Rp XXX |
-| ... | ... | ... | ... |
-| Desember | SUM(Payment) Des | 0.5% | Rp XXX |
-| **Total** | **Total** | | **Total** |
+| Bulan     | Peredaran Bruto  | Tarif | PPh Final |
+| --------- | ---------------- | ----- | --------- |
+| Januari   | SUM(Payment) Jan | 0.5%  | Rp XXX    |
+| Februari  | SUM(Payment) Feb | 0.5%  | Rp XXX    |
+| ...       | ...              | ...   | ...       |
+| Desember  | SUM(Payment) Des | 0.5%  | Rp XXX    |
+| **Total** | **Total**        |       | **Total** |
 
 **Sumber Data:**
 
 ```sql
-SELECT 
+SELECT
   MONTH(approvedDate) as bulan,
   SUM(amount) as peredaran_bruto,
   SUM(amount) * 0.005 as pph_final
@@ -79,26 +79,26 @@ Untuk laporan keuangan yang lebih detail (opsional untuk UMKM).
 
 #### I. PENGHASILAN
 
-| Kode | Uraian | Sumber Data OCN | Query |
-|------|--------|-----------------|-------|
-| 1a | Penjualan/Peredaran Bruto | `Payment` | SUM(amount) WHERE status='APPROVED' |
-| 1b | Dikurangi: Retur Penjualan | - | 0 (tidak ada di sistem) |
-| 1c | Dikurangi: Potongan Penjualan | `Payment.discount` | SUM(discount) jika ada |
-| **1** | **Penjualan Netto** | | **1a - 1b - 1c** |
-| 2 | Harga Pokok Penjualan (HPP) | Lihat detail HPP | |
-| **3** | **LABA/(RUGI) BRUTO** | | **1 - 2** |
+| Kode  | Uraian                        | Sumber Data OCN    | Query                               |
+| ----- | ----------------------------- | ------------------ | ----------------------------------- |
+| 1a    | Penjualan/Peredaran Bruto     | `Payment`          | SUM(amount) WHERE status='APPROVED' |
+| 1b    | Dikurangi: Retur Penjualan    | -                  | 0 (tidak ada di sistem)             |
+| 1c    | Dikurangi: Potongan Penjualan | `Payment.discount` | SUM(discount) jika ada              |
+| **1** | **Penjualan Netto**           |                    | **1a - 1b - 1c**                    |
+| 2     | Harga Pokok Penjualan (HPP)   | Lihat detail HPP   |                                     |
+| **3** | **LABA/(RUGI) BRUTO**         |                    | **1 - 2**                           |
 
 #### II. HPP (Harga Pokok Penjualan)
 
-| Kode | Uraian | Sumber Data OCN | Query |
-|------|--------|-----------------|-------|
-| a | Persediaan awal | - | Manual (dari tahun sebelumnya) |
-| b | Pembelian | `PurchaseOrder` | SUM(total) WHERE status='RECEIVED' |
-| c | Biaya langsung | `ProjectExpense` | SUM(amount) |
-| d | Upah langsung | `ProjectItem` (labor) | SUM(technicianCost) |
-| e | Biaya overhead pabrik | - | 0 atau manual |
-| f | Persediaan akhir | `Product` stock | SUM(stock × avgCost) |
-| **Total HPP** | | | **a + b + c + d + e - f** |
+| Kode          | Uraian                | Sumber Data OCN       | Query                              |
+| ------------- | --------------------- | --------------------- | ---------------------------------- |
+| a             | Persediaan awal       | -                     | Manual (dari tahun sebelumnya)     |
+| b             | Pembelian             | `PurchaseOrder`       | SUM(total) WHERE status='RECEIVED' |
+| c             | Biaya langsung        | `ProjectExpense`      | SUM(amount)                        |
+| d             | Upah langsung         | `ProjectItem` (labor) | SUM(technicianCost)                |
+| e             | Biaya overhead pabrik | -                     | 0 atau manual                      |
+| f             | Persediaan akhir      | `Product` stock       | SUM(stock × avgCost)               |
+| **Total HPP** |                       |                       | **a + b + c + d + e - f**          |
 
 **Query HPP Detail:**
 
@@ -124,16 +124,16 @@ WHERE Project.status IN ('COMPLETED', 'APPROVED')
 
 #### III. BIAYA USAHA (Operasional)
 
-| Kode | Uraian | Sumber Data OCN | Query |
-|------|--------|-----------------|-------|
-| 4a | Biaya gaji karyawan | `CashTransaction` | WHERE category='SALARY' |
-| 4b | Biaya sewa | `CashTransaction` | WHERE description LIKE '%sewa%' |
-| 4c | Biaya listrik/air/telepon | `Expense` | WHERE type='UTILITIES' |
-| 4d | Biaya pemasaran | `Expense` | WHERE type='MARKETING' |
-| 4e | Biaya transportasi | `Expense` | WHERE type='TRANSPORT' |
-| 4f | Biaya pemeliharaan | `Expense` | WHERE type='MAINTENANCE' |
-| 4g | Biaya lain-lain | `Expense` | WHERE type='OTHER' |
-| **Total Biaya Usaha** | | | **SUM(4a-4g)** |
+| Kode                  | Uraian                    | Sumber Data OCN   | Query                           |
+| --------------------- | ------------------------- | ----------------- | ------------------------------- |
+| 4a                    | Biaya gaji karyawan       | `CashTransaction` | WHERE category='SALARY'         |
+| 4b                    | Biaya sewa                | `CashTransaction` | WHERE description LIKE '%sewa%' |
+| 4c                    | Biaya listrik/air/telepon | `Expense`         | WHERE type='UTILITIES'          |
+| 4d                    | Biaya pemasaran           | `Expense`         | WHERE type='MARKETING'          |
+| 4e                    | Biaya transportasi        | `Expense`         | WHERE type='TRANSPORT'          |
+| 4f                    | Biaya pemeliharaan        | `Expense`         | WHERE type='MAINTENANCE'        |
+| 4g                    | Biaya lain-lain           | `Expense`         | WHERE type='OTHER'              |
+| **Total Biaya Usaha** |                           |                   | **SUM(4a-4g)**                  |
 
 **Query:**
 
@@ -145,7 +145,7 @@ WHERE category = 'SALARY'
   AND YEAR(date) = 2026
 
 -- Total biaya operasional lainnya
-SELECT 
+SELECT
   type,
   SUM(amount) as total
 FROM Expense
@@ -155,36 +155,36 @@ GROUP BY type
 
 #### IV. LABA BERSIH
 
-| Kode | Uraian | Kalkulasi |
-|------|--------|-----------|
-| 5 | LABA/(RUGI) USAHA | (3) - (4) |
-| 6 | Penghasilan lain | Manual input |
-| 7 | Biaya lain | Manual input |
-| **8** | **LABA BERSIH** | **(5) + (6) - (7)** |
-| 9 | PPh Final yang sudah dibayar | SUM(TaxPayment.taxAmount) |
+| Kode  | Uraian                       | Kalkulasi                 |
+| ----- | ---------------------------- | ------------------------- |
+| 5     | LABA/(RUGI) USAHA            | (3) - (4)                 |
+| 6     | Penghasilan lain             | Manual input              |
+| 7     | Biaya lain                   | Manual input              |
+| **8** | **LABA BERSIH**              | **(5) + (6) - (7)**       |
+| 9     | PPh Final yang sudah dibayar | SUM(TaxPayment.taxAmount) |
 
 ### D. SPT Tahunan - Lampiran Neraca
 
 #### HARTA (Assets)
 
-| Kode | Uraian | Sumber Data OCN | Query |
-|------|--------|-----------------|-------|
-| **A. HARTA LANCAR** | | | |
-| 1 | Kas dan Bank | `CashTransaction` | SUM(amount) - saldo akhir |
-| 2 | Piutang Usaha | `Payment` | WHERE status='PENDING' |
-| 3 | Persediaan Barang | `Product` | SUM(stock × avgCost) |
-| **Jumlah Harta Lancar** | | | |
-| **B. HARTA TIDAK LANCAR** | | | |
-| 4 | Aset Tetap | Manual | Tanah, bangunan, kendaraan |
-| 5 | Akumulasi Penyusutan | Manual | Penyusutan aset |
-| **Jumlah Harta Tidak Lancar** | | | |
-| **TOTAL HARTA** | | | **A + B** |
+| Kode                          | Uraian               | Sumber Data OCN   | Query                      |
+| ----------------------------- | -------------------- | ----------------- | -------------------------- |
+| **A. HARTA LANCAR**           |                      |                   |                            |
+| 1                             | Kas dan Bank         | `CashTransaction` | SUM(amount) - saldo akhir  |
+| 2                             | Piutang Usaha        | `Payment`         | WHERE status='PENDING'     |
+| 3                             | Persediaan Barang    | `Product`         | SUM(stock × avgCost)       |
+| **Jumlah Harta Lancar**       |                      |                   |                            |
+| **B. HARTA TIDAK LANCAR**     |                      |                   |                            |
+| 4                             | Aset Tetap           | Manual            | Tanah, bangunan, kendaraan |
+| 5                             | Akumulasi Penyusutan | Manual            | Penyusutan aset            |
+| **Jumlah Harta Tidak Lancar** |                      |                   |                            |
+| **TOTAL HARTA**               |                      |                   | **A + B**                  |
 
 **Query:**
 
 ```sql
 -- Saldo Kas (Cashflow)
-SELECT 
+SELECT
   SUM(CASE WHEN category IN ('PAYMENT') THEN amount ELSE 0 END) as pemasukan,
   SUM(CASE WHEN category IN ('SALARY', 'PO', 'TAX', 'PROJECT_EXPENSE') THEN ABS(amount) ELSE 0 END) as pengeluaran,
   SUM(amount) as saldo
@@ -197,7 +197,7 @@ FROM Payment
 WHERE status = 'PENDING'
 
 -- Persediaan (Stock akhir)
-SELECT 
+SELECT
   SUM(stock * avgCost) as nilai_persediaan,
   COUNT(*) as jumlah_item
 FROM Product
@@ -206,21 +206,21 @@ WHERE stock > 0
 
 #### KEWAJIBAN (Liabilities)
 
-| Kode | Uraian | Sumber Data OCN | Query |
-|------|--------|-----------------|-------|
-| **A. KEWAJIBAN JANGKA PENDEK** | | | |
-| 1 | Utang Usaha | `PurchaseOrder` | WHERE status='PENDING' atau 'RECEIVED' tapi belum bayar |
-| 2 | Utang Pajak | `TaxPayment` | WHERE status='UNPAID' |
-| **Jumlah Kewajiban Jangka Pendek** | | | |
-| **B. KEWAJIBAN JANGKA PANJANG** | | | |
-| 3 | Utang Bank | Manual | Jika ada pinjaman |
-| **TOTAL KEWAJIBAN** | | | **A + B** |
+| Kode                               | Uraian      | Sumber Data OCN | Query                                                   |
+| ---------------------------------- | ----------- | --------------- | ------------------------------------------------------- |
+| **A. KEWAJIBAN JANGKA PENDEK**     |             |                 |                                                         |
+| 1                                  | Utang Usaha | `PurchaseOrder` | WHERE status='PENDING' atau 'RECEIVED' tapi belum bayar |
+| 2                                  | Utang Pajak | `TaxPayment`    | WHERE status='UNPAID'                                   |
+| **Jumlah Kewajiban Jangka Pendek** |             |                 |                                                         |
+| **B. KEWAJIBAN JANGKA PANJANG**    |             |                 |                                                         |
+| 3                                  | Utang Bank  | Manual          | Jika ada pinjaman                                       |
+| **TOTAL KEWAJIBAN**                |             |                 | **A + B**                                               |
 
 **Query:**
 
 ```sql
 -- Utang PO (yang sudah received tapi belum bayar)
-SELECT 
+SELECT
   COUNT(*) as jumlah_po,
   SUM(total) as total_utang
 FROM PurchaseOrder
@@ -240,13 +240,14 @@ WHERE status IN ('UNPAID', 'OVERDUE')
 
 #### MODAL (Equity)
 
-| Kode | Uraian | Kalkulasi |
-|------|--------|-----------|
-| 1 | Modal Awal | Manual (dari tahun lalu) |
-| 2 | Laba/(Rugi) Tahun Berjalan | Dari Laba Rugi |
-| **TOTAL MODAL** | | **1 + 2** |
+| Kode            | Uraian                     | Kalkulasi                |
+| --------------- | -------------------------- | ------------------------ |
+| 1               | Modal Awal                 | Manual (dari tahun lalu) |
+| 2               | Laba/(Rugi) Tahun Berjalan | Dari Laba Rugi           |
+| **TOTAL MODAL** |                            | **1 + 2**                |
 
 **Rumus Neraca:**
+
 ```
 TOTAL HARTA = TOTAL KEWAJIBAN + TOTAL MODAL
 ```
@@ -279,12 +280,12 @@ TOTAL HARTA = TOTAL KEWAJIBAN + TOTAL MODAL
 
 **Sheet 1: Lampiran Khusus 8A - PPh Final UMKM**
 
-| Bulan | Peredaran Bruto | PPh Final (0,5%) | Status Bayar |
-|-------|-----------------|------------------|--------------|
-| Januari | Rp 38.132.500 | Rp 190.663 | LUNAS |
-| Februari | Rp ... | Rp ... | LUNAS |
-| ... | ... | ... | ... |
-| **TOTAL** | **Rp XXX** | **Rp XXX** | |
+| Bulan     | Peredaran Bruto | PPh Final (0,5%) | Status Bayar |
+| --------- | --------------- | ---------------- | ------------ |
+| Januari   | Rp 38.132.500   | Rp 190.663       | LUNAS        |
+| Februari  | Rp ...          | Rp ...           | LUNAS        |
+| ...       | ...             | ...              | ...          |
+| **TOTAL** | **Rp XXX**      | **Rp XXX**       |              |
 
 **Sheet 2: Laba Rugi**
 
@@ -353,10 +354,10 @@ TOTAL KEWAJIBAN + MODAL               Rp XXX
 
 **Sheet 4: Bukti Pembayaran Pajak**
 
-| Masa | Tgl Bayar | NTPN/Billing | Jumlah | Bukti |
-|------|-----------|--------------|--------|-------|
-| Jan 2026 | 2026-02-10 | 123XXX | Rp 190.663 | ✓ |
-| ... | ... | ... | ... | ... |
+| Masa     | Tgl Bayar  | NTPN/Billing | Jumlah     | Bukti |
+| -------- | ---------- | ------------ | ---------- | ----- |
+| Jan 2026 | 2026-02-10 | 123XXX       | Rp 190.663 | ✓     |
+| ...      | ...        | ...          | ...        | ...   |
 
 ### 3. Export CSV untuk Import CoreTax
 
@@ -424,6 +425,7 @@ GET /api/reports/sales-detail/:year/:month?format=xlsx
 ```
 
 **Columns:**
+
 - Tanggal
 - No Invoice
 - Customer
@@ -438,6 +440,7 @@ GET /api/reports/purchase-detail/:year/:month?format=xlsx
 ```
 
 **Columns:**
+
 - Tanggal
 - No PO
 - Supplier
@@ -453,28 +456,28 @@ npm install exceljs
 ```
 
 ```typescript
-import ExcelJS from 'exceljs';
+import ExcelJS from 'exceljs'
 
 async function exportSPTMasa(year: number, month: number) {
-  const workbook = new ExcelJS.Workbook();
-  
+  const workbook = new ExcelJS.Workbook()
+
   // Sheet 1: Ringkasan
-  const sheet1 = workbook.addWorksheet('Ringkasan');
+  const sheet1 = workbook.addWorksheet('Ringkasan')
   sheet1.columns = [
     { header: 'Field', key: 'field', width: 30 },
-    { header: 'Value', key: 'value', width: 20 }
-  ];
-  
+    { header: 'Value', key: 'value', width: 20 },
+  ]
+
   // Add data...
-  sheet1.addRow({ field: 'NPWP', value: '...' });
-  
+  sheet1.addRow({ field: 'NPWP', value: '...' })
+
   // Sheet 2: Detail Penjualan
-  const sheet2 = workbook.addWorksheet('Detail Penjualan');
+  const sheet2 = workbook.addWorksheet('Detail Penjualan')
   // ...
-  
+
   // Generate buffer
-  const buffer = await workbook.xlsx.writeBuffer();
-  return buffer;
+  const buffer = await workbook.xlsx.writeBuffer()
+  return buffer
 }
 ```
 
@@ -485,26 +488,27 @@ npm install puppeteer
 ```
 
 ```typescript
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer'
 
 async function exportLaporanPDF(html: string) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  
-  await page.setContent(html);
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
+
+  await page.setContent(html)
   const pdf = await page.pdf({
     format: 'A4',
-    printBackground: true
-  });
-  
-  await browser.close();
-  return pdf;
+    printBackground: true,
+  })
+
+  await browser.close()
+  return pdf
 }
 ```
 
 ## Checklist Data yang Dibutuhkan CoreTax
 
 ### Data Perusahaan (Master)
+
 - [ ] NPWP (15 digit)
 - [ ] Nama Badan
 - [ ] Alamat lengkap
@@ -514,6 +518,7 @@ async function exportLaporanPDF(html: string) {
 - [ ] Email
 
 ### Data Transaksi Bulanan
+
 - [ ] Total Peredaran Bruto (Omzet)
 - [ ] Detail penjualan (tanggal, invoice, customer, jumlah)
 - [ ] PPh Final 0,5%
@@ -522,6 +527,7 @@ async function exportLaporanPDF(html: string) {
 - [ ] Bukti pembayaran (PDF)
 
 ### Data Tahunan
+
 - [ ] Laporan Laba Rugi lengkap
 - [ ] Neraca (Harta, Kewajiban, Modal)
 - [ ] Rekap pembayaran PPh Final 12 bulan
@@ -530,6 +536,7 @@ async function exportLaporanPDF(html: string) {
 - [ ] Rekening koran (opsional)
 
 ### Dokumen Pendukung
+
 - [ ] Faktur penjualan
 - [ ] Kwitansi pembayaran
 - [ ] Invoice pembelian
@@ -572,55 +579,59 @@ async function exportLaporanPDF(html: string) {
 
 ```typescript
 async function validateDataBeforeExport(year: number, month?: number) {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
+  const errors: string[] = []
+  const warnings: string[] = []
+
   // 1. Check company data
-  const company = await getCompanyData();
-  if (!company.npwp) errors.push('NPWP belum diisi');
-  if (!company.address) errors.push('Alamat perusahaan belum lengkap');
-  
+  const company = await getCompanyData()
+  if (!company.npwp) errors.push('NPWP belum diisi')
+  if (!company.address) errors.push('Alamat perusahaan belum lengkap')
+
   // 2. Check tax payments
-  const tax = await getTaxPayment(year, month);
-  if (!tax) warnings.push('Data pajak belum tercatat di sistem');
-  if (tax?.status !== 'PAID') warnings.push('Pajak belum dibayar');
-  
+  const tax = await getTaxPayment(year, month)
+  if (!tax) warnings.push('Data pajak belum tercatat di sistem')
+  if (tax?.status !== 'PAID') warnings.push('Pajak belum dibayar')
+
   // 3. Check cashflow balance
-  const cashflow = await getCashflowBalance(year, month);
-  const profitLoss = await getProfitLoss(year, month);
-  const diff = Math.abs(cashflow - profitLoss);
+  const cashflow = await getCashflowBalance(year, month)
+  const profitLoss = await getProfitLoss(year, month)
+  const diff = Math.abs(cashflow - profitLoss)
   if (diff > 1000000) {
-    warnings.push(`Selisih cashflow vs laba rugi: Rp ${diff.toLocaleString()}`);
+    warnings.push(`Selisih cashflow vs laba rugi: Rp ${diff.toLocaleString()}`)
   }
-  
+
   // 4. Check missing data
-  const payments = await getPaymentsWithoutInvoice(year, month);
+  const payments = await getPaymentsWithoutInvoice(year, month)
   if (payments.length > 0) {
-    warnings.push(`${payments.length} pembayaran tanpa nomor invoice`);
+    warnings.push(`${payments.length} pembayaran tanpa nomor invoice`)
   }
-  
-  return { errors, warnings };
+
+  return { errors, warnings }
 }
 ```
 
 ## Migration Plan
 
 ### Phase 1: Core Export (Week 1)
+
 - [ ] API endpoint export SPT Masa (Excel)
 - [ ] API endpoint export CSV CoreTax
 - [ ] Basic UI export page
 
 ### Phase 2: Annual Report (Week 2)
+
 - [ ] Laba Rugi generator
 - [ ] Neraca generator
 - [ ] Export SPT Tahunan
 
 ### Phase 3: Supporting Docs (Week 3)
+
 - [ ] Detail penjualan export
 - [ ] Detail pembelian export
 - [ ] Bukti pembayaran pajak
 
 ### Phase 4: Validation & Enhancement (Week 4)
+
 - [ ] Data validation before export
 - [ ] Preview before download
 - [ ] Templates & guides
