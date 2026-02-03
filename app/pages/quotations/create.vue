@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex items-center gap-2 sm:gap-4">
@@ -577,6 +577,28 @@ const { data: packagesResponse } = await useFetch('/api/packages', {
 })
 const packages = computed(() => packagesResponse.value?.data || [])
 
+// Load budget data if budgetId is provided
+const budgetId = route.query.budgetId as string
+if (budgetId) {
+  const { data: budgetData } = await useFetch(`/api/budgets/${budgetId}`)
+  if (budgetData.value) {
+    const budget = budgetData.value as any
+    // Pre-fill form with budget data
+    form.customerId = budget.customerId || ''
+    form.title = budget.title || ''
+    form.notes = budget.notes || ''
+    form.validDays = 14 // Default
+
+    // Convert budget items to quotation items
+    form.items = budget.items.map((item: any) => ({
+      productId: null,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      price: Number(item.sellPrice),
+    }))
+  }
+}
 const categories = computed(() => {
   if (!products.value?.length) return []
   return [...new Set(products.value.map((p: any) => p.category))]
@@ -654,11 +676,28 @@ const handleSubmit = async () => {
       method: 'POST',
       body: form,
     })
+
+    // If this quotation was created from a budget, update the budget status
+    const budgetId = route.query.budgetId as string
+    if (budgetId) {
+      try {
+        await $fetch(`/api/budgets/${budgetId}`, {
+          method: 'PUT',
+          body: {
+            status: 'CONVERTED',
+            quotationId: (quotation as any).id,
+          },
+        })
+      } catch (budgetErr) {
+        console.warn('Failed to update budget status:', budgetErr)
+      }
+    }
+
     success('Penawaran berhasil dibuat')
-    await navigateTo(`/quotations/${(quotation as any).id}`)
+    loading.value = false
+    return navigateTo(`/quotations/${(quotation as any).id}`)
   } catch (err: any) {
     showError(err.data?.message || 'Gagal membuat penawaran')
-  } finally {
     loading.value = false
   }
 }

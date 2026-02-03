@@ -111,7 +111,7 @@
             v-if="budget.status === 'APPROVED'"
             @click="convertToQuotation"
             class="btn btn-primary btn-xs sm:btn-sm whitespace-nowrap"
-            :disabled="actionLoading || !budget.customerId"
+            :disabled="actionLoading"
           >
             <span v-if="actionLoading" class="loading loading-spinner loading-xs"></span>
             <span class="hidden sm:inline">Convert ke</span>
@@ -149,26 +149,6 @@
           <p class="font-bold">Alasan Penolakan:</p>
           <p>{{ budget.rejectionNote }}</p>
         </div>
-      </div>
-
-      <!-- Warning: No Customer -->
-      <div v-if="budget.status === 'APPROVED' && !budget.customerId" class="alert alert-warning">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="stroke-current shrink-0 h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-        <span>
-          Budget harus memiliki pelanggan untuk diconvert ke penawaran. Silakan edit budget.
-        </span>
       </div>
 
       <!-- Converted Quotation Link -->
@@ -563,25 +543,8 @@ const rejectBudget = async () => {
 }
 
 const convertToQuotation = async () => {
-  const confirmed = await confirmDialog.value?.show({
-    title: 'Convert ke Penawaran',
-    message: 'Apakah Anda yakin ingin mengconvert budget ini ke penawaran?',
-    confirmText: 'Convert',
-    confirmClass: 'btn-primary',
-  })
-
-  if (!confirmed) return
-
-  actionLoading.value = true
-  try {
-    const result = await $fetch(`/api/budgets/${budgetId}/convert`, { method: 'POST' })
-    success('Budget berhasil diconvert ke penawaran')
-    await navigateTo(`/quotations/${(result as any).quotation.id}`)
-  } catch (err: any) {
-    showError(err.data?.message || 'Gagal convert budget')
-  } finally {
-    actionLoading.value = false
-  }
+  // Navigate to quotation create page with budget data
+  await navigateTo(`/quotations/create?budgetId=${budgetId}`)
 }
 
 const deleteBudget = async () => {
