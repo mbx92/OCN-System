@@ -9,6 +9,9 @@ export default defineEventHandler(async event => {
 
   if (status && status !== 'all') {
     where.status = status
+  } else {
+    // When status is 'all' or not provided, exclude CANCELLED projects
+    where.status = { not: 'CANCELLED' }
   }
 
   if (search) {

@@ -681,6 +681,11 @@
                             </NuxtLink>
                           </li>
                           <li>
+                            <NuxtLink to="/finance/reports/cash-vs-accrual" active-class="active">
+                              Kas vs Akrual
+                            </NuxtLink>
+                          </li>
+                          <li>
                             <NuxtLink to="/finance/reports/gross-revenue" active-class="active">
                               Omzet Bruto
                             </NuxtLink>

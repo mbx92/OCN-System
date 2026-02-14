@@ -19,6 +19,15 @@ export default defineEventHandler(async event => {
   if (status) {
     where.status = status
   }
+  // Exclude payments from cancelled projects
+  where.OR = [
+    { projectId: null }, // POS payments or payments without project
+    {
+      project: {
+        status: { not: 'CANCELLED' },
+      },
+    },
+  ]
 
   const [payments, total] = await Promise.all([
     prisma.payment.findMany({

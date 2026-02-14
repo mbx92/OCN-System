@@ -3,9 +3,6 @@ import { Prisma } from '@prisma/client'
 export default defineEventHandler(async event => {
   const query = getQuery(event)
 
-  // Filter by project status if needed, but 'needsPo' should suffice?
-  // Usually we only care about Approved/Ongoing projects.
-
   const pendingItems = await prisma.projectItem.findMany({
     where: {
       needsPo: true,
