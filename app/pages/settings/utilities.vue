@@ -599,6 +599,513 @@
         </div>
       </div>
     </div>
+
+    <!-- Analyze Cashflow vs Profit Loss Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          Analisis Cashflow vs Laba Rugi
+        </h2>
+
+        <div class="alert alert-info text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">
+              Fungsi: Membandingkan saldo cashflow dengan laba bersih untuk menemukan
+              ketidaksesuaian
+            </p>
+            <p class="mt-2">
+              Tool ini membantu mengidentifikasi perbedaan antara cash-basis (cashflow) dan
+              accrual-basis (laba rugi) untuk memastikan akurasi data keuangan.
+            </p>
+          </div>
+        </div>
+
+        <!-- Year Selection -->
+        <div class="form-control w-full max-w-xs">
+          <label class="label">
+            <span class="label-text font-semibold">Tahun</span>
+          </label>
+          <select v-model="analysisYear" class="select select-bordered">
+            <option :value="2024">2024</option>
+            <option :value="2025">2025</option>
+            <option :value="2026">2026</option>
+          </select>
+        </div>
+
+        <!-- Action Button -->
+        <div class="card-actions justify-end">
+          <button
+            @click="analyzeCashflowProfit"
+            class="btn btn-primary"
+            :disabled="loadingAnalysis"
+          >
+            <span v-if="loadingAnalysis" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            {{ loadingAnalysis ? 'Menganalisis...' : 'Analisis Sekarang' }}
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div v-if="analysisResult" class="mt-6 space-y-4">
+          <!-- Stats -->
+          <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+            <div class="stat">
+              <div class="stat-title">Saldo Cashflow</div>
+              <div class="stat-value text-primary text-2xl">
+                {{ formatCurrency(analysisResult.cashflow.balance) }}
+              </div>
+              <div class="stat-desc">
+                {{ analysisResult.cashflow.totalIncome > 0 ? 'Positif' : 'Negatif' }}
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Laba Bersih</div>
+              <div class="stat-value text-secondary text-2xl">
+                {{ formatCurrency(analysisResult.profitLoss.labaBersih) }}
+              </div>
+              <div class="stat-desc">Basis Akrual</div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Selisih</div>
+              <div
+                class="stat-value text-2xl"
+                :class="{
+                  'text-success': Math.abs(analysisResult.analysis.selisih) < 1000000,
+                  'text-warning':
+                    Math.abs(analysisResult.analysis.selisih) >= 1000000 &&
+                    Math.abs(analysisResult.analysis.selisih) < 5000000,
+                  'text-error': Math.abs(analysisResult.analysis.selisih) >= 5000000,
+                }"
+              >
+                {{ formatCurrency(analysisResult.analysis.selisih) }}
+              </div>
+              <div class="stat-desc">{{ analysisResult.analysis.percentageDiff }}%</div>
+            </div>
+          </div>
+
+          <!-- Summary Alert -->
+          <div
+            class="alert"
+            :class="{
+              'alert-success': Math.abs(analysisResult.analysis.selisih) < 1000000,
+              'alert-warning':
+                Math.abs(analysisResult.analysis.selisih) >= 1000000 &&
+                Math.abs(analysisResult.analysis.selisih) < 5000000,
+              'alert-error': Math.abs(analysisResult.analysis.selisih) >= 5000000,
+            }"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <h3 class="font-bold">
+                {{
+                  Math.abs(analysisResult.analysis.selisih) < 1000000
+                    ? 'Balance - Cashflow & Laba Rugi seimbang'
+                    : Math.abs(analysisResult.analysis.selisih) < 5000000
+                      ? 'Perhatian - Ada selisih yang cukup besar'
+                      : 'Warning - Selisih sangat besar, perlu investigasi'
+                }}
+              </h3>
+              <p class="text-sm mt-2">
+                Selisih Rp {{ formatCurrency(Math.abs(analysisResult.analysis.selisih)) }} ({{
+                  analysisResult.analysis.percentageDiff
+                }}% dari laba bersih)
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fix Sisa Upah Teknisi Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Fix Double Counting Sisa Upah Teknisi
+        </h2>
+
+        <div class="alert alert-warning text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">Fungsi: Menghapus transaksi sisa upah teknisi yang salah</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>CHECK:</strong>
+                Lihat transaksi sisa upah yang tercatat sebagai income
+              </li>
+              <li>
+                <strong>EXECUTE:</strong>
+                Hapus transaksi sisa upah (tidak bisa undo!)
+              </li>
+            </ul>
+            <p class="mt-2 text-xs">
+              Sisa upah teknisi adalah selisih antara fee yang dianggarkan vs yang dibayar. Ini
+              BUKAN income, jadi tidak boleh dicatat di cashflow.
+            </p>
+          </div>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="form-control w-full max-w-xs">
+          <label class="label">
+            <span class="label-text font-semibold">Pilih Mode</span>
+          </label>
+          <select v-model="sisaUpahMode" class="select select-bordered">
+            <option value="CHECK">CHECK - Lihat Data Saja</option>
+            <option value="EXECUTE">EXECUTE - Hapus Transaksi</option>
+          </select>
+        </div>
+
+        <!-- Action Button -->
+        <div class="card-actions justify-end">
+          <button
+            @click="fixSisaUpah"
+            class="btn"
+            :class="{
+              'btn-primary': sisaUpahMode === 'CHECK',
+              'btn-error': sisaUpahMode === 'EXECUTE',
+            }"
+            :disabled="loadingSisaUpah"
+          >
+            <span v-if="loadingSisaUpah" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            {{ loadingSisaUpah ? 'Memproses...' : `Jalankan ${sisaUpahMode}` }}
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div v-if="sisaUpahResult" class="mt-6 space-y-4">
+          <div class="alert" :class="sisaUpahResult.success ? 'alert-success' : 'alert-error'">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                v-if="sisaUpahResult.success"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <h3 class="font-bold">{{ sisaUpahResult.message }}</h3>
+              <div class="text-sm mt-2">
+                <p>
+                  Total:
+                  <strong>{{ formatCurrency(sisaUpahResult.totalAmount || 0) }}</strong>
+                </p>
+                <p v-if="sisaUpahResult.mode === 'EXECUTE' && sisaUpahResult.deleted">
+                  Dihapus:
+                  <strong>{{ sisaUpahResult.deleted }} transaksi</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transactions List -->
+          <div
+            v-if="sisaUpahResult.transactions && sisaUpahResult.transactions.length > 0"
+            class="card bg-base-200"
+          >
+            <div class="card-body">
+              <h3 class="card-title text-lg">
+                Detail Transaksi ({{ sisaUpahResult.transactions.length }})
+              </h3>
+              <div class="overflow-x-auto max-h-96">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>Deskripsi</th>
+                      <th class="text-right">Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="tx in sisaUpahResult.transactions" :key="tx.id">
+                      <td class="text-sm">{{ formatDate(new Date(tx.date)) }}</td>
+                      <td class="max-w-xs truncate text-sm">{{ tx.description }}</td>
+                      <td class="text-right font-mono text-sm">{{ formatCurrency(tx.amount) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fix PO Cashflow Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          Fix Cashflow Purchase Order
+        </h2>
+
+        <div class="alert alert-warning text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">
+              Fungsi: Menambahkan cashflow untuk PO yang sudah received tapi belum tercatat
+            </p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>CHECK:</strong>
+                Lihat PO yang sudah received tapi belum ada cashflow
+              </li>
+              <li>
+                <strong>EXECUTE:</strong>
+                Buat cashflow untuk PO tersebut (tidak bisa undo!)
+              </li>
+            </ul>
+            <p class="mt-2 text-xs">
+              Biasanya terjadi pada data historis yang di-import. Cashflow akan dibuat sesuai
+              tanggal received PO.
+            </p>
+          </div>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="form-control w-full max-w-xs">
+          <label class="label">
+            <span class="label-text font-semibold">Pilih Mode</span>
+          </label>
+          <select v-model="poCashflowMode" class="select select-bordered">
+            <option value="CHECK">CHECK - Lihat Data Saja</option>
+            <option value="EXECUTE">EXECUTE - Buat Cashflow</option>
+          </select>
+        </div>
+
+        <!-- Action Button -->
+        <div class="card-actions justify-end">
+          <button
+            @click="fixPOCashflow"
+            class="btn"
+            :class="{
+              'btn-primary': poCashflowMode === 'CHECK',
+              'btn-warning': poCashflowMode === 'EXECUTE',
+            }"
+            :disabled="loadingPOCashflow"
+          >
+            <span v-if="loadingPOCashflow" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            {{ loadingPOCashflow ? 'Memproses...' : `Jalankan ${poCashflowMode}` }}
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div v-if="poCashflowResult" class="mt-6 space-y-4">
+          <div class="alert" :class="poCashflowResult.success ? 'alert-success' : 'alert-error'">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                v-if="poCashflowResult.success"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <h3 class="font-bold">{{ poCashflowResult.message }}</h3>
+              <div class="text-sm mt-2">
+                <p v-if="poCashflowResult.missingCount !== undefined">
+                  PO belum tercatat:
+                  <strong>{{ poCashflowResult.missingCount }}</strong>
+                </p>
+                <p>
+                  Total:
+                  <strong>{{ formatCurrency(poCashflowResult.totalAmount || 0) }}</strong>
+                </p>
+                <p v-if="poCashflowResult.mode === 'EXECUTE' && poCashflowResult.created">
+                  Dibuat:
+                  <strong>{{ poCashflowResult.created }} cashflow</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Missing POs List -->
+          <div
+            v-if="poCashflowResult.missingPOs && poCashflowResult.missingPOs.length > 0"
+            class="card bg-base-200"
+          >
+            <div class="card-body">
+              <h3 class="card-title text-lg">
+                PO Belum Tercatat ({{ poCashflowResult.missingPOs.length }})
+              </h3>
+              <div class="overflow-x-auto max-h-96">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>PO Number</th>
+                      <th>Supplier</th>
+                      <th>Project</th>
+                      <th class="text-right">Amount</th>
+                      <th>Received Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="po in poCashflowResult.missingPOs" :key="po.poNumber">
+                      <td class="font-mono text-xs">{{ po.poNumber }}</td>
+                      <td class="text-sm">{{ po.supplier }}</td>
+                      <td class="font-mono text-xs">{{ po.project }}</td>
+                      <td class="text-right font-mono text-sm">{{ formatCurrency(po.amount) }}</td>
+                      <td class="text-sm">{{ formatDate(new Date(po.receivedDate)) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -620,6 +1127,21 @@ const wageResult = ref<any>(null)
 const reopenSearch = ref('')
 const completedProjects = ref<any[]>([])
 const loadingReopen = ref(false)
+
+// Analyze Cashflow vs Profit states
+const analysisYear = ref(2025)
+const loadingAnalysis = ref(false)
+const analysisResult = ref<any>(null)
+
+// Fix Sisa Upah states
+const sisaUpahMode = ref<'CHECK' | 'EXECUTE'>('CHECK')
+const loadingSisaUpah = ref(false)
+const sisaUpahResult = ref<any>(null)
+
+// Fix PO Cashflow states
+const poCashflowMode = ref<'CHECK' | 'EXECUTE'>('CHECK')
+const loadingPOCashflow = ref(false)
+const poCashflowResult = ref<any>(null)
 
 const searchCompletedProjects = async () => {
   if (!reopenSearch.value || reopenSearch.value.length < 2) {
@@ -764,6 +1286,110 @@ const clearPendingPO = async () => {
     console.error('Error:', err)
   } finally {
     loading.value = false
+  }
+}
+
+const analyzeCashflowProfit = async () => {
+  loadingAnalysis.value = true
+  analysisResult.value = null
+
+  try {
+    const response = await $fetch('/api/utilities/analyze-cashflow-profit', {
+      params: {
+        year: analysisYear.value,
+      },
+    })
+
+    analysisResult.value = response
+    showAlert('Analisis berhasil', 'success')
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal melakukan analisis', 'error')
+    console.error('Error:', err)
+  } finally {
+    loadingAnalysis.value = false
+  }
+}
+
+const fixSisaUpah = async () => {
+  if (sisaUpahMode.value === 'EXECUTE') {
+    const confirmed = await confirm({
+      title: 'Fix Sisa Upah Teknisi',
+      message:
+        'Apakah Anda yakin ingin menghapus transaksi sisa upah teknisi?\n\nTransaksi ini salah dicatat sebagai income dan akan dihapus permanen. (tidak bisa diundo)',
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'warning',
+    })
+
+    if (!confirmed) {
+      return
+    }
+  }
+
+  loadingSisaUpah.value = true
+  sisaUpahResult.value = null
+
+  try {
+    const response = await $fetch('/api/utilities/fix-sisa-upah', {
+      method: 'POST',
+      body: {
+        mode: sisaUpahMode.value,
+        year: analysisYear.value,
+      },
+    })
+
+    sisaUpahResult.value = response
+
+    if (response.success) {
+      const action = sisaUpahMode.value === 'CHECK' ? 'Data berhasil diambil' : response.message
+      showAlert(action, 'success')
+    }
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal memproses', 'error')
+    console.error('Error:', err)
+  } finally {
+    loadingSisaUpah.value = false
+  }
+}
+
+const fixPOCashflow = async () => {
+  if (poCashflowMode.value === 'EXECUTE') {
+    const confirmed = await confirm({
+      title: 'Fix PO Cashflow',
+      message:
+        'Apakah Anda yakin ingin membuat cashflow untuk PO yang sudah received?\n\nCashflow akan dibuat sesuai tanggal received PO. (tidak bisa diundo)',
+      confirmText: 'Ya, Buat Cashflow',
+      cancelText: 'Batal',
+      type: 'warning',
+    })
+
+    if (!confirmed) {
+      return
+    }
+  }
+
+  loadingPOCashflow.value = true
+  poCashflowResult.value = null
+
+  try {
+    const response = await $fetch('/api/utilities/fix-po-cashflow', {
+      method: 'POST',
+      body: {
+        mode: poCashflowMode.value,
+      },
+    })
+
+    poCashflowResult.value = response
+
+    if (response.success) {
+      const action = poCashflowMode.value === 'CHECK' ? 'Data berhasil diambil' : response.message
+      showAlert(action, 'success')
+    }
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal memproses', 'error')
+    console.error('Error:', err)
+  } finally {
+    loadingPOCashflow.value = false
   }
 }
 </script>

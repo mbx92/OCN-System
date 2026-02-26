@@ -60,11 +60,14 @@
 
         <!-- Items -->
         <div class="card bg-base-100 shadow">
-          <div class="card-body">
-            <div class="flex justify-between items-center">
-              <h2 class="card-title">Item Penawaran</h2>
+          <div class="card-body p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+              <h2 class="card-title text-lg">Item Penawaran</h2>
               <div class="flex gap-2">
-                <button @click="openPackageModal" class="btn btn-secondary btn-sm">
+                <button
+                  @click="openPackageModal"
+                  class="btn btn-secondary btn-sm flex-1 sm:flex-none"
+                >
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -73,9 +76,10 @@
                       d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                     />
                   </svg>
-                  Pilih Paket
+                  <span class="hidden xs:inline">Pilih</span>
+                  Paket
                 </button>
-                <button @click="addItem" class="btn btn-primary btn-sm">
+                <button @click="addItem" class="btn btn-primary btn-sm flex-1 sm:flex-none">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-4 w-4"
@@ -102,29 +106,178 @@
               </button>
             </div>
 
-            <div v-else class="space-y-2">
+            <div v-else class="space-y-3">
               <div
                 v-for="(item, index) in form.items"
                 :key="index"
-                class="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
+                class="p-3 bg-base-200 rounded-lg"
               >
-                <span class="text-sm font-medium text-base-content/60 w-6 text-center">
-                  {{ index + 1 }}
-                </span>
+                <!-- Mobile Layout -->
+                <div class="flex flex-col gap-2 sm:hidden">
+                  <!-- Row 1: No + Name + Search + Delete -->
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-base-content/60 w-6 text-center shrink-0">
+                      {{ index + 1 }}
+                    </span>
+                    <input
+                      v-model="item.name"
+                      type="text"
+                      placeholder="Nama item"
+                      class="input input-bordered input-sm flex-1 min-w-0"
+                      required
+                    />
+                    <button
+                      @click="openProductModal(index)"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-square shrink-0"
+                      title="Pilih dari produk"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      @click="removeItem(index)"
+                      class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <!-- Row 2: Qty + Unit + Price -->
+                  <div class="flex items-center gap-2 pl-8">
+                    <div class="flex-1">
+                      <label class="text-xs text-base-content/60 mb-1 block">Qty</label>
+                      <input
+                        v-model.number="item.quantity"
+                        type="number"
+                        min="1"
+                        class="input input-bordered input-sm w-full text-right"
+                        required
+                      />
+                    </div>
+                    <div class="flex-1">
+                      <label class="text-xs text-base-content/60 mb-1 block">Unit</label>
+                      <input
+                        v-model="item.unit"
+                        type="text"
+                        class="input input-bordered input-sm w-full"
+                        placeholder="unit"
+                        required
+                      />
+                    </div>
+                    <div class="flex-2">
+                      <label class="text-xs text-base-content/60 mb-1 block">Harga</label>
+                      <input
+                        v-model.number="item.price"
+                        type="number"
+                        min="0"
+                        placeholder="Harga"
+                        class="input input-bordered input-sm w-full text-right"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <!-- Row 3: Subtotal -->
+                  <div class="flex justify-end pl-8">
+                    <span class="font-semibold text-primary text-sm">
+                      Subtotal: {{ formatCurrency(item.quantity * item.price) }}
+                    </span>
+                  </div>
+                </div>
 
-                <div class="flex items-center gap-1 flex-1 min-w-0">
+                <!-- Desktop Layout -->
+                <div class="hidden sm:flex items-center gap-2">
+                  <span class="text-sm font-medium text-base-content/60 w-6 text-center">
+                    {{ index + 1 }}
+                  </span>
+
+                  <div class="flex items-center gap-1 flex-1 min-w-0">
+                    <input
+                      v-model="item.name"
+                      type="text"
+                      placeholder="Nama item"
+                      class="input input-bordered input-sm flex-1"
+                      required
+                    />
+                    <button
+                      @click="openProductModal(index)"
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-square"
+                      title="Pilih dari produk"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
                   <input
-                    v-model="item.name"
-                    type="text"
-                    placeholder="Nama item"
-                    class="input input-bordered input-sm flex-1"
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    class="input input-bordered input-sm w-16 text-right"
                     required
                   />
+                  <input
+                    v-model="item.unit"
+                    type="text"
+                    class="input input-bordered input-sm w-16"
+                    placeholder="unit"
+                    required
+                  />
+                  <input
+                    v-model.number="item.price"
+                    type="number"
+                    min="0"
+                    placeholder="Harga"
+                    class="input input-bordered input-sm w-28 text-right"
+                    required
+                  />
+
+                  <div class="text-right min-w-24">
+                    <span class="font-semibold text-primary text-sm">
+                      {{ formatCurrency(item.quantity * item.price) }}
+                    </span>
+                  </div>
+
                   <button
-                    @click="openProductModal(index)"
-                    type="button"
-                    class="btn btn-ghost btn-sm btn-square"
-                    title="Pilih dari produk"
+                    @click="removeItem(index)"
+                    class="btn btn-ghost btn-xs btn-circle text-error"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -137,60 +290,11 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        d="M6 18L18 6M6 6l12 12"
                       />
                     </svg>
                   </button>
                 </div>
-
-                <input
-                  v-model.number="item.quantity"
-                  type="number"
-                  min="1"
-                  class="input input-bordered input-sm w-16 text-right"
-                  required
-                />
-                <input
-                  v-model="item.unit"
-                  type="text"
-                  class="input input-bordered input-sm w-16"
-                  placeholder="unit"
-                  required
-                />
-                <input
-                  v-model.number="item.price"
-                  type="number"
-                  min="0"
-                  placeholder="Harga"
-                  class="input input-bordered input-sm w-28 text-right"
-                  required
-                />
-
-                <div class="text-right min-w-24">
-                  <span class="font-semibold text-primary text-sm">
-                    {{ formatCurrency(item.quantity * item.price) }}
-                  </span>
-                </div>
-
-                <button
-                  @click="removeItem(index)"
-                  class="btn btn-ghost btn-xs btn-circle text-error"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -244,8 +348,8 @@
     </div>
 
     <!-- Product Selection Modal -->
-    <dialog ref="productModal" class="modal">
-      <div class="modal-box w-11/12 max-w-4xl">
+    <dialog ref="productModal" class="modal modal-bottom sm:modal-middle">
+      <div class="modal-box w-full sm:w-11/12 sm:max-w-4xl max-h-[85vh]">
         <h3 class="font-bold text-lg mb-4">Pilih Produk</h3>
         <div class="form-control mb-4">
           <input
@@ -255,7 +359,43 @@
             class="input input-bordered w-full"
           />
         </div>
-        <div class="overflow-x-auto max-h-96">
+
+        <!-- Mobile: Card Layout -->
+        <div class="sm:hidden space-y-2 max-h-80 overflow-y-auto">
+          <div
+            v-for="product in filteredProducts"
+            :key="product.id"
+            class="p-3 bg-base-200 rounded-lg active:bg-base-300"
+            @click="selectProduct(product)"
+          >
+            <div class="flex justify-between items-start">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ product.name }}</div>
+                <div class="text-xs text-base-content/60">{{ product.sku }}</div>
+                <span class="badge badge-xs mt-1" :class="getCategoryBadge(product.category)">
+                  {{ product.category }}
+                </span>
+              </div>
+              <div class="text-right shrink-0 ml-2">
+                <div class="font-medium text-primary text-sm">
+                  {{ formatCurrency(product.sellingPrice) }}
+                </div>
+                <span
+                  class="badge badge-xs"
+                  :class="product.stock?.available > 0 ? 'badge-success' : 'badge-error'"
+                >
+                  {{ product.stock?.available || 0 }} {{ product.unit }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div v-if="filteredProducts.length === 0" class="text-center text-base-content/60 py-8">
+            Tidak ada produk ditemukan
+          </div>
+        </div>
+
+        <!-- Desktop: Table Layout -->
+        <div class="hidden sm:block overflow-x-auto max-h-96">
           <table class="table table-sm table-zebra">
             <thead class="sticky top-0 bg-base-200">
               <tr>
@@ -309,8 +449,8 @@
     </dialog>
 
     <!-- Package Selection Modal -->
-    <dialog ref="packageModal" class="modal">
-      <div class="modal-box w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <dialog ref="packageModal" class="modal modal-bottom sm:modal-middle">
+      <div class="modal-box w-full sm:max-w-4xl max-h-[85vh] overflow-y-auto">
         <h3 class="font-bold text-lg mb-4">Pilih Paket</h3>
 
         <div class="form-control mb-4">
@@ -322,47 +462,50 @@
           />
         </div>
 
-        <div class="space-y-3 max-h-[60vh] overflow-y-auto">
+        <div class="space-y-3 max-h-[55vh] overflow-y-auto">
           <div
             v-for="pkg in filteredPackages"
             :key="pkg.id"
-            class="card bg-base-200 hover:bg-base-300 cursor-pointer transition-colors"
+            class="card bg-base-200 active:bg-base-300 cursor-pointer transition-colors"
             @click="selectPackage(pkg)"
           >
-            <div class="card-body p-4">
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <h4 class="font-bold">{{ pkg.name }}</h4>
-                  <p v-if="pkg.description" class="text-sm text-base-content/60 line-clamp-2 mt-1">
+            <div class="card-body p-3 sm:p-4">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm sm:text-base">{{ pkg.name }}</h4>
+                  <p
+                    v-if="pkg.description"
+                    class="text-xs sm:text-sm text-base-content/60 line-clamp-2 mt-1"
+                  >
                     {{ pkg.description }}
                   </p>
-                  <div class="flex gap-2 mt-2">
+                  <div class="flex flex-wrap gap-1 sm:gap-2 mt-2">
                     <span
                       v-if="pkg.category"
-                      class="badge badge-sm"
+                      class="badge badge-xs sm:badge-sm"
                       :class="getCategoryBadge(pkg.category)"
                     >
                       {{ pkg.category }}
                     </span>
-                    <span class="badge badge-sm badge-ghost">
+                    <span class="badge badge-xs sm:badge-sm badge-ghost">
                       {{ pkg.items?.length || 0 }} item
                     </span>
                   </div>
                 </div>
-                <div class="text-right">
+                <div class="text-left sm:text-right shrink-0">
                   <div class="text-xs text-base-content/60">Total</div>
-                  <div class="text-lg font-bold text-primary">
+                  <div class="text-base sm:text-lg font-bold text-primary">
                     {{ formatCurrency(pkg.totalPrice) }}
                   </div>
                 </div>
               </div>
 
-              <div class="mt-3 pt-3 border-t border-base-300">
+              <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-base-300">
                 <div class="text-xs space-y-1">
                   <div
                     v-for="(item, idx) in pkg.items?.slice(0, 3)"
                     :key="idx"
-                    class="text-base-content/80"
+                    class="text-base-content/80 truncate"
                   >
                     • {{ item.name }} - {{ item.quantity }} {{ item.unit }}
                   </div>
@@ -372,8 +515,8 @@
                 </div>
               </div>
 
-              <div class="card-actions justify-end mt-3">
-                <button class="btn btn-primary btn-sm">Gunakan Paket</button>
+              <div class="card-actions justify-end mt-2 sm:mt-3">
+                <button class="btn btn-primary btn-xs sm:btn-sm">Gunakan Paket</button>
               </div>
             </div>
           </div>

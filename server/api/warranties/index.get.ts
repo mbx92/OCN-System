@@ -14,6 +14,10 @@ export default defineEventHandler(async event => {
   if (status) {
     where.status = status
   }
+  // Exclude warranties from cancelled projects
+  where.project = {
+    status: { not: 'CANCELLED' },
+  }
 
   const [warranties, total] = await Promise.all([
     prisma.warranty.findMany({

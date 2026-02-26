@@ -641,6 +641,9 @@
                       <NuxtLink to="/finance/cashflow" active-class="active">Cashflow</NuxtLink>
                     </li>
                     <li>
+                      <NuxtLink to="/finance/tax" active-class="active">Pajak UMKM</NuxtLink>
+                    </li>
+                    <li>
                       <NuxtLink to="/finance/cash-advances" active-class="active">
                         Kas Bon Teknisi
                       </NuxtLink>
@@ -675,6 +678,11 @@
                           <li>
                             <NuxtLink to="/finance/reports/profit-loss" active-class="active">
                               Laba Rugi
+                            </NuxtLink>
+                          </li>
+                          <li>
+                            <NuxtLink to="/finance/reports/cash-vs-accrual" active-class="active">
+                              Kas vs Akrual
                             </NuxtLink>
                           </li>
                           <li>

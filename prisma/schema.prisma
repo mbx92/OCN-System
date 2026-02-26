@@ -619,15 +619,18 @@ model IntegrationSetting {
 model CashTransaction {
   id            String              @id @default(cuid())
   type          CashTransactionType
-  category      String // PAYMENT, PO, ASSET, SALARY, EXPENSE, MANUAL
+  category      String // PAYMENT, PO, ASSET, SALARY, EXPENSE, MANUAL, TAX
   amount        Decimal             @db.Decimal(15, 2)
   description   String
   reference     String? // e.g., Payment Number, PO Number
-  referenceType String? // e.g., "Payment", "PurchaseOrder", "Asset"
+  referenceType String? // e.g., "Payment", "PurchaseOrder", "Asset", "TaxPayment"
   referenceId   String? // Linked entity ID
   date          DateTime            @default(now())
   createdAt     DateTime            @default(now())
   createdBy     String?
+
+  // Relation to TaxPayment
+  taxPayment TaxPayment?
 }
 
 enum CashTransactionType {
@@ -717,4 +720,40 @@ enum BudgetStatus {
   APPROVED // Disetujui, siap convert ke quotation
   REJECTED // Ditolak
   CONVERTED // Sudah diconvert ke quotation
+}
+
+// ==================== TAX MODULE ====================
+
+model TaxPayment {
+  id           String           @id @default(cuid())
+  year         Int // Tahun pajak
+  month        Int // Bulan pajak (1-12)
+  omzet        Decimal          @db.Decimal(15, 2) // Total omzet bulan ini
+  taxRate      Decimal          @default(0.005) @db.Decimal(5, 4) // Default: 0.5%
+  taxAmount    Decimal          @db.Decimal(15, 2) // Jumlah pajak yang harus dibayar
+  dueDate      DateTime // Tanggal jatuh tempo (tanggal 15 bulan berikutnya)
+  paymentDate  DateTime? // Tanggal aktual pembayaran
+  status       TaxPaymentStatus @default(UNPAID)
+  billingCode  String? // Kode billing dari DJP Online
+  paymentProof String? // Path ke bukti pembayaran
+  notes        String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  createdBy    String?
+  updatedBy    String?
+
+  // Link ke CashTransaction saat dibayar
+  cashTransactionId String?          @unique
+  cashTransaction   CashTransaction? @relation(fields: [cashTransactionId], references: [id])
+
+  @@unique([year, month])
+  @@index([status, dueDate])
+  @@index([year, month])
+}
+
+enum TaxPaymentStatus {
+  UNPAID // Belum dibayar
+  PAID // Sudah dibayar
+  OVERDUE // Terlambat (lewat tanggal 15)
+  EXEMPTED // Bebas pajak (omzet < 500jt/tahun)
 }

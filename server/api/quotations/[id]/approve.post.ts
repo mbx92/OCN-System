@@ -59,6 +59,7 @@ export default defineEventHandler(async event => {
     const count = await prisma.project.count({
       where: {
         createdAt: { gte: startOfMonth, lte: endOfMonth },
+        status: { not: 'CANCELLED' },
       },
     })
     projectNumber = `PRJ-${projectDate.format('YYYYMM')}-${String(count + 1 + attempt).padStart(3, '0')}`
@@ -116,7 +117,8 @@ export default defineEventHandler(async event => {
   const stockUpdates: { productId: string; increment: number }[] = []
 
   const projectItemsData = items.map(item => {
-    let cost = 0
+    // Use cost from quotation item first (e.g., from budget conversion)
+    let cost = item.cost ? Number(item.cost) : 0
     let needsPo = false
     let currentStock = 0
     let reservedStock = 0
@@ -124,7 +126,10 @@ export default defineEventHandler(async event => {
     if (item.productId) {
       const product = productMap.get(item.productId)
       if (product) {
-        cost = Number(product.purchasePrice)
+        // Only use product purchase price if cost not already set
+        if (!item.cost) {
+          cost = Number(product.purchasePrice)
+        }
 
         // Only check stock for physical products, not services
         if (!product.isService) {

@@ -8,9 +8,12 @@ export default defineEventHandler(async event => {
     })
   }
 
-  // Check if customer has projects
+  // Check if customer has projects (exclude cancelled)
   const projectCount = await prisma.project.count({
-    where: { customerId: id },
+    where: {
+      customerId: id,
+      status: { not: 'CANCELLED' },
+    },
   })
 
   if (projectCount > 0) {

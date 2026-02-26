@@ -63,6 +63,7 @@
                 <option value="EXPENSE">Expense</option>
                 <option value="SALARY">Gaji Teknisi</option>
                 <option value="ASSET">Aset</option>
+                <option value="TAX">Pajak</option>
                 <option value="MANUAL">Manual</option>
               </select>
             </div>
@@ -389,6 +390,7 @@ const getCategoryLabel = (category: string) => {
     EXPENSE: 'Expense',
     SALARY: 'Gaji Teknisi',
     ASSET: 'Aset',
+    TAX: 'Pajak',
     MANUAL: 'Manual',
   }
   return labels[category] || category

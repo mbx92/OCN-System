@@ -67,6 +67,7 @@ export default defineEventHandler(async event => {
     unit: item.unit,
     price: Number(item.sellPrice),
     total: Number(item.totalPrice),
+    cost: Number(item.costPrice), // Include HPP/cost from budget
   }))
 
   // Create quotation in transaction

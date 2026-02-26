@@ -46,14 +46,32 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 404, message: 'Budget tidak ditemukan' })
   }
 
+  const body = await readBody(event)
+
+  // Allow status and quotationId updates for non-DRAFT budgets (for conversion)
+  if (body.status === 'CONVERTED' && body.quotationId) {
+    const budget = await prisma.budget.update({
+      where: { id },
+      data: {
+        status: 'CONVERTED',
+        quotationId: body.quotationId,
+      },
+      include: {
+        customer: true,
+        items: {
+          orderBy: { id: 'asc' },
+        },
+      },
+    })
+    return budget
+  }
+
   if (existing.status !== 'DRAFT') {
     throw createError({
       statusCode: 400,
       message: 'Hanya budget dengan status DRAFT yang dapat diedit',
     })
   }
-
-  const body = await readBody(event)
   const result = updateBudgetSchema.safeParse(body)
 
   if (!result.success) {

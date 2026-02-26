@@ -59,13 +59,31 @@ export default defineEventHandler(async (event: H3Event) => {
     ]
   }
 
+  // Exclude expenses from cancelled projects
+  // Use AND to combine with existing filters
+  const projectFilter = where.projectId
+    ? {} // If filtering by specific projectId, don't add extra filter
+    : {
+        OR: [
+          { projectId: null }, // General expenses without project
+          {
+            project: {
+              status: { not: 'CANCELLED' },
+            },
+          },
+        ],
+      }
+
+  // Merge filters
+  const finalWhere = where.projectId ? where : { ...where, ...projectFilter }
+
   try {
     // Get total count
-    const total = await prisma.expense.count({ where })
+    const total = await prisma.expense.count({ where: finalWhere })
 
     // Get expenses with project info
     const expenses = await prisma.expense.findMany({
-      where,
+      where: finalWhere,
       include: {
         project: {
           select: {

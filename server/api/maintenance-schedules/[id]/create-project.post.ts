@@ -62,7 +62,10 @@ export default defineEventHandler(async event => {
   const prefix = `MNT-${year}${month}`
 
   const lastProject = await prisma.project.findFirst({
-    where: { projectNumber: { startsWith: prefix } },
+    where: {
+      projectNumber: { startsWith: prefix },
+      status: { not: 'CANCELLED' },
+    },
     orderBy: { projectNumber: 'desc' },
   })
 

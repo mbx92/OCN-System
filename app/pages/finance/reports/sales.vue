@@ -435,7 +435,7 @@ onMounted(() => {
                       formatCurrency(
                         payments
                           .filter(p => p.projectId === project.id)
-                          .reduce((sum, p) => sum + p.amount, 0)
+                          .reduce((sum, p) => sum + Number(p.amount || 0), 0)
                       )
                     }}
                   </td>

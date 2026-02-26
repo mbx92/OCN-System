@@ -33,6 +33,9 @@ export default defineEventHandler(async () => {
         gte: today,
         lte: thirtyDaysFromNow,
       },
+      project: {
+        status: { not: 'CANCELLED' },
+      },
     },
     include: {
       project: {
