@@ -878,6 +878,61 @@ const detailPeriodLabel = computed(() => {
                     {{ formatCurrency(detailData.data.labaBersih) }}
                   </td>
                 </tr>
+
+                <!-- Sisa Pembagian Teknisi -->
+                <tr v-if="detailData.sisaTeknisi && detailData.sisaTeknisi.total > 0">
+                  <td colspan="3" class="py-2 pt-4">
+                    <div class="bg-teal-500/10 border border-teal-500/30 rounded-lg p-3">
+                      <div class="flex items-center gap-2 mb-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-teal-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span class="font-semibold text-teal-700 text-sm">
+                          Sisa Pembagian Teknisi → Kas Perusahaan
+                        </span>
+                        <span class="badge badge-sm bg-teal-500/20 text-teal-700 border-0">
+                          {{ detailData.sisaTeknisi.count }} entri
+                        </span>
+                      </div>
+                      <p class="text-xs text-teal-600/80 mb-2">
+                        Sisa upah teknisi yang tidak dialokasikan ke teknisi dan disimpan ke kas
+                        perusahaan pada periode ini.
+                      </p>
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm text-teal-700">Total Sisa Masuk Kas</span>
+                        <span class="font-bold text-teal-700 text-lg">
+                          {{ formatCurrency(detailData.sisaTeknisi.total) }}
+                        </span>
+                      </div>
+                      <div
+                        v-if="detailData.sisaTeknisi.items.length > 0"
+                        class="mt-2 space-y-1 max-h-32 overflow-y-auto"
+                      >
+                        <div
+                          v-for="item in detailData.sisaTeknisi.items"
+                          :key="item.id"
+                          class="flex justify-between text-xs text-teal-600/70"
+                        >
+                          <span class="truncate max-w-xs">{{ item.description }}</span>
+                          <span class="font-mono ml-2 shrink-0">
+                            {{ formatCurrency(item.amount) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>

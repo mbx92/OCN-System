@@ -10,9 +10,23 @@ interface ExpenseCategory {
   total: number
 }
 
+interface SisaTeknisiData {
+  total: number
+  count: number
+  items: Array<{
+    id: string
+    date: Date
+    amount: number
+    description: string | null
+    reference: string | null
+    referenceId: string | null
+  }>
+}
+
 interface ProfitLossReport {
   companyName: string
   periodLabel: string
+  sisaTeknisi: SisaTeknisiData
   data: {
     pendapatanKotor: number
     diskonPenjualan: number
@@ -219,6 +233,21 @@ export default defineEventHandler(async (event: H3Event) => {
       },
     })
 
+    // Get sisa upah teknisi (unallocated technician wage remainder saved to company kas)
+    const sisaTeknisiTransactions = await prisma.cashTransaction.findMany({
+      where: {
+        type: 'INCOME',
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        description: {
+          contains: 'Sisa upah teknisi',
+        },
+      },
+    })
+    const totalSisaTeknisi = sisaTeknisiTransactions.reduce((sum, t) => sum + Number(t.amount), 0)
+
     // Calculate revenue (Pendapatan Kotor)
     // Use payments received or project values
     let pendapatanKotor = 0
@@ -405,6 +434,18 @@ export default defineEventHandler(async (event: H3Event) => {
     const report: ProfitLossReport = {
       companyName,
       periodLabel,
+      sisaTeknisi: {
+        total: totalSisaTeknisi,
+        count: sisaTeknisiTransactions.length,
+        items: sisaTeknisiTransactions.map(t => ({
+          id: t.id,
+          date: t.date,
+          amount: Number(t.amount),
+          description: t.description,
+          reference: t.reference,
+          referenceId: t.referenceId,
+        })),
+      },
       data: {
         pendapatanKotor,
         diskonPenjualan,

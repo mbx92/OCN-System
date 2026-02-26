@@ -10,6 +10,8 @@ const selectedYear = ref(new Date().getFullYear())
 const selectedPeriod = ref<'month' | 'quarter' | 'year'>('month')
 const selectedPeriodValue = ref<number | null>(null)
 const showDetailModal = ref(false)
+const sisaTeknisiData = ref<any>(null)
+const loadingSisaTeknisi = ref(false)
 
 // Available years
 const currentYear = new Date().getFullYear()
@@ -44,16 +46,32 @@ const {
 })
 
 // Open detail modal
-function openDetail(periodValue: number) {
+async function openDetail(periodValue: number) {
   selectedPeriodValue.value = periodValue
   showDetailModal.value = true
   refreshDetail()
+  // Fetch sisa teknisi for this period
+  loadingSisaTeknisi.value = true
+  try {
+    sisaTeknisiData.value = await $fetch('/api/reports/technician-remainder', {
+      params: {
+        year: selectedYear.value,
+        period: selectedPeriod.value,
+        periodValue,
+      },
+    })
+  } catch (e) {
+    sisaTeknisiData.value = null
+  } finally {
+    loadingSisaTeknisi.value = false
+  }
 }
 
 // Close modal
 function closeDetail() {
   showDetailModal.value = false
   selectedPeriodValue.value = null
+  sisaTeknisiData.value = null
 }
 
 // Get period label
@@ -438,6 +456,61 @@ function exportToCSV() {
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Sisa Pembagian Teknisi -->
+          <div v-if="loadingSisaTeknisi" class="flex justify-center py-4">
+            <span class="loading loading-spinner loading-sm"></span>
+          </div>
+          <div
+            v-else-if="sisaTeknisiData && sisaTeknisiData.total > 0"
+            class="mt-4 bg-teal-500/10 border border-teal-500/30 rounded-lg p-3"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-teal-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              <span class="font-semibold text-teal-700 text-sm">
+                Sisa Pembagian Teknisi → Kas Perusahaan
+              </span>
+              <span class="badge badge-sm bg-teal-500/20 text-teal-700 border-0">
+                {{ sisaTeknisiData.count }} entri
+              </span>
+            </div>
+            <p class="text-xs text-teal-600/80 mb-2">
+              Sisa upah teknisi yang tidak dialokasikan ke teknisi dan disimpan ke kas perusahaan
+              pada periode ini.
+            </p>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-teal-700">Total Sisa Masuk Kas</span>
+              <span class="font-bold text-teal-700 text-lg">
+                {{ formatCurrency(sisaTeknisiData.total) }}
+              </span>
+            </div>
+            <div
+              v-if="sisaTeknisiData.items.length > 0"
+              class="mt-2 space-y-1 max-h-28 overflow-y-auto"
+            >
+              <div
+                v-for="item in sisaTeknisiData.items"
+                :key="item.id"
+                class="flex justify-between text-xs text-teal-600/70"
+              >
+                <span class="truncate max-w-xs">{{ item.description }}</span>
+                <span class="font-mono ml-2 shrink-0">{{ formatCurrency(item.amount) }}</span>
+              </div>
+            </div>
           </div>
 
           <!-- Export -->
