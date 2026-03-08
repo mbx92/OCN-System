@@ -27,4 +27,9 @@ logs
 .env.*
 !.env.example
 
+# Exclude docs except export files (needed for seeding)
+docs/*
+!docs/export/
+!docs/export/*.xlsx
+
 /app/generated/prisma
