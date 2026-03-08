@@ -41,13 +41,13 @@ OCN System sudah mendukung PWA dan dapat diinstall sebagai aplikasi standalone d
 
 ## 🎨 Icons yang Di-generate
 
-| Size | Nama File | Penggunaan |
-|------|-----------|------------|
-| 192x192 | `icon-192x192.png` | Android home screen |
-| 512x512 | `icon-512x512.png` | Android splash screen |
-| 180x180 | `apple-touch-icon.png` | iOS home screen |
-| 32x32 | `favicon-32x32.png` | Browser tab icon |
-| 16x16 | `favicon.ico` | Browser fallback |
+| Size    | Nama File              | Penggunaan            |
+| ------- | ---------------------- | --------------------- |
+| 192x192 | `icon-192x192.png`     | Android home screen   |
+| 512x512 | `icon-512x512.png`     | Android splash screen |
+| 180x180 | `apple-touch-icon.png` | iOS home screen       |
+| 32x32   | `favicon-32x32.png`    | Browser tab icon      |
+| 16x16   | `favicon.ico`          | Browser fallback      |
 
 ## 🔧 Regenerate Icons
 
@@ -83,6 +83,7 @@ PWA manifest tersedia di: `http://your-server:3000/manifest.webmanifest`
 ## 🔄 Service Worker
 
 Service worker otomatis di-register untuk:
+
 - Cache static assets (JS, CSS, images)
 - Offline fallback
 - Background sync (future)
@@ -118,10 +119,10 @@ PWA hanya berfungsi penuh di HTTPS (kecuali localhost). Setup reverse proxy deng
 server {
     listen 443 ssl;
     server_name ocn.yourdomain.com;
-    
+
     ssl_certificate /path/to/cert.pem;
     ssl_certificate_key /path/to/key.pem;
-    
+
     location / {
         proxy_pass http://localhost:3000;
     }
