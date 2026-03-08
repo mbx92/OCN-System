@@ -69,7 +69,15 @@ export default defineEventHandler(async () => {
 
   // PO items pending
   const pendingPoItems = await prisma.projectItem.count({
-    where: { poStatus: 'PENDING' },
+    where: {
+      poStatus: 'PENDING',
+      project: {
+        status: { in: ['APPROVED', 'ONGOING'] },
+      },
+      product: {
+        isService: false,
+      },
+    },
   })
 
   if (pendingPoItems > 0) {

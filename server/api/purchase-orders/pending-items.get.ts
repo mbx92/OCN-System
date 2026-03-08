@@ -5,13 +5,12 @@ export default defineEventHandler(async event => {
 
   const pendingItems = await prisma.projectItem.findMany({
     where: {
-      needsPo: true,
       poStatus: 'PENDING',
       project: {
         status: { in: ['APPROVED', 'ONGOING'] },
       },
       product: {
-        isService: false, // Exclude services - they don't have physical stock
+        isService: false,
       },
     },
     include: {
@@ -25,6 +24,8 @@ export default defineEventHandler(async event => {
       product: {
         select: {
           sku: true,
+          name: true,
+          unit: true,
           stock: true,
           suppliers: {
             include: {
