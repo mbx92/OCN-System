@@ -4,15 +4,23 @@
 
 <script setup>
 import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
   chartData: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 // Attach each dataset to its own Y axis
@@ -25,11 +33,11 @@ const computedData = computed(() => {
       yAxisID: i === 0 ? 'yIncome' : 'yExpense',
       minBarLength: 4,
       borderRadius: 4,
-    }))
+    })),
   }
 })
 
-const fmt = (value) => {
+const fmt = value => {
   if (value >= 1_000_000) return 'Rp ' + (value / 1_000_000).toFixed(1) + ' M'
   if (value >= 1_000) return 'Rp ' + (value / 1_000).toFixed(0) + ' K'
   return 'Rp ' + value
@@ -48,12 +56,12 @@ const chartOptions = {
     },
     tooltip: {
       callbacks: {
-        label: function(context) {
+        label: function (context) {
           const label = context.dataset.label || ''
           return `${label}: Rp ${new Intl.NumberFormat('id-ID').format(context.parsed.y)}`
-        }
-      }
-    }
+        },
+      },
+    },
   },
   scales: {
     yIncome: {
@@ -72,6 +80,6 @@ const chartOptions = {
       ticks: { callback: fmt },
       grid: { drawOnChartArea: false },
     },
-  }
+  },
 }
 </script>

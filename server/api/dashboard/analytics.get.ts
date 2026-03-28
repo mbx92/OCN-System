@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
 
   const now = dayjs()
   const monthsData = []
-  
+
   // Prepare last 6 months data structure
   for (let i = 5; i >= 0; i--) {
     const month = now.subtract(i, 'month')
@@ -14,7 +14,7 @@ export default defineEventHandler(async event => {
       startDate: month.startOf('month').toDate(),
       endDate: month.endOf('month').toDate(),
       income: 0,
-      expense: 0
+      expense: 0,
     })
   }
 
@@ -41,9 +41,10 @@ export default defineEventHandler(async event => {
   // Distribute payments to months
   payments.forEach(payment => {
     const dateToUse = dayjs(payment.paidDate || payment.paymentDate)
-    const monthObj = monthsData.find(m =>
-      dateToUse.year() === dayjs(m.startDate).year() &&
-      dateToUse.month() === dayjs(m.startDate).month()
+    const monthObj = monthsData.find(
+      m =>
+        dateToUse.year() === dayjs(m.startDate).year() &&
+        dateToUse.month() === dayjs(m.startDate).month()
     )
     if (monthObj) {
       monthObj.income += Number(payment.amount || 0)
@@ -75,9 +76,8 @@ export default defineEventHandler(async event => {
   // Helper to assign an expense-like record to the correct month bucket
   const assignExpense = (date: Date, amount: any) => {
     const d = dayjs(date)
-    const monthObj = monthsData.find(m =>
-      d.year() === dayjs(m.startDate).year() &&
-      d.month() === dayjs(m.startDate).month()
+    const monthObj = monthsData.find(
+      m => d.year() === dayjs(m.startDate).year() && d.month() === dayjs(m.startDate).month()
     )
     if (monthObj) {
       monthObj.expense += Number(amount || 0)
@@ -93,13 +93,13 @@ export default defineEventHandler(async event => {
     by: ['status'],
     _count: { id: true },
     where: {
-      status: { notIn: ['COMPLETED', 'CANCELLED'] }
-    }
+      status: { notIn: ['COMPLETED', 'CANCELLED'] },
+    },
   })
 
   const projectStatusData = activeProjects.map(p => ({
     status: p.status,
-    count: p._count.id
+    count: p._count.id,
   }))
 
   const incomeExpensesChart = {
@@ -112,8 +112,8 @@ export default defineEventHandler(async event => {
       {
         label: 'Expense (Rp)',
         data: monthsData.map(m => m.expense),
-      }
-    ]
+      },
+    ],
   }
 
   return {

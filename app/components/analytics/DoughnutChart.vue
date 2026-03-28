@@ -11,8 +11,8 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const props = defineProps({
   chartData: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const chartOptions = {
