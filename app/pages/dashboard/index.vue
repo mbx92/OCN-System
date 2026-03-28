@@ -131,6 +131,43 @@
       </div>
     </div>
 
+    
+    <!-- Analytics Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Income & Expense Chart -->
+      <div class="lg:col-span-2">
+        <div class="card bg-base-100 shadow h-96">
+          <div class="card-body">
+            <h2 class="card-title text-lg font-medium mb-4">Grafik Pemasukan & Pengeluaran (6 Bulan)</h2>
+            <div class="relative w-full h-full">
+               <ClientOnly>
+                 <BarChart v-if="incomeExpenseChartData.labels.length" :chartData="incomeExpenseChartData" />
+                 <template #fallback>
+                    <div class="skeleton w-full h-full"></div>
+                 </template>
+               </ClientOnly>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Project Status Chart -->
+      <div>
+        <div class="card bg-base-100 shadow h-96">
+          <div class="card-body">
+            <h2 class="card-title text-lg font-medium mb-4">Status Proyek Aktif</h2>
+            <div class="relative w-full h-full pb-8">
+               <ClientOnly>
+                  <DoughnutChart v-if="projectStatusChartData.labels.length" :chartData="projectStatusChartData" />
+                  <template #fallback>
+                    <div class="skeleton w-full h-full"></div>
+                  </template>
+               </ClientOnly>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Recent Projects -->
@@ -442,6 +479,45 @@ const { data: recentProjects } = await useFetch('/api/projects', {
 const { data: alerts } = await useFetch('/api/dashboard/alerts')
 
 // Fetch tax summary for widget
+import BarChart from '~/components/analytics/BarChart.vue'
+import DoughnutChart from '~/components/analytics/DoughnutChart.vue'
+
+// Analytics Data Fetch
+const { data: analytics } = await useFetch('/api/dashboard/analytics')
+
+const incomeExpenseChartData = computed(() => {
+  if (!analytics.value?.incomeExpensesChart) return { labels: [], datasets: [] }
+  const d = analytics.value.incomeExpensesChart
+  return {
+    labels: d.labels,
+    datasets: [
+      {
+        label: d.datasets[0].label,
+        data: d.datasets[0].data,
+        backgroundColor: '#4ade80' // Base success green
+      },
+      {
+        label: d.datasets[1].label,
+        data: d.datasets[1].data,
+        backgroundColor: '#f87171' // Base error red
+      }
+    ]
+  }
+})
+
+const projectStatusChartData = computed(() => {
+  if (!analytics.value?.projectStatusData) return { labels: [], datasets: [] }
+  const d = analytics.value.projectStatusData
+  return {
+    labels: d.map(item => item.status),
+    datasets: [{
+      label: 'Count',
+      data: d.map(item => item.count),
+      backgroundColor: ['#60a5fa', '#facc15', '#4ade80', '#c084fc', '#9ca3af', '#fb7185', '#2dd4bf']
+    }]
+  }
+})
+
 const { data: taxSummary } = await useFetch('/api/tax/summary', {
   server: false,
   lazy: true,

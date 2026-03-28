@@ -5,6 +5,243 @@
       <p class="text-base-content/60">Tools untuk maintenance dan perbaikan data</p>
     </div>
 
+    <!-- Database Backup Card -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+            />
+          </svg>
+          Backup Database
+        </h2>
+
+        <div class="alert alert-info text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div>
+            <p class="font-semibold">Backup database PostgreSQL secara manual atau terjadwal</p>
+            <ul class="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>Manual:</strong>
+                Buat backup sekarang dan download hasilnya
+              </li>
+              <li>
+                <strong>Terjadwal:</strong>
+                Otomatis backup sesuai interval yang dipilih
+              </li>
+              <li>
+                <strong>Download:</strong>
+                Semua file backup bisa didownload via browser
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Schedule Settings -->
+        <div class="bg-base-200/50 border border-base-200 rounded-lg p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-sm">Pengaturan Backup Terjadwal</h3>
+              <p class="text-xs text-base-content/60 mt-0.5">
+                Lakukan pencadangan database secara otomatis
+              </p>
+            </div>
+            <label
+              class="cursor-pointer flex items-center gap-2 bg-base-100 px-3 py-1.5 rounded-full border border-base-300 shadow-sm"
+            >
+              <span
+                class="text-xs font-bold"
+                :class="backupScheduleEnabled ? 'text-primary' : 'text-base-content/50'"
+              >
+                {{ backupScheduleEnabled ? 'AKTIF' : 'NONAKTIF' }}
+              </span>
+              <input
+                type="checkbox"
+                v-model="backupScheduleEnabled"
+                class="toggle toggle-primary toggle-sm"
+              />
+            </label>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4 items-end">
+            <div
+              class="form-control w-full sm:flex-1"
+              :class="{ 'opacity-50 grayscale-[50%]': !backupScheduleEnabled }"
+            >
+              <label class="label py-1">
+                <span class="label-text text-xs font-semibold">Interval Backup</span>
+              </label>
+              <select
+                v-model="backupScheduleInterval"
+                class="select select-bordered select-sm w-full"
+                :disabled="!backupScheduleEnabled"
+              >
+                <option value="6hours">Setiap 6 Jam</option>
+                <option value="12hours">Setiap 12 Jam</option>
+                <option value="daily">Harian</option>
+                <option value="weekly">Mingguan</option>
+              </select>
+            </div>
+            <div
+              class="form-control w-full sm:w-32"
+              :class="{ 'opacity-50 grayscale-[50%]': !backupScheduleEnabled }"
+            >
+              <label class="label py-1">
+                <span class="label-text text-xs font-semibold">Retensi (Hari)</span>
+              </label>
+              <input
+                type="number"
+                v-model.number="backupRetentionDays"
+                min="1"
+                max="90"
+                class="input input-bordered input-sm w-full"
+                :disabled="!backupScheduleEnabled"
+              />
+            </div>
+            <button
+              @click="saveBackupSchedule"
+              class="btn btn-sm btn-primary w-full sm:w-auto"
+              :disabled="loadingBackupSave"
+            >
+              <span v-if="loadingBackupSave" class="loading loading-spinner loading-xs"></span>
+              Simpan Jadwal
+            </button>
+          </div>
+        </div>
+
+        <!-- Manual Backup Button -->
+        <div class="card-actions justify-between items-center">
+          <span class="text-sm text-base-content/60">{{ backupList.length }} backup tersedia</span>
+          <button
+            @click="createManualBackup"
+            class="btn btn-primary"
+            :disabled="loadingBackupCreate"
+          >
+            <span v-if="loadingBackupCreate" class="loading loading-spinner loading-sm"></span>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            {{ loadingBackupCreate ? 'Membuat Backup...' : 'Buat Backup Sekarang' }}
+          </button>
+        </div>
+
+        <!-- Backup List Table -->
+        <div v-if="backupList.length > 0" class="mt-4">
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Nama File</th>
+                  <th>Tipe</th>
+                  <th>Ukuran</th>
+                  <th>Tanggal</th>
+                  <th class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="backup in backupList" :key="backup.filename">
+                  <td class="font-mono text-xs max-w-xs truncate">{{ backup.filename }}</td>
+                  <td>
+                    <span
+                      class="badge badge-sm"
+                      :class="backup.type === 'scheduled' ? 'badge-info' : 'badge-primary'"
+                    >
+                      {{ backup.type === 'scheduled' ? 'Terjadwal' : 'Manual' }}
+                    </span>
+                  </td>
+                  <td class="text-sm">{{ backup.sizeFormatted }}</td>
+                  <td class="text-sm">{{ formatDate(new Date(backup.createdAt)) }}</td>
+                  <td class="text-center">
+                    <div class="flex gap-1 justify-center">
+                      <button
+                        @click="downloadBackup(backup.filename)"
+                        class="btn btn-xs btn-ghost btn-circle"
+                        title="Download"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        @click="deleteBackup(backup.filename)"
+                        class="btn btn-xs btn-ghost btn-circle text-error"
+                        title="Hapus"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-else-if="!loadingBackupList" class="text-center text-base-content/50 py-4">
+          Belum ada file backup
+        </div>
+      </div>
+    </div>
+
     <!-- Fix Remaining Wage Date Card -->
     <div class="card bg-base-100 shadow">
       <div class="card-body">
@@ -217,8 +454,45 @@
                         {{ tx.projectDate ? formatDate(new Date(tx.projectDate)) : 'Tidak ada' }}
                       </td>
                       <td class="text-center">
-                        <span v-if="tx.needsUpdate" class="text-warning font-bold">⚠️ YA</span>
-                        <span v-else class="text-success">✅ Tidak</span>
+                        <span
+                          v-if="tx.needsUpdate"
+                          class="text-warning font-bold flex items-center justify-center gap-1"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            stroke-width="2"
+                            stroke="currentColor"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M12 9v4" />
+                            <path
+                              d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"
+                            />
+                            <path d="M12 16h.01" />
+                          </svg>
+                          YA
+                        </span>
+                        <span v-else class="text-success flex items-center justify-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            stroke-width="2"
+                            stroke="currentColor"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M5 12l5 5l10 -10" />
+                          </svg>
+                          Tidak
+                        </span>
                       </td>
                     </tr>
                   </tbody>
@@ -583,12 +857,69 @@
                         {{ formatCurrency(item.totalCost) }}
                       </td>
                       <td class="text-center">
-                        <span v-if="item.hasProduct" class="text-success">✅</span>
-                        <span v-else class="text-error">❌</span>
+                        <svg
+                          v-if="item.hasProduct"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-success mx-auto"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                          stroke="currentColor"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M5 12l5 5l10 -10" />
+                        </svg>
+                        <svg
+                          v-else
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-error mx-auto"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                          stroke="currentColor"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M18 6l-12 12" />
+                          <path d="M6 6l12 12" />
+                        </svg>
                       </td>
                       <td class="text-center">
-                        <span v-if="item.costOk" class="text-success">✅</span>
-                        <span v-else class="text-warning">⚠️</span>
+                        <svg
+                          v-if="item.costOk"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-success mx-auto"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                          stroke="currentColor"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M5 12l5 5l10 -10" />
+                        </svg>
+                        <svg
+                          v-else
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-warning mx-auto"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                          stroke="currentColor"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M12 9v4" />
+                          <path
+                            d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"
+                          />
+                          <path d="M12 16h.01" />
+                        </svg>
                       </td>
                     </tr>
                   </tbody>
@@ -1114,6 +1445,15 @@ const { showAlert } = useAlert()
 const { formatCurrency, formatDate } = useFormatter()
 const { confirm } = useConfirm()
 
+// Backup states
+const backupList = ref<any[]>([])
+const loadingBackupList = ref(false)
+const loadingBackupCreate = ref(false)
+const loadingBackupSave = ref(false)
+const backupScheduleEnabled = ref(false)
+const backupScheduleInterval = ref('daily')
+const backupRetentionDays = ref(7)
+
 const selectedMode = ref<'CHECK' | 'SIMPLE' | 'FULL'>('CHECK')
 const loading = ref(false)
 const result = ref<any>(null)
@@ -1392,4 +1732,123 @@ const fixPOCashflow = async () => {
     loadingPOCashflow.value = false
   }
 }
+
+// === Backup Functions ===
+const fetchBackups = async () => {
+  loadingBackupList.value = true
+  try {
+    const response = await $fetch<any>('/api/utilities/backup')
+    backupList.value = response.backups || []
+    backupScheduleEnabled.value = response.scheduledEnabled ?? false
+    backupScheduleInterval.value = response.scheduleInterval ?? 'daily'
+    backupRetentionDays.value = response.retentionDays ?? 7
+  } catch (err: any) {
+    console.error('Error fetching backups:', err)
+  } finally {
+    loadingBackupList.value = false
+  }
+}
+
+const createManualBackup = async () => {
+  const confirmed = await confirm({
+    title: 'Buat Backup Database',
+    message:
+      'Apakah Anda yakin ingin membuat backup database sekarang?\n\nProses ini mungkin memakan waktu beberapa menit tergantung ukuran database.',
+    confirmText: 'Ya, Backup Sekarang',
+    cancelText: 'Batal',
+    type: 'info',
+  })
+
+  if (!confirmed) return
+
+  loadingBackupCreate.value = true
+  try {
+    const response = await $fetch<any>('/api/utilities/backup', {
+      method: 'POST',
+      body: { action: 'create' },
+    })
+
+    if (response.success) {
+      showAlert(`Backup berhasil: ${response.filename} (${response.sizeFormatted})`, 'success')
+      await fetchBackups()
+    }
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal membuat backup', 'error')
+  } finally {
+    loadingBackupCreate.value = false
+  }
+}
+
+const saveBackupSchedule = async () => {
+  loadingBackupSave.value = true
+  try {
+    await $fetch('/api/utilities/backup', {
+      method: 'POST',
+      body: {
+        action: 'update-schedule',
+        scheduledEnabled: backupScheduleEnabled.value,
+        scheduleInterval: backupScheduleInterval.value,
+        retentionDays: backupRetentionDays.value,
+      },
+    })
+    showAlert('Konfigurasi backup terjadwal berhasil disimpan', 'success')
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menyimpan konfigurasi', 'error')
+  } finally {
+    loadingBackupSave.value = false
+  }
+}
+
+const downloadBackup = async (filename: string) => {
+  try {
+    const response = await fetch(
+      `/api/utilities/backup/download?file=${encodeURIComponent(filename)}`,
+      {
+        credentials: 'include',
+      }
+    )
+    if (!response.ok) {
+      const errData = await response.json().catch(() => null)
+      throw new Error(errData?.message || `Download gagal: ${response.statusText}`)
+    }
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (err: any) {
+    showAlert(err.message || 'Gagal mendownload backup', 'error')
+  }
+}
+
+const deleteBackup = async (filename: string) => {
+  const confirmed = await confirm({
+    title: 'Hapus Backup',
+    message: `Apakah Anda yakin ingin menghapus backup:\n${filename}\n\nFile yang dihapus tidak bisa dikembalikan.`,
+    confirmText: 'Ya, Hapus',
+    cancelText: 'Batal',
+    type: 'warning',
+  })
+
+  if (!confirmed) return
+
+  try {
+    await $fetch(`/api/utilities/backup/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+    })
+    showAlert('Backup berhasil dihapus', 'success')
+    await fetchBackups()
+  } catch (err: any) {
+    showAlert(err.data?.message || 'Gagal menghapus backup', 'error')
+  }
+}
+
+// Load backups on mount
+onMounted(() => {
+  fetchBackups()
+})
 </script>

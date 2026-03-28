@@ -233,7 +233,22 @@
       <div class="modal-box w-11/12 max-w-4xl p-0">
         <div class="flex justify-between items-center p-4 border-b">
           <h3 class="font-bold text-lg">Preview Invoice Detail</h3>
-          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
+          <button @click="showInvoice = false" class="btn btn-ghost btn-sm btn-circle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <div id="invoice-print" class="p-6 bg-white text-black overflow-auto">
           <PaymentInvoice v-if="payment" :payment="payment" :company="company" />
@@ -288,7 +303,22 @@
       <div class="modal-box w-11/12 max-w-4xl p-0">
         <div class="flex justify-between items-center p-4 border-b">
           <h3 class="font-bold text-lg">Preview Kwitansi</h3>
-          <button @click="showReceipt = false" class="btn btn-ghost btn-sm btn-circle">✕</button>
+          <button @click="showReceipt = false" class="btn btn-ghost btn-sm btn-circle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <div id="receipt-print" class="p-6 bg-white text-black overflow-auto">
           <PaymentReceipt v-if="payment" :payment="payment" :company="company" />

@@ -27,6 +27,9 @@ logs
 .env.*
 !.env.example
 
+# Database backups
+backups/
+
 # Exclude docs except export files (needed for seeding)
 docs/*
 !docs/export/

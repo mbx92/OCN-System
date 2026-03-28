@@ -355,7 +355,20 @@ function exportToCSV() {
     <dialog :class="['modal', { 'modal-open': showDetailModal }]">
       <div class="modal-box max-w-5xl w-full">
         <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeDetail">
-          ✕
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
         </button>
         <h3 class="font-bold text-base sm:text-lg mb-3 sm:mb-4">
           Detail Pengeluaran - {{ detailPeriodLabel }}
