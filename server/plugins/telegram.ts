@@ -33,7 +33,7 @@ export default defineNitroPlugin(async () => {
           allowed_updates: ['message', 'callback_query'],
         }),
       })
-      const result = await res.json() as any
+      const result = (await res.json()) as any
       if (result.ok) {
         console.log(`[Telegram Plugin] Webhook registered: ${webhookUrl}`)
       } else {

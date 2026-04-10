@@ -37,7 +37,6 @@ export async function startPolling() {
   // Start polling loop
   poll()
 }
-}
 
 async function poll() {
   while (isPolling) {
