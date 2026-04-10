@@ -24,8 +24,10 @@ export async function startPolling() {
 
   // Delete webhook first (with drop_pending_updates to force-clear any active webhook/conflict)
   try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`)
-    const json = await res.json() as any
+    const res = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`
+    )
+    const json = (await res.json()) as any
     console.log('[Telegram Polling] Webhook deleted:', json.description || 'ok')
   } catch (err) {
     console.error('[Telegram Polling] Failed to delete webhook:', err)
@@ -69,7 +71,9 @@ async function poll() {
       if (error.message?.includes('409')) {
         console.log('[Telegram Polling] Conflict detected, re-deleting webhook and waiting 10s...')
         try {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`)
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`
+          )
         } catch (_) {}
         await new Promise(resolve => setTimeout(resolve, 10000))
       } else {
