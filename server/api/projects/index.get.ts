@@ -59,7 +59,10 @@ export default defineEventHandler(async event => {
   // Calculate paid amount and remaining amount for each project
   const projectsWithPaymentInfo = projects.map(project => {
     const itemSellingValue = project.items.reduce((sum, item) => {
-      const actualQty = Math.max(0, Number((item as any).quantity || 0) - Number((item as any).returnedQty || 0))
+      const actualQty = Math.max(
+        0,
+        Number((item as any).quantity || 0) - Number((item as any).returnedQty || 0)
+      )
       const itemPrice = Number((item as any).price || 0)
       const itemTotalPrice = Number(item.totalPrice || 0)
 
