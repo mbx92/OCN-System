@@ -814,22 +814,34 @@ const calculateTotalHPP = (project: any) => {
   return calculateItemCost(project) + calculateExpenseCost(project)
 }
 
+const calculateItemRevenue = (project: any) => {
+  if (!project.items?.length) return 0
+
+  return project.items.reduce((sum: number, item: any) => {
+    const actualQty = Math.max(0, Number(item.quantity || 0) - Number(item.returnedQty || 0))
+    const price = Number(item.price || 0)
+    const totalPrice = Number(item.totalPrice || 0)
+
+    if (actualQty > 0 && price > 0) {
+      return sum + actualQty * price
+    }
+
+    return sum + totalPrice
+  }, 0)
+}
+
 // Fungsi untuk menghitung total revenue/nilai project
-// Prioritas: finalPrice -> budget -> sum of items.totalPrice
+// Prioritas: total harga jual item aktual -> finalPrice -> budget
 const getProjectRevenue = (project: any) => {
+  const itemRevenue = calculateItemRevenue(project)
   const finalPrice = Number(project.finalPrice || 0)
   const budget = Number(project.budget || 0)
 
-  // Jika ada finalPrice, gunakan itu
+  if (itemRevenue > 0) return itemRevenue
+
   if (finalPrice > 0) return finalPrice
 
-  // Jika budget ada, gunakan itu
   if (budget > 0) return budget
-
-  // Fallback: hitung dari total items (untuk project maintenance yang diinput setelah dibuat)
-  if (project.items && project.items.length > 0) {
-    return project.items.reduce((sum: number, item: any) => sum + Number(item.totalPrice || 0), 0)
-  }
 
   return 0
 }
@@ -859,8 +871,19 @@ const calculateTechnicianWage = (project: any) => {
 }
 
 const calculateItemCost = (project: any) => {
-  if (!project.items) return 0
-  return project.items.reduce((sum: number, item: any) => sum + Number(item.totalCost || 0), 0)
+  if (!project.items?.length) return 0
+
+  return project.items.reduce((sum: number, item: any) => {
+    const actualQty = Math.max(0, Number(item.quantity || 0) - Number(item.returnedQty || 0))
+    const cost = Number(item.cost || 0)
+    const totalCost = Number(item.totalCost || 0)
+
+    if (actualQty > 0 && cost > 0) {
+      return sum + actualQty * cost
+    }
+
+    return sum + totalCost
+  }, 0)
 }
 
 // Check if payment record already exists for this tech + project

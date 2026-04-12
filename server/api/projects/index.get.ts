@@ -30,6 +30,9 @@ export default defineEventHandler(async event => {
         items: {
           select: {
             id: true,
+            quantity: true,
+            returnedQty: true,
+            price: true,
             totalPrice: true,
             totalCost: true,
           },
@@ -55,11 +58,19 @@ export default defineEventHandler(async event => {
 
   // Calculate paid amount and remaining amount for each project
   const projectsWithPaymentInfo = projects.map(project => {
-    const totalPrice =
-      project.items.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0) ||
-      Number(project.finalPrice) ||
-      Number(project.budget) ||
-      0
+    const itemSellingValue = project.items.reduce((sum, item) => {
+      const actualQty = Math.max(0, Number((item as any).quantity || 0) - Number((item as any).returnedQty || 0))
+      const itemPrice = Number((item as any).price || 0)
+      const itemTotalPrice = Number(item.totalPrice || 0)
+
+      if (actualQty > 0 && itemPrice > 0) {
+        return sum + actualQty * itemPrice
+      }
+
+      return sum + itemTotalPrice
+    }, 0)
+
+    const totalPrice = itemSellingValue || Number(project.finalPrice) || Number(project.budget) || 0
 
     const paidAmount = project.payments.reduce(
       (sum, payment) => sum + Number(payment.amount || 0),
