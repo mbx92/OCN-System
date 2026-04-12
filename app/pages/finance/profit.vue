@@ -811,10 +811,12 @@ const summary = computed(() => {
 })
 
 const calculateTotalHPP = (project: any) => {
+  if (typeof project.totalHpp === 'number') return project.totalHpp
   return calculateItemCost(project) + calculateExpenseCost(project)
 }
 
 const calculateItemRevenue = (project: any) => {
+  if (typeof project.itemRevenue === 'number') return project.itemRevenue
   if (!project.items?.length) return 0
 
   return project.items.reduce((sum: number, item: any) => {
@@ -831,17 +833,16 @@ const calculateItemRevenue = (project: any) => {
 }
 
 // Fungsi untuk menghitung total revenue/nilai project
-// Prioritas: total harga jual item aktual -> finalPrice -> budget
+// Prioritas: total harga jual item aktual -> finalPrice
 const getProjectRevenue = (project: any) => {
+  if (typeof project.sellingValue === 'number') return project.sellingValue
+
   const itemRevenue = calculateItemRevenue(project)
   const finalPrice = Number(project.finalPrice || 0)
-  const budget = Number(project.budget || 0)
 
   if (itemRevenue > 0) return itemRevenue
 
   if (finalPrice > 0) return finalPrice
-
-  if (budget > 0) return budget
 
   return 0
 }
@@ -871,6 +872,7 @@ const calculateTechnicianWage = (project: any) => {
 }
 
 const calculateItemCost = (project: any) => {
+  if (typeof project.itemCost === 'number') return project.itemCost
   if (!project.items?.length) return 0
 
   return project.items.reduce((sum: number, item: any) => {
@@ -903,6 +905,7 @@ const isTechPaymentPaid = (tech: any, project: any) => {
 }
 
 const calculateExpenseCost = (project: any) => {
+  if (typeof project.expenseCost === 'number') return project.expenseCost
   if (!project.expenses) return 0
   return project.expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0)
 }
