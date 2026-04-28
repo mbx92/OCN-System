@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 $TIMESTAMP = Get-Date -Format "yyyyMMdd_HHmmss"
 $BACKUP_DIR = ".\backups"
-$CONTAINER_NAME = "ocn-system"
+$CONTAINER_NAME = if ($env:CONTAINER_NAME) { $env:CONTAINER_NAME } else { "ocn-app" }
 
 # Buat folder backup jika belum ada
 New-Item -ItemType Directory -Force -Path $BACKUP_DIR | Out-Null
@@ -20,8 +20,8 @@ $BACKUP_FILE = "$BACKUP_DIR\ocn_backup_$TIMESTAMP.sql"
 
 Write-Host "💾 Backing up to: $BACKUP_FILE" -ForegroundColor Gray
 
-# Backup database
-docker exec $CONTAINER_NAME sh -c "pg_dump `$DATABASE_URL -F c -b -v" > $BACKUP_FILE
+# Backup database (plain SQL for compatibility and easy restore)
+docker exec $CONTAINER_NAME sh -c "pg_dump `$DATABASE_URL -F p --no-owner --no-privileges -b -v" > $BACKUP_FILE
 
 # Compress
 Compress-Archive -Path $BACKUP_FILE -DestinationPath "$BACKUP_FILE.zip" -Force

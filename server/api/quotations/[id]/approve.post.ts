@@ -118,7 +118,8 @@ export default defineEventHandler(async event => {
 
   const projectItemsData = items.map(item => {
     // Use cost from quotation item first (e.g., from budget conversion)
-    let cost = item.cost ? Number(item.cost) : 0
+    const rawItemCost = item.cost ?? item.costPrice ?? item.hpp
+    let cost = rawItemCost != null ? Number(rawItemCost) : 0
     let needsPo = false
     let currentStock = 0
     let reservedStock = 0
@@ -126,8 +127,8 @@ export default defineEventHandler(async event => {
     if (item.productId) {
       const product = productMap.get(item.productId)
       if (product) {
-        // Only use product purchase price if cost not already set
-        if (!item.cost) {
+        // Only use product purchase price if cost not already set in quotation item
+        if (rawItemCost == null) {
           cost = Number(product.purchasePrice)
         }
 
@@ -156,7 +157,7 @@ export default defineEventHandler(async event => {
       quantity: item.quantity,
       unit: item.unit || 'pcs',
       price: item.price,
-      totalPrice: item.total || item.quantity * item.price,
+      totalPrice: item.total ?? item.totalPrice ?? item.quantity * item.price,
       cost: cost,
       totalCost: item.quantity * cost,
       type: 'QUOTATION',

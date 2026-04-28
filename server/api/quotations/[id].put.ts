@@ -13,6 +13,7 @@ const updateQuotationSchema = z.object({
         quantity: z.number().min(1, 'Qty minimal 1'),
         unit: z.string().min(1, 'Unit wajib diisi'),
         price: z.number().min(0, 'Harga tidak boleh negatif'),
+        cost: z.number().min(0, 'HPP tidak boleh negatif').optional(),
       })
     )
     .min(1, 'Minimal 1 item'),
@@ -68,6 +69,8 @@ export default defineEventHandler(async event => {
     quantity: item.quantity,
     unit: item.unit,
     price: item.price,
+    cost: item.cost ?? 0,
+    total: item.quantity * item.price,
     totalPrice: item.quantity * item.price,
     sortOrder: index,
   }))

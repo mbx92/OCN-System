@@ -7,7 +7,7 @@ set -e
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="./backups"
-CONTAINER_NAME="ocn-system"
+CONTAINER_NAME="${CONTAINER_NAME:-ocn-app}"
 
 # Buat folder backup jika belum ada
 mkdir -p $BACKUP_DIR
@@ -33,7 +33,9 @@ docker exec -e PGPASSWORD=$DB_PASS $CONTAINER_NAME pg_dump \
   -p $DB_PORT \
   -U $DB_USER \
   -d $DB_NAME \
-  -F c \
+  -F p \
+  --no-owner \
+  --no-privileges \
   -b \
   -v \
   -f "/tmp/backup_$TIMESTAMP.sql"
@@ -57,4 +59,4 @@ echo "🧹 Old backups cleaned (>7 days)"
 echo ""
 echo "📝 To restore this backup:"
 echo "   gunzip ${BACKUP_FILE}.gz"
-echo "   docker exec -i $CONTAINER_NAME pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME < $BACKUP_FILE"
+echo "   docker exec -i $CONTAINER_NAME psql -h $DB_HOST -U $DB_USER -d $DB_NAME < $BACKUP_FILE"

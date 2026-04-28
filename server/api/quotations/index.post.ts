@@ -12,6 +12,7 @@ const quotationSchema = z.object({
         quantity: z.number().min(1),
         unit: z.string().min(1),
         price: z.number().min(0),
+        cost: z.number().min(0).optional(),
       })
     )
     .min(1, 'Minimal 1 item'),
@@ -45,10 +46,15 @@ export default defineEventHandler(async event => {
   const quotationNo = `QT-${quotationDate.format('YYYYMM')}-${String(count + 1).padStart(3, '0')}`
 
   // Calculate total
-  const items = result.data.items.map(item => ({
-    ...item,
-    total: item.quantity * item.price,
-  }))
+  const items = result.data.items.map(item => {
+    const total = item.quantity * item.price
+    return {
+      ...item,
+      total,
+      totalPrice: total, // Backward compatibility for consumers using totalPrice key
+      cost: item.cost ?? 0,
+    }
+  })
   const totalAmount = items.reduce((sum, item) => sum + item.total, 0)
 
   const quotation = await prisma.quotation.create({

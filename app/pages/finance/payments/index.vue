@@ -31,7 +31,7 @@
           <span class="sm:hidden">Invoice</span>
         </button>
         <button
-          @click="openModal('PROJECT')"
+          @click="openModal('PROJECT_PAYMENT')"
           class="btn btn-sm sm:btn-md btn-primary flex-1 sm:flex-initial"
         >
           <svg
@@ -48,8 +48,8 @@
               d="M12 4v16m8-8H4"
             />
           </svg>
-          <span class="hidden sm:inline">Bayar Proyek</span>
-          <span class="sm:hidden">Proyek</span>
+          <span class="hidden sm:inline">Bayar Invoice</span>
+          <span class="sm:hidden">Bayar</span>
         </button>
         <button
           @click="openModal('POS')"
@@ -468,7 +468,8 @@
       <div class="modal-box">
         <h3 class="font-bold text-lg mb-4">
           <span v-if="modalMode === 'INVOICE'">Buat Invoice / Tagihan</span>
-          <span v-else>{{ modalMode === 'PROJECT' ? 'Pembayaran Proyek' : 'Pembayaran POS' }}</span>
+          <span v-else-if="modalMode === 'PROJECT_PAYMENT'">Pembayaran dari Invoice</span>
+          <span v-else>Pembayaran POS</span>
         </h3>
 
         <!-- Info Alert for Invoice -->
@@ -492,8 +493,8 @@
 
         <form @submit.prevent="savePayment">
           <div class="space-y-4">
-            <!-- Project Selection (PROJECT/INVOICE mode only) -->
-            <div v-if="modalMode === 'PROJECT' || modalMode === 'INVOICE'" class="form-control">
+            <!-- Project Selection (invoice creation mode only) -->
+            <div v-if="modalMode === 'INVOICE'" class="form-control">
               <label class="label"><span class="label-text">Proyek *</span></label>
               <AppProjectSelect
                 v-model="form.projectId"
@@ -534,6 +535,32 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
                     <span>Sudah Lunas</span>
                   </div>
+                </p>
+              </div>
+            </div>
+
+            <!-- Invoice selection for payment -->
+            <div v-if="modalMode === 'PROJECT_PAYMENT'" class="form-control">
+              <label class="label"><span class="label-text">Invoice *</span></label>
+              <select v-model="form.invoiceId" class="select select-bordered w-full" required>
+                <option value="">Pilih invoice belum lunas</option>
+                <option v-for="inv in payableInvoices" :key="inv.id" :value="inv.id">
+                  {{ inv.paymentNumber }} - {{ inv.project?.projectNumber || '-' }} -
+                  {{ formatCurrency(inv.amount) }}
+                </option>
+              </select>
+              <div v-if="selectedInvoiceForPayment" class="text-sm mt-2 space-y-1">
+                <p class="text-base-content/60">
+                  Customer:
+                  <span class="font-semibold">
+                    {{ selectedInvoiceForPayment.project?.customer?.name || '-' }}
+                  </span>
+                </p>
+                <p class="text-base-content/60">
+                  Nilai Invoice:
+                  <span class="font-mono font-bold text-success">
+                    {{ formatCurrency(selectedInvoiceForPayment.amount) }}
+                  </span>
                 </p>
               </div>
             </div>
@@ -784,10 +811,11 @@ const viewMode = ref<'LIST' | 'GRID'>(
   typeof window !== 'undefined' && window.innerWidth < 768 ? 'GRID' : 'LIST'
 )
 const showModal = ref(false)
-const modalMode = ref<'PROJECT' | 'POS' | 'INVOICE'>('PROJECT')
+const modalMode = ref<'PROJECT_PAYMENT' | 'POS' | 'INVOICE'>('PROJECT_PAYMENT')
 const saving = ref(false)
 
 const form = reactive({
+  invoiceId: '',
   projectId: '',
   type: 'FULL' as 'FULL' | 'DP' | 'INSTALLMENT' | 'SETTLEMENT',
   amount: 0,
@@ -824,6 +852,31 @@ const payments = computed(() => (paymentsData.value as any)?.data || [])
 // Fetch projects for dropdown
 const { data: projectsData } = await useFetch('/api/projects', { query: { limit: 100 } })
 const projects = computed(() => (projectsData.value as any)?.data || [])
+
+// Unpaid/partial project invoices used for payment recording from invoice
+const { data: payableInvoicesData, refresh: refreshPayableInvoices } = await useFetch('/api/payments', {
+  query: {
+    mode: 'PROJECT',
+    limit: 200,
+  },
+})
+
+const payableInvoices = computed(() => {
+  const unpaid = ((payableInvoicesData.value as any)?.data || []) as any[]
+  return unpaid.filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL')
+})
+
+const selectedInvoiceForPayment = computed(() => {
+  if (!form.invoiceId) return null
+  return payableInvoices.value.find((inv: any) => inv.id === form.invoiceId) || null
+})
+
+watch(selectedInvoiceForPayment, invoice => {
+  if (!invoice) return
+  form.amount = Number(invoice.amount || 0)
+  form.type = 'FULL'
+  form.method = invoice.method || 'TRANSFER'
+})
 
 const fetchPayments = () => {
   page.value = 1
@@ -930,8 +983,9 @@ const getTypeLabel = (type: string) => {
   return labels[type] || type
 }
 
-const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
+const openModal = async (mode: 'PROJECT_PAYMENT' | 'POS' | 'INVOICE') => {
   modalMode.value = mode
+  form.invoiceId = ''
   form.projectId = ''
   form.type = 'FULL'
   form.amount = 0
@@ -943,6 +997,9 @@ const openModal = (mode: 'PROJECT' | 'POS' | 'INVOICE') => {
   form.status = mode === 'INVOICE' ? 'UNPAID' : 'PAID'
   form.dueDate = ''
   form.paymentDate = new Date().toISOString().split('T')[0] // Reset to today
+  if (mode === 'PROJECT_PAYMENT') {
+    await refreshPayableInvoices()
+  }
   showModal.value = true
 }
 
@@ -954,10 +1011,14 @@ const changeStatusFilter = (status: string) => {
 const savePayment = async () => {
   saving.value = true
   try {
+    if (modalMode.value === 'PROJECT_PAYMENT' && !form.invoiceId) {
+      throw new Error('Pilih invoice terlebih dahulu')
+    }
+
     const body: any = {
-      mode: modalMode.value === 'INVOICE' ? 'PROJECT' : modalMode.value,
-      projectId:
-        modalMode.value === 'PROJECT' || modalMode.value === 'INVOICE' ? form.projectId : null,
+      mode: modalMode.value === 'POS' ? 'POS' : 'PROJECT',
+      projectId: modalMode.value === 'INVOICE' ? form.projectId : null,
+      invoiceId: modalMode.value === 'PROJECT_PAYMENT' ? form.invoiceId : null,
       type: form.type,
       amount: form.amount,
       discount: form.discount || 0,
@@ -978,13 +1039,22 @@ const savePayment = async () => {
       body.dueDate = new Date(form.dueDate).toISOString()
     }
 
+    // For invoice payment flow, use selected invoice amount by default.
+    if (modalMode.value === 'PROJECT_PAYMENT' && selectedInvoiceForPayment.value) {
+      body.amount = selectedInvoiceForPayment.value.amount
+    }
+
     await $fetch('/api/payments', {
       method: 'POST',
       body,
     })
 
     const message =
-      modalMode.value === 'INVOICE' ? 'Invoice berhasil dibuat!' : 'Pembayaran berhasil disimpan!'
+      modalMode.value === 'INVOICE'
+        ? 'Invoice berhasil dibuat!'
+        : modalMode.value === 'PROJECT_PAYMENT'
+          ? 'Pembayaran invoice berhasil dicatat!'
+          : 'Pembayaran berhasil disimpan!'
     showAlert(message, 'success')
     showModal.value = false
     await refresh()

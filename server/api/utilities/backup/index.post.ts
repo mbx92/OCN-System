@@ -51,7 +51,7 @@ export async function createBackup(type: 'manual' | 'scheduled' = 'manual') {
     // Set PGPASSWORD environment variable for pg_dump
     const env = { ...process.env, PGPASSWORD: parsed.password }
 
-    const command = `pg_dump -h ${parsed.host} -p ${parsed.port} -U ${parsed.user} -d ${parsed.database} -F p -f "${filepath}"`
+    const command = `pg_dump -h ${parsed.host} -p ${parsed.port} -U ${parsed.user} -d ${parsed.database} -F p --no-owner --no-privileges -f "${filepath}"`
 
     await execAsync(command, { env, timeout: 120000 })
 
@@ -69,66 +69,12 @@ export async function createBackup(type: 'manual' | 'scheduled' = 'manual') {
       type,
     }
   } catch (err: any) {
-    // If pg_dump fails, try alternative method via Prisma raw query
-    try {
-      return await createBackupViaPrisma(filepath, filename, type)
-    } catch (prismaErr: any) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: `Backup gagal: ${err.message}. pg_dump mungkin tidak terinstall.`,
-      })
-    }
-  }
-}
-
-async function createBackupViaPrisma(filepath: string, filename: string, type: string) {
-  // Fallback: export schema + data as SQL via Prisma
-  const { writeFile } = await import('fs/promises')
-
-  const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
-    SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename
-  `
-
-  let sql = `-- OCN System Database Backup\n-- Created: ${new Date().toISOString()}\n-- Type: ${type}\n\n`
-
-  for (const { tablename } of tables) {
-    if (tablename.startsWith('_')) continue
-
-    try {
-      const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tablename}"`)
-      if (Array.isArray(rows) && rows.length > 0) {
-        sql += `-- Table: ${tablename} (${rows.length} rows)\n`
-
-        for (const row of rows) {
-          const columns = Object.keys(row as Record<string, unknown>)
-          const values = columns.map(col => {
-            const val = (row as Record<string, unknown>)[col]
-            if (val === null) return 'NULL'
-            if (typeof val === 'number') return String(val)
-            if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-            if (val instanceof Date) return `'${val.toISOString()}'`
-            return `'${String(val).replace(/'/g, "''")}'`
-          })
-          sql += `INSERT INTO "${tablename}" ("${columns.join('", "')}") VALUES (${values.join(', ')});\n`
-        }
-        sql += '\n'
-      }
-    } catch {}
-  }
-
-  await writeFile(filepath, sql, 'utf-8')
-
-  const { stat } = await import('fs/promises')
-  const fileStat = await stat(filepath)
-
-  return {
-    success: true,
-    message: `Backup ${type} berhasil dibuat (via Prisma fallback)`,
-    filename,
-    size: fileStat.size,
-    sizeFormatted: formatFileSize(fileStat.size),
-    createdAt: new Date().toISOString(),
-    type,
+    throw createError({
+      statusCode: 500,
+      statusMessage:
+        `Backup gagal: ${err.message}. ` +
+        'Pastikan pg_dump tersedia di server/container aplikasi agar backup mencakup seluruh tabel dan struktur database.',
+    })
   }
 }
 

@@ -61,7 +61,8 @@ export default defineEventHandler(async event => {
 
   // Convert budget items to quotation items format
   const items = budget.items.map(item => ({
-    productId: null, // Budget items are manual entry
+    // Preserve product link if budget item was created from catalog.
+    productId: item.productId || null,
     name: item.name,
     quantity: item.quantity,
     unit: item.unit,

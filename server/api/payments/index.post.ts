@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { logActivity, ActivityAction, ActivityEntity } from '../../utils/logger'
 
 const createPaymentSchema = z.object({
+  invoiceId: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
   mode: z.enum(['PROJECT', 'POS']),
   type: z.enum(['FULL', 'DP', 'INSTALLMENT', 'SETTLEMENT']),
@@ -34,6 +35,135 @@ export default defineEventHandler(async event => {
   }
 
   const data = result.data
+
+  // Enforce invoice-first flow for project payments.
+  // PROJECT with PAID/PARTIAL status must reference an existing invoice.
+  if (
+    data.mode === 'PROJECT' &&
+    (data.status === 'PAID' || data.status === 'PARTIAL') &&
+    !data.invoiceId
+  ) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Pembayaran proyek wajib dari invoice. Buat invoice terlebih dahulu.',
+    })
+  }
+
+  if (data.mode === 'PROJECT' && !data.invoiceId && !data.projectId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Project wajib dipilih untuk membuat invoice',
+    })
+  }
+
+  // If invoiceId is provided, record payment against that invoice
+  // instead of creating a brand-new payment row from project data.
+  if (data.invoiceId) {
+    const existingInvoice = await prisma.payment.findUnique({
+      where: { id: data.invoiceId },
+      include: {
+        project: {
+          include: {
+            customer: true,
+          },
+        },
+      },
+    })
+
+    if (!existingInvoice) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Invoice tidak ditemukan',
+      })
+    }
+
+    if (existingInvoice.mode !== 'PROJECT') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invoice tidak valid untuk pembayaran proyek',
+      })
+    }
+
+    if (existingInvoice.status === 'PAID' || existingInvoice.status === 'CANCELLED') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invoice sudah lunas atau dibatalkan',
+      })
+    }
+
+    // Use custom payment date if provided (backdate), otherwise use now
+    const invoicePaymentDate = data.paymentDate ? new Date(data.paymentDate) : new Date()
+    const nextStatus = data.status === 'PARTIAL' ? 'PARTIAL' : 'PAID'
+
+    const payment = await prisma.payment.update({
+      where: { id: existingInvoice.id },
+      data: {
+        // Keep invoice base data and only update payment-related fields.
+        method: data.method,
+        reference: data.reference || existingInvoice.reference,
+        notes: data.notes || existingInvoice.notes,
+        receivedBy: data.receivedBy || existingInvoice.receivedBy,
+        status: nextStatus,
+        paymentDate: invoicePaymentDate,
+        paidDate: nextStatus === 'PAID' ? invoicePaymentDate : null,
+      },
+      include: {
+        project: {
+          include: {
+            customer: true,
+          },
+        },
+      },
+    })
+
+    // Record cash transaction only when invoice becomes PAID.
+    if (existingInvoice.status !== 'PAID' && payment.status === 'PAID') {
+      await prisma.cashTransaction.create({
+        data: {
+          type: 'INCOME',
+          category: 'PAYMENT',
+          amount: Number(payment.amount),
+          description: `Pembayaran ${payment.paymentNumber}${payment.project ? ` - ${payment.project.projectNumber}` : ''}`,
+          reference: payment.paymentNumber,
+          referenceType: 'Payment',
+          referenceId: payment.id,
+          date: invoicePaymentDate,
+        },
+      })
+
+      if (payment.project) {
+        const { notifyPaymentReceived } = await import('../../utils/telegram')
+        notifyPaymentReceived({
+          amount: payment.amount,
+          projectNumber: payment.project.projectNumber,
+          customerName: payment.project.customer.name,
+          paymentType: payment.type,
+          paymentId: payment.id,
+        }).catch(err => {
+          console.error('Failed to send Telegram notification:', err)
+        })
+      }
+    }
+
+    if (user) {
+      await logActivity({
+        userId: user.id,
+        action: ActivityAction.CREATE_PAYMENT,
+        entity: ActivityEntity.Payment,
+        entityId: payment.id,
+        metadata: {
+          paymentNumber: payment.paymentNumber,
+          invoiceId: existingInvoice.id,
+          projectId: payment.projectId,
+          type: payment.type,
+          amount: payment.amount,
+          flow: 'invoice-payment',
+        },
+      })
+    }
+
+    return payment
+  }
 
   // Use custom payment date if provided (backdate), otherwise use now
   const paymentDateToUse = data.paymentDate ? new Date(data.paymentDate) : new Date()
